@@ -159,11 +159,11 @@
 				<td><input type="text" name="title"></td>
 			</tr>
 			<tr>
-				<th><?php __('Choose a password'); ?>:&nbsp;</th>
+				<th><?php __('Choose a Password'); ?>:&nbsp;</th>
 				<td><input type="password" name="password"></td>
 			</tr>
 			<tr>
-				<th><?php __('Repeat password'); ?>:&nbsp;</th>
+				<th><?php __('Repeat Password'); ?>:&nbsp;</th>
 				<td><input type="password" name="password2"></td>
 			</tr>
 			<tr>
@@ -181,8 +181,7 @@
 				<td>
 					<select name="changepassword" autofocus="true">
 						<?php
-						$sql = "SELECT id, title "
-							 . "FROM vault ";
+						$sql = "SELECT id, title FROM vault ";
 						$statement = $mysqli->prepare($sql);
 						$statement->execute();
 						$result = $statement->get_result();

@@ -1,16 +1,12 @@
 # WebPW
 Web based password safe with multi-language support.
 
-|                  W e b P W                  |
-|:-------------------------------------------:|
-|   (c) 2017 Georg Sieber - georg-sieber.de   |
-
-| License: GPLv2 (see LICENSE.txt)            |
-|:-------------------------------------------:|
-| View source and fork me on GitHub:          |
-| https://github.com/schorschii/webpw         |
-
 ## About
+* (c) 2017 Georg Sieber - http://georg-sieber.de
+* licensed under the terms of the GPLv2 (see LICENSE.txt)
+* view source and fork me on GitHub: https://github.com/schorschii/webpw
+
+## Description
 Store and view your passwords platform-independent with this PHP web application. Passwords are saved AES-encrypted in an MySQL database. You can create multiple vaults with different master passwords, e.g. for different departments in your company. Inside of vaults you can group passwords entries.
 
 ## Screenshots
@@ -20,7 +16,7 @@ Store and view your passwords platform-independent with this PHP web application
 
 ## Setup
 ### Server
-To set up this web app you need a database (MySQL) server and an Linux-based apache webserver running PHP.
+To set up this web app you need a database (MySQL) server and an Linux-based apache webserver running PHP 7.
   1. Copy all files into a directory of your choice.
   2. Edit "database.php" and enter your MySQL connection credentials.
   3. Open the "setup.php" file in your webbrowser to create the required tables in your database.

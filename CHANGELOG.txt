@@ -1,2 +1,7 @@
+v0.0.2
+- added search bar
+- added possibility to close and open groups
+- updated german translation
+
 v0.0.1
 - initial release

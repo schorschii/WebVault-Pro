@@ -59,28 +59,36 @@
 			$result = $statement->get_result();
 			$counter = 0;
 			$last_group = NULL;
+			$entry_style = "";
+			$entry_class = "entry_without_group";
 			while($row = $result->fetch_object()) {
 				$counter ++;
-				// display group header, if group changed
+				// display group header, if we reached next group
 				if($last_group != $row->group_id) {
-					echo "<tr><th colspan='100'>" . $row->group . "</th></tr>\n";
+					echo "<tr><th colspan='100' class='groupheader'>";
+					echo "<button onclick='showRows(".$row->group_id.")' class='btnplusminus btnplus' id='btnplus".$row->group_id."' title='".translate('expand group')."'>&#10133;</button>";
+					echo "<button onclick='hideRows(".$row->group_id.")' class='btnplusminus btnminus' id='btnminus".$row->group_id."' title='".translate('collapse group')."' style='display:none;'>&#10134;</button>";
+					echo $row->group;
+					echo "</th></tr>\n";
 					$last_group = $row->group_id;
+					$entry_style = "display:none";
+					$entry_class = "";
 				}
 
 				// display entry
 				$decrypted = openssl_decrypt($row->password, $method, $_SESSION['sessionpassword'], 0, $row->iv);
-				echo "<tr>\n";
-				echo "<td>" . $row->title . "</td>\n";
-				echo "<td title='" . $row->description . "'>" . shortText($row->description) . "</td>\n";
+				echo "<tr class='entry $entry_class group".$row->group_id."' style='$entry_style'>\n";
+				echo "<td class='title'>" . $row->title . "</td>\n";
+				echo "<td class='description' title='" . $row->description . "'>" . shortText($row->description) . "</td>\n";
 				echo "<td>"
-				   . "<a target='_blank' href='" . $row->url . "'>" . shortText($row->url) . "</a>"
+				   . "<a class='url' target='_blank' href='" . $row->url . "'>" . shortText($row->url) . "</a>"
 				   . "</td>\n";
 				echo "<td>"
-				   . "<input type='text' value='" . $row->username . "' id='userbox".$row->id."' readonly>"
+				   . "<input class='username' type='text' value='" . $row->username . "' id='userbox".$row->id."' readonly>"
 				   . "<button title='".translate("copy username to clipboard")."' onclick='toClipboard(\"userbox".$row->id."\");'>&#9997;</button>"
 				   . "</td>\n";
 				echo "<td>"
-				   . "<input type='password' value='" . $decrypted . "' id='pwbox".$row->id."' readonly>"
+				   . "<input class='password' type='password' value='" . $decrypted . "' id='pwbox".$row->id."' readonly>"
 				   . "<button title='".translate("show or hide password")."' onclick='toggleView(\"pwbox".$row->id."\");'>&#9678;</button>"
 				   . "<button title='".translate("copy password to clipboard")."' onclick='toClipboard(\"pwbox".$row->id."\");'>&#9997;</button>"
 				   . "</td>\n";

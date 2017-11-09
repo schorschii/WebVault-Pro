@@ -5,7 +5,7 @@ $info = ""; $infotype = "";
 if(isset($_POST['setlang']) && file_exists("lang/".$_POST['setlang'].".php")) {
 	session_start();
 	$_SESSION['lang'] = $_POST['setlang'];
-	$info = "Language was set to '".$_SESSION['lang']."'";
+	$info = "Language was set to" . " '".$_SESSION['lang']."'";
 	$infotype = "green";
 }
 
@@ -24,7 +24,7 @@ require_once('lang/.init.php');
 	<?php $loginmenu = true; require_once("menu.php"); ?>
 
 	<div id="contentcontainer">
-		<h1>Change language</h1>
+		<h1><?php __('Change language'); ?></h1>
 
 		<?php if($info != "") { ?><div class="infobox <?php echo $infotype; ?>"><?php echo $info; ?></div><?php } ?>
 
@@ -38,7 +38,7 @@ require_once('lang/.init.php');
 				}
 				?>
 			</select>
-			<input type="submit" value="OK">
+			<input type="submit" value="<?php __('Set Language'); ?>">
 		</form>
 	</div>
 

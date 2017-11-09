@@ -40,6 +40,8 @@
 	<span class="center">
 	</span>
 	<span class="right">
+		<span id="searchresults" style="display:none"><span id="searchresultcount"></span>&nbsp;<?php __('result(s)'); ?>&nbsp;<button onclick="clearSearch()"><?php __('Close Search'); ?></button></span>
+		<input type="text" id="searchbar" autofocus="true" oninput="search(this.value)" placeholder="<?php __('Search...'); ?>" title="<?php __('Search...'); ?>">
 		<a href="login.php?logout=1"><button><?php __('Close Vault'); ?></button></a>
 	</span>
 

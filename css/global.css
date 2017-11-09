@@ -74,6 +74,13 @@ input[type=submit] {
 .resulttable form {
 	display: inline;
 }
+.resulttable th.groupheader button {
+	margin-right: 10px;
+}
+
+#searchbar {
+	width: 130px;
+}
 
 .remove {
 	color: red;

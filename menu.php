@@ -33,14 +33,18 @@
 <?php } else { ?>
 
 	<span class="left">
+		<?php
+			$groupview_param = "groupview=collapsed";
+			if((!isset($_GET['groupview'])) || (isset($_GET['groupview']) && $_GET['groupview'] == "collapsed"))
+				$groupview_param = "groupview=expanded";
+		?>
 		<a href="new.php"><button><?php __('New Entry'); ?></button></a>
 		<a href="newgroup.php"><button><?php __('New Group'); ?></button></a>
-		<a href="index.php"><button><?php __('Show Entries'); ?></button></a>
+		<a href="index.php?<?php echo $groupview_param; ?>"><button><?php __('Show Entries'); ?></button></a>
 	</span>
 	<span class="center">
 	</span>
 	<span class="right">
-		<span id="searchresults" style="display:none"><span id="searchresultcount"></span>&nbsp;<?php __('result(s)'); ?>&nbsp;<button onclick="clearSearch()"><?php __('Close Search'); ?></button></span>
 		<input type="text" id="searchbar" autofocus="true" oninput="search(this.value)" placeholder="<?php __('Search...'); ?>" title="<?php __('Search...'); ?>">
 		<a href="login.php?logout=1"><button><?php __('Close Vault'); ?></button></a>
 	</span>

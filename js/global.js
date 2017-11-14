@@ -44,7 +44,26 @@ function hideRows($classname) {
 	document.getElementById("btnplus"+$classname).style.display = "inline-block";
 }
 
+function checkSearchBarHide() {
+	// check if searchresults object is available and hide search box if not
+	if(document.getElementById('searchresults') === null) {
+		if(document.getElementById('searchbar') !== null) {
+			document.getElementById('searchbar').style.display = "none";
+		}
+	}
+}
+if(window.addEventListener) {
+	window.addEventListener('load', checkSearchBarHide, false); //W3C
+} else {
+	window.attachEvent('onload', checkSearchBarHide); //IE
+}
+
 function search($q) {
+	// check if searchresults object is available (only on index.php)
+	if(document.getElementById('searchresults') === null) {
+		return;
+	}
+
 	// empty query means display all entries (default state)
 	if($q == "") {
 		// hide all entries
@@ -116,7 +135,7 @@ function search($q) {
 	}
 
 	// echo result count
-	document.getElementById("searchresults").style.display = "inline";
+	document.getElementById("searchresults").style.display = "block";
 	document.getElementById("searchresultcount").innerHTML = result_count;
 }
 

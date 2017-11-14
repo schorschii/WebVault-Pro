@@ -231,9 +231,9 @@
 			while($row = $result->fetch_object()) {
 				$counter ++;
 				echo "<tr>";
-				echo "<td>" . $row->title . "</td>";
+				echo "<td>" . htmlspecialchars($row->title) . "</td>";
 				echo "<td>"
-				   . "<form method='POST' onsubmit='return confirm(\"Remove " . $row->title . "? All password entries will be lost!\")'>"
+				   . "<form method='POST' onsubmit='return confirm(\"".translate('Remove this entry?'). " " . translate('All password entries will be lost!') ."\")'>"
 				   . "<input type='hidden' name='remove' value='" . $row->id . "'>"
 				   . "<input type='submit' value='".translate("Remove")."' class='remove'>"
 				   . "</form>"

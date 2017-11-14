@@ -116,8 +116,8 @@
 <?php require_once("menu.php"); ?>
 
 <div id="contentcontainer">
-	<h1><?php echo $_SESSION['vaultname']; ?></h1>
-	<h2><?php echo $subtitle; ?></h2>
+	<h1><?php echo htmlspecialchars($_SESSION['vaultname']); ?></h1>
+	<h2><?php echo htmlspecialchars($subtitle); ?></h2>
 
 	<br>
 	<?php if($info != "") { ?><div class="infobox <?php echo $infotype; ?>"><?php echo $info; ?></div><?php } ?>
@@ -138,7 +138,7 @@
 						while($row = $result->fetch_object()) {
 							$selected = "";
 							if($default_group == $row->id) $selected = "selected";
-							echo "<option $selected value='" . $row->id . "' title='" . $row->description . "'>" . $row->title . "</option>";
+							echo "<option $selected value='" . $row->id . "' title='" . htmlspecialchars($row->description, ENT_QUOTES) . "'>" . htmlspecialchars($row->title, ENT_QUOTES) . "</option>";
 						}
 						?>
 					</select>
@@ -146,23 +146,23 @@
 			</tr>
 			<tr>
 				<th><?php __('Title'); ?>:&nbsp;</th>
-				<td><input type="text" name="title" value="<?php echo $default_title; ?>"></td>
+				<td><input type="text" name="title" value="<?php echo htmlspecialchars($default_title); ?>"></td>
 			</tr>
 			<tr>
 				<th><?php __('Description'); ?>:&nbsp;</th>
-				<td><input type="text" name="description" value="<?php echo $default_description; ?>"></td>
+				<td><input type="text" name="description" value="<?php echo htmlspecialchars($default_description); ?>"></td>
 			</tr>
 			<tr>
 				<th><?php __('URL to service'); ?>:&nbsp;</th>
-				<td><input type="text" name="url" value="<?php echo $default_url; ?>"></td>
+				<td><input type="text" name="url" value="<?php echo htmlspecialchars($default_url); ?>"></td>
 			</tr>
 			<tr>
 				<th><?php __('Username'); ?>:&nbsp;</th>
-				<td><input type="text" name="username" value="<?php echo $default_username; ?>"></td>
+				<td><input type="text" name="username" value="<?php echo htmlspecialchars($default_username); ?>"></td>
 			</tr>
 			<tr>
 				<th><?php __('Password'); ?>:&nbsp;</th>
-				<td><input type="password" id="password" name="password" value="<?php echo $default_password; ?>"></td>
+				<td><input type="password" id="password" name="password" value="<?php echo htmlspecialchars($default_password); ?>"></td>
 			</tr>
 			<tr>
 				<td></td>

@@ -25,13 +25,13 @@ function __($translate) {
 }
 
 // function for translating and returning strings
-function translate($translate) {
+function translate($translate, $replace="") {
 	global $LANG;
 
 	if(isset($LANG[$translate]))
-		return $LANG[$translate];
+		return str_replace('$$$', $replace, $LANG[$translate]);
 	else
-		return $translate;
+		return str_replace('$$$', $replace, $translate);
 }
 
 ?>

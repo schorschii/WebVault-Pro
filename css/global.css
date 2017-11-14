@@ -78,8 +78,26 @@ input[type=submit] {
 	margin-right: 10px;
 }
 
+.resulttable th.groupheader * {
+	vertical-align: middle;
+}
+.resulttable th.groupheader .grouptext {
+	display: inline-block;
+}
+.resulttable th.groupheader .grouptitle {
+	font-weight: normal;
+}
+.resulttable th.groupheader .groupdescription {
+	font-size: 85%;
+	font-weight: normal;
+	color: rgba(0,0,0,0.6);
+}
+
 #searchbar {
 	width: 130px;
+}
+#searchresults {
+	text-align: center;
 }
 
 .remove {

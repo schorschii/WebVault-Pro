@@ -10,4 +10,8 @@
 	if ($mysqli->connect_errno) {
 		die("Failed to connect to database server: " . $mysqli->connect_error);
 	}
+
+	if (version_compare(phpversion(), '6.9.9', '<')) {
+		die("This application requires PHP 7.");
+	}
 ?>

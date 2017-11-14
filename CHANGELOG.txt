@@ -1,3 +1,12 @@
+v0.0.3
+- optimized search
+- fixed german translation (collapse/expand group)
+- changed group appearance
+- added htmlspecialchars() around database output to display chars like < > " ' correctly
+- PHP version check
+- "Show Entries"-Button now toggles the visibility of group entries
+- "login.php" shows last vault after failed login attempt
+
 v0.0.2
 - added search bar
 - added possibility to close and open groups

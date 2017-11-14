@@ -11,6 +11,7 @@ if(!IsAlreadyEstablished($mysqli)) {
 
 
 $info = ""; $infotype = "";
+$default_vault = "";
 if (isset($_POST['vault']) && isset($_POST['password'])) {
 	$vault = $_POST['vault']; $password = $_POST['password'];
 	if (correctVaultPassword($vault, $password)) {
@@ -19,6 +20,7 @@ if (isset($_POST['vault']) && isset($_POST['password'])) {
 		header('Location: index.php');
 	} else {
 		sleep(1); // wait for exacerbate brute force attacks
+		$default_vault = $_POST['vault'];
 		$info = translate("Invalid password.");
 		$infotype = "red";
 	}
@@ -62,7 +64,9 @@ if (isset($_POST['vault']) && isset($_POST['password'])) {
 								$counter = 0;
 								while($row = $result->fetch_object()) {
 									$counter ++;
-									echo "<option value='" . $row->id . "'>" . $row->title . "</option>";
+									$selected = "";
+									if($row->id == $default_vault) $selected = "selected";
+									echo "<option $selected value='" . $row->id . "'>" . htmlspecialchars($row->title) . "</option>";
 								}
 								if($counter == 0) {
 									echo "<option>".translate("No vault found")."</option>";

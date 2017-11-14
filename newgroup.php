@@ -62,8 +62,8 @@
 <?php require_once("menu.php"); ?>
 
 <div id="contentcontainer">
-	<h1><?php echo $_SESSION['vaultname']; ?></h1>
-	<h2><?php echo $subtitle; ?></h2>
+	<h1><?php echo htmlspecialchars($_SESSION['vaultname']); ?></h1>
+	<h2><?php echo htmlspecialchars($subtitle); ?></h2>
 
 	<br>
 	<?php if($info != "") { ?><div class="infobox <?php echo $infotype; ?>"><?php echo $info; ?></div><?php } ?>
@@ -73,11 +73,11 @@
 		<table class="inputtable">
 			<tr>
 				<th><?php __('Title'); ?>:&nbsp;</th>
-				<td><input type="text" name="title" value="<?php echo $default_title; ?>"></td>
+				<td><input type="text" name="title" value="<?php echo htmlspecialchars($default_title); ?>"></td>
 			</tr>
 			<tr>
 				<th><?php __('Description'); ?>:&nbsp;</th>
-				<td><input type="text" name="description" value="<?php echo $default_description; ?>"></td>
+				<td><input type="text" name="description" value="<?php echo htmlspecialchars($default_description); ?>"></td>
 			</tr>
 			<tr>
 				<th></th>
@@ -101,9 +101,9 @@
 			while($row = $result->fetch_object()) {
 				$counter ++;
 				echo "<tr>";
-				echo "<td>" . $row->title . "</td>";
+				echo "<td>" . htmlspecialchars($row->title) . "</td>";
 				echo "<td>"
-				   . "<form method='POST' onsubmit='return confirm(\"Remove " . $row->title . "? This will only work if the group is empty.\")'>"
+				   . "<form method='POST' onsubmit='return confirm(\"".translate('Remove this entry?') . " " . translate('This will only work if the group is empty.') . "\")'>"
 				   . "<input type='hidden' name='remove' value='" . $row->id . "'>"
 				   . "<input type='submit' value='".translate("Remove")."' class='remove'>"
 				   . "</form>"

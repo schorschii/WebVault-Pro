@@ -1,3 +1,6 @@
+v0.0.6
+- db connection now uses UTF-8 charset
+
 v0.0.5
 - updated german translation
 

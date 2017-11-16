@@ -13,7 +13,7 @@ require_once('lang/.init.php');
 <?php $loginmenu = true; require_once("menu.php"); ?>
 
 	<div id="contentcontainer">
-		<h1>About WebPW v0.0.4</h1>
+		<h1>About WebPW v0.0.6</h1>
 		<h2>web based PHP password safe</h2>
 		<br>
 		<hr>

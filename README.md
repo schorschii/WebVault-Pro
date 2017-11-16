@@ -48,8 +48,8 @@ Free Software Foundation, Inc.
 Boston, MA  02111-1307, USA.
 
 ## Libraries
-This program uses the [parseCSV][] library
-© 2014 Jim Myhrberg
+This program uses the [parseCSV][] library  
+© 2014 Jim Myhrberg  
 Licensed under the terms of the MIT license
 
 [parseCSV]: https://github.com/parsecsv/parsecsv-for-php

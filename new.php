@@ -71,14 +71,14 @@
 					 	. "WHERE id = ?;";
 					$statement = $mysqli->prepare($sql);
 					$statement->bind_param('ssssssii',
-							   	$_POST['title'],
-							   	$_POST['username'],
-							   	$encrypted,
-							   	$iv,
-							   	$_POST['description'],
-							   	$_POST['url'],
-							   	$insert_group,
-							   	$_POST['doedit']
+										   $_POST['title'],
+										   $_POST['username'],
+										   $encrypted,
+										   $iv,
+										   $_POST['description'],
+										   $_POST['url'],
+										   $insert_group,
+										   $_POST['doedit']
 					);
 					if (!$statement->execute()) {
 						$info = "Execute failed: (" . $statement->errno . ") " . $statement->error;

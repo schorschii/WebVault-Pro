@@ -78,6 +78,19 @@ $LANG['Repeat New Password'] = "Passwort wiederholen";
 $LANG['Create'] = "Erstellen";
 $LANG['Change Password'] = "Passwort ändern";
 
+$LANG['Import into'] = "Importieren nach";
+$LANG['Preview only'] = "nur Vorschau";
+$LANG['Export from'] = "Exportieren aus";
+$LANG['Please choose a format to export passwords.'] = "Bitte wählen Sie ein Format, in welches Sie exportieren möchten.";
+$LANG['Passwords will be exported in CLEARTEXT! Please be careful.'] = "Passwörter werden im KLARTEXT gespeichert. Bitte seien Sie vorsichtig.";
+$LANG['Vault Password'] = "Tresor-Passwort";
+$LANG['Tab-Separated'] = "Tab-getrennt";
+$LANG['Comma-Separated (CSV)'] = "Komma-getrennt (CSV)";
+$LANG['HTML (for printing)'] = "HTML (zum drucken)";
+$LANG['Vault passwort is not correct.'] = "Tresor-Passwort ist nicht korrekt.";
+$LANG['<b>Expected format: tab-separated</b>, field order:'] = "<b>Unterstütztes Format: Tab-getrennt</b>, Feldreihenfolge:";
+$LANG['ParseCSV-Library not found. Please download it from <a href="https://github.com/parsecsv/parsecsv-for-php">Github</a> and move "parsecsv.lib.php"-file into "components/parsecsv-for-php" directory.'] = 'Die ParseCSV-Bibliothek konnte nicht gefunden werden. Bitte laden Sie sie von <a href="https://github.com/parsecsv/parsecsv-for-php">Github</a> herunter und verschieben Sie die Datei "parsecsv.lib.php" in das Verzeichnis "components/parsecsv-for-php".';
+
 $LANG['You are accessing this site via HTTP. This is very insecure. Please consider using HTTPS.'] = "Sie haben die Seite via HTTP aufgerufen. Dies ist sehr unsicher. Bitte denken Sie daran HTTPS zu verwenden."
 
 ?>

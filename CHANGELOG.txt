@@ -1,3 +1,6 @@
+v0.0.5
+- updated german translation
+
 v0.0.4
 - when editing an entry, new.php checks if the record was edited meanwhile from another user and cancels the action if so
 - if all groups are expanded via the "Show Entries" button, the collapse buttons are now shown correctly

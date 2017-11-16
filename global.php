@@ -52,4 +52,21 @@ function clearStoredResults($mysqli){
 	} while ($mysqli->more_results() && $mysqli->next_result());
 }
 
+function startsWith($haystack, $needle)
+{
+	$length = strlen($needle);
+	return (substr($haystack, 0, $length) === $needle);
+}
+
+function endsWith($haystack, $needle)
+{
+	$length = strlen($needle);
+	return $length === 0 ||
+	(substr($haystack, -$length) === $needle);
+}
+
+function escapeOnlyQuotes($string) {
+	return str_replace('"', '\"', $string);
+}
+
 ?>

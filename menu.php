@@ -35,7 +35,7 @@
 	<span class="left">
 		<?php
 			$groupview_param = "groupview=collapsed";
-			if((!isset($_GET['groupview'])) || (isset($_GET['groupview']) && $_GET['groupview'] == "collapsed"))
+			if(isset($_GET['groupview']) && $_GET['groupview'] == "collapsed")
 				$groupview_param = "groupview=expanded";
 		?>
 		<a href="new.php"><button><?php __('New Entry'); ?></button></a>
@@ -46,6 +46,8 @@
 	</span>
 	<span class="right">
 		<input type="text" id="searchbar" autofocus="true" oninput="search(this.value)" placeholder="<?php __('Search...'); ?>" title="<?php __('Search...'); ?>">
+		<a href="import.php"><button><?php __('Import'); ?></button></a>
+		<a href="export.php"><button><?php __('Export'); ?></button></a>
 		<a href="login.php?logout=1"><button><?php __('Close Vault'); ?></button></a>
 	</span>
 

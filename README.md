@@ -2,7 +2,7 @@
 Web based password safe with multi-language support.
 
 ## About
-* (c) 2017 Georg Sieber - http://georg-sieber.de
+* © 2017 Georg Sieber - http://georg-sieber.de
 * licensed under the terms of the GPLv2 (see LICENSE.txt)
 * view source and fork me on GitHub: https://github.com/schorschii/webpw
 
@@ -47,11 +47,17 @@ Free Software Foundation, Inc.
 59 Temple Place - Suite 330
 Boston, MA  02111-1307, USA.
 
+## Libraries
+This program uses the [parseCSV][] library
+© 2014 Jim Myhrberg
+Licensed under the terms of the MIT license
+
+[parseCSV]: https://github.com/parsecsv/parsecsv-for-php
+
 ## Support
 Found a bug? Great!  
 Please report it (preferably with a ready-to-use fix for it ;-) ) on GitHub.
 Questions, ideas and feature requests are also welcome.
-
 
 ## ToDo and planned features
 Visit the GitHub page for more information.

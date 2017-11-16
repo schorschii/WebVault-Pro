@@ -51,7 +51,7 @@ input[type=submit] {
 .inputtable th {
 	text-align: left;
 }
-.inputtable input, .inputtable select, .inputtable button, .inputtable textarea {
+.inputtable input:not([type=checkbox]):not([type=radio]), .inputtable select, .inputtable button, .inputtable textarea {
 	width: 100%;
 	box-sizing: border-box;
 }
@@ -77,6 +77,9 @@ input[type=submit] {
 .resulttable th.groupheader button {
 	margin-right: 10px;
 }
+.resulttable tr.entry:not(.entry_without_group) td:first-child {
+	padding-left: 45px;
+}
 
 .resulttable th.groupheader * {
 	vertical-align: middle;
@@ -98,6 +101,17 @@ input[type=submit] {
 }
 #searchresults {
 	text-align: center;
+}
+#searchresultstext {
+	font-weight: bold;
+	color: white;
+	background-color: rgba(120,10,10,0.8);
+	border-radius: 100px;
+	border: 2px solid rgb(120,10,10);
+	padding: 5px 10px;
+}
+#searchresultstext > button {
+	margin-left: 5px;
 }
 
 .remove {

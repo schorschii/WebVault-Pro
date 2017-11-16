@@ -41,7 +41,7 @@ if(isset($_SESSION['management_auth_ok']) && $_SESSION['management_auth_ok'] == 
 		<h1><?php __('Manage Vaults'); ?></h1>
 		<form method="POST">
 			<?php __('Enter management password'); ?>:<br>
-			<input type="password" name="managementpassword">
+			<input type="password" name="managementpassword" autofocus>
 			<input type="submit" value="<?php __('Login'); ?>">
 		</form>
 	</div>

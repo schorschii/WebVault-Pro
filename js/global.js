@@ -1,57 +1,64 @@
+function obj($id) {
+	return document.getElementById($id);
+}
+
 function toggleView($id) {
-	if(document.getElementById($id).type == "password") {
-		document.getElementById($id).type = "text";
-	} else if(document.getElementById($id).type == "text") {
-		document.getElementById($id).type = "password";
+	if(obj($id).type == "password") {
+		obj($id).type = "text";
+	} else if(obj($id).type == "text") {
+		obj($id).type = "password";
 	}
 }
 function toClipboard($id) {
 	// convert input to text, because copy from password input is not allowed
 	$convertback = false;
-	if(document.getElementById($id).type == "password") {
-		document.getElementById($id).type = "text";
+	if(obj($id).type == "password") {
+		obj($id).type = "text";
 		$convertback = true;
 	}
 
 	// copy
-	var copyText = document.getElementById($id);
+	var copyText = obj($id);
 	copyText.select();
 	document.execCommand("Copy");
 
 	// convert input back to password field
 	if($convertback == true) {
-		document.getElementById($id).type = "password";
+		obj($id).type = "password";
 	}
 }
 
-function showRows($classname) {
-	var x = document.getElementsByClassName("group"+$classname);
+function showRows($groupid) {
+	var x = document.getElementsByClassName("entry");
 	var i;
 	for(i = 0; i < x.length; i++) {
-		x[i].style.display = "table-row";
+		if(x[i].getAttribute("group") == $groupid)
+			x[i].style.display = "table-row";
 	}
-	document.getElementById("btnminus"+$classname).style.display = "inline-block";
-	document.getElementById("btnplus"+$classname).style.display = "none";
+	obj("btnminus"+$groupid).style.display = "inline-block";
+	obj("btnplus"+$groupid).style.display = "none";
 }
 
-function hideRows($classname) {
-	var x = document.getElementsByClassName("group"+$classname);
+function hideRows($groupid) {
+	var x = document.getElementsByClassName("entry");
 	var i;
 	for(i = 0; i < x.length; i++) {
-		x[i].style.display = "none";
+		if(x[i].getAttribute("group") == $groupid)
+			x[i].style.display = "none";
 	}
-	document.getElementById("btnminus"+$classname).style.display = "none";
-	document.getElementById("btnplus"+$classname).style.display = "inline-block";
+	obj("btnminus"+$groupid).style.display = "none";
+	obj("btnplus"+$groupid).style.display = "inline-block";
 }
 
 function checkSearchBarHide() {
 	// check if searchresults object is available and hide search box if not
-	if(document.getElementById('searchresults') === null) {
-		if(document.getElementById('searchbar') !== null) {
-			document.getElementById('searchbar').style.display = "none";
+	if(obj('searchresults') === null) {
+		if(obj('searchbar') !== null) {
+			obj('searchbar').style.display = "none";
 		}
 	}
 }
+// register checkSearchBarHide function on load event
 if(window.addEventListener) {
 	window.addEventListener('load', checkSearchBarHide, false); //W3C
 } else {
@@ -60,7 +67,7 @@ if(window.addEventListener) {
 
 function search($q) {
 	// check if searchresults object is available (only on index.php)
-	if(document.getElementById('searchresults') === null) {
+	if(obj('searchresults') === null) {
 		return;
 	}
 
@@ -70,28 +77,18 @@ function search($q) {
 		var x = document.getElementsByClassName("entry");
 		var i;
 		for(i = 0; i < x.length; i++) {
-			x[i].style.display = "none";
+			if(hasClass(x[i], "entry_without_group"))
+				x[i].style.display = "table-row";
+			else
+				x[i].style.display = "none";
 		}
-		// show entries without group
-		x = document.getElementsByClassName("entry_without_group");
-		i = 0;
-		for(i = 0; i < x.length; i++) {
-			x[i].style.display = "table-row";
-		}
-		// hide all hide group entries buttons
-		x = document.getElementsByClassName("btnminus");
-		i = 0;
-		for(i = 0; i < x.length; i++) {
-			x[i].style.display = "none";
-		}
-		// show all show all group entries buttons
-		x = document.getElementsByClassName("btnplus");
-		i = 0;
-		for(i = 0; i < x.length; i++) {
-			x[i].style.display = "inline-block";
-		}
+
+		// restore group header visibility
+		showGroupHeader();
+
 		// hide results text
-		document.getElementById("searchresults").style.display = "none";
+		obj("searchresults").style.display = "none";
+
 		return;
 	}
 
@@ -134,13 +131,55 @@ function search($q) {
 		x[i].style.display = "none";
 	}
 
+	// hide group header if there are no results in this group
+	showHideGroupHeader();
+
 	// echo result count
-	document.getElementById("searchresults").style.display = "block";
-	document.getElementById("searchresultcount").innerHTML = result_count;
+	obj("searchresults").style.display = "block";
+	obj("searchresultcount").innerHTML = result_count;
+}
+
+function showGroupHeader() {
+	// show all group headers
+	x = document.getElementsByClassName("groupheader");
+	i = 0;
+	for(i = 0; i < x.length; i++) {
+		x[i].style.display = "table-cell";
+	}
+
+	// hide all "hide group entries" buttons, show all "show group entries" button
+	x = document.getElementsByClassName("btnplusminus");
+	i = 0;
+	for(i = 0; i < x.length; i++) {
+		if(hasClass(x[i], "btnplus"))
+			x[i].style.display = "inline-block";
+		if(hasClass(x[i], "btnminus"))
+			x[i].style.display = "none";
+	}
+}
+
+function showHideGroupHeader() {
+	// hide group header if there are no results in this group
+	x = document.getElementsByClassName("groupheader");
+	i = 0;
+	for(i = 0; i < x.length; i++) {
+		var currentgroup = x[i].getAttribute("group");
+		var hidegroup = true;
+		y = document.getElementsByClassName("entry");
+		j = 0;
+		for(j = 0; j < y.length; j++) {
+			if(y[j].getAttribute("group") == currentgroup && y[j].style.display != "none")
+				hidegroup = false;
+		}
+		if(hidegroup == true)
+			x[i].style.display = "none";
+		else
+			x[i].style.display = "table-cell";
+	}
 }
 
 function clearSearch() {
-	document.getElementById("searchbar").value = "";
+	obj("searchbar").value = "";
 	search("");
 }
 

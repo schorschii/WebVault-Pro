@@ -36,7 +36,9 @@
 
 <div id="contentcontainer">
 	<h1><?php echo htmlspecialchars($_SESSION['vaultname']); ?></h1>
-	<div id="searchresults" style="display:none"><span id="searchresultcount"></span>&nbsp;<?php __('result(s)'); ?>&nbsp;<button onclick="clearSearch()"><?php __('Close Search'); ?></button></div>
+	<div id="searchresults" style="display:none">
+		<span id="searchresultstext"><span id="searchresultcount"></span>&nbsp;<?php __('result(s)'); ?>&nbsp;<button onclick="clearSearch()"><?php __('Close Search'); ?></button></span>
+	</div>
 
 	<br>
 	<?php if($info != "") { ?><div class="infobox <?php echo $infotype; ?>"><?php echo $info; ?></div><?php } ?>
@@ -53,7 +55,7 @@
 		<?php
 		$sql = "SELECT p.id AS 'id', pg.id AS 'group_id', pg.title AS 'group', pg.description AS 'group_desc', p.title AS 'title', p.username AS 'username', p.password AS 'password', p.iv AS 'iv', p.description AS 'description', p.url AS 'url' "
 		     . "FROM password p LEFT JOIN passwordgroup pg ON p.group_id = pg.id "
-		     . "WHERE vault_id = ? ORDER BY group_id";
+		     . "WHERE vault_id = ? ORDER BY pg.title ASC";
 			$statement = $mysqli->prepare($sql);
 			$statement->bind_param('i', $_SESSION['vault']);
 			$statement->execute();
@@ -63,31 +65,37 @@
 			if(isset($_GET['groupview'])) $groupview = $_GET['groupview'];
 			$last_group = NULL;
 			$entry_style = "";
+			$group_collapsebtn_style = "display:none";
+			$group_expandbtn_style = "";
 			$entry_class = "entry_without_group";
 			while($row = $result->fetch_object()) {
 				$counter ++;
 				// display group header, if we reached next group
 				if($last_group != $row->group_id) {
-					echo "<tr><th colspan='100' class='groupheader'>";
-					echo "<button onclick='showRows(".$row->group_id.")' class='btnplusminus btnplus' id='btnplus".$row->group_id."' title='".translate('expand group')."'>&#10133;</button>";
-					echo "<button onclick='hideRows(".$row->group_id.")' class='btnplusminus btnminus' id='btnminus".$row->group_id."' title='".translate('collapse group')."' style='display:none;'>&#10134;</button>";
+					if($groupview != "expanded") { $entry_style = "display:none"; $group_collapsebtn_style = "display:none"; }
+					if($groupview == "expanded") { $group_expandbtn_style = "display:none"; $group_collapsebtn_style = ""; }
+					echo "<tr>";
+					echo "<th colspan='100' class='groupheader' group='".$row->group_id."'>";
+					echo "<button onclick='showRows(".$row->group_id.")' class='btnplusminus btnplus' id='btnplus".$row->group_id."' title='".translate('expand group')."' style='$group_expandbtn_style'>&#10133;</button>";
+					echo "<button onclick='hideRows(".$row->group_id.")' class='btnplusminus btnminus' id='btnminus".$row->group_id."' title='".translate('collapse group')."' style='$group_collapsebtn_style'>&#10134;</button>";
 					echo "<div class='grouptext'>";
 					echo "<div class='grouptitle'>" . htmlspecialchars($row->group) . "</div>";
 					echo "<div class='groupdescription'>" . htmlspecialchars($row->group_desc) . "</div>";
 					echo "</div>";
-					echo "</th></tr>\n";
+					echo "</th>";
+					echo "</tr>\n";
 					$last_group = $row->group_id;
-					if($groupview != "expanded") $entry_style = "display:none";
 					$entry_class = "";
 				}
 
 				// display entry
 				$decrypted = openssl_decrypt($row->password, $method, $_SESSION['sessionpassword'], 0, $row->iv);
-				echo "<tr class='entry $entry_class group".$row->group_id."' style='$entry_style'>\n";
+				$url = $row->url; if(!(startsWith($row->url, "http://") || startsWith($row->url, "https://") || startsWith($row->url, "ftp://"))) $url = "http://".$url;
+				echo "<tr class='entry $entry_class' group='".$row->group_id."' style='$entry_style'>\n";
 				echo "<td class='title'>" . htmlspecialchars($row->title, ENT_QUOTES) . "</td>\n";
 				echo "<td class='description' title='" . htmlspecialchars($row->description, ENT_QUOTES) . "'>" . htmlspecialchars(shortText($row->description), ENT_QUOTES) . "</td>\n";
 				echo "<td>"
-				   . "<a class='url' target='_blank' href='" . $row->url . "'>" . htmlspecialchars(shortText($row->url), ENT_QUOTES) . "</a>"
+				   . "<a class='url' target='_blank' href='" . $url . "'>" . htmlspecialchars(shortText($row->url), ENT_QUOTES) . "</a>"
 				   . "</td>\n";
 				echo "<td>"
 				   . "<input class='username' type='text' value='" . htmlspecialchars($row->username, ENT_QUOTES) . "' id='userbox".$row->id."' readonly>"

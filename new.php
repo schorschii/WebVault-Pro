@@ -14,7 +14,6 @@
 				$encrypted = openssl_encrypt($_POST['password'], $method, $_SESSION['sessionpassword'], 0, $iv);
 				$insert_group = $_POST['group'];
 				if($insert_group == "NULL") $insert_group = NULL;
-
 				$sql = "INSERT INTO password "
 					 . "(vault_id, group_id, title, username, password, iv, description, url) "
 					 . "VALUES (?, ?, ?, ?, ?, ?, ?, ?);";
@@ -37,32 +36,57 @@
 					$infotype = "green";
 				}
 			} else {
-				// edit entry
-				$iv = generateIV();
-				$encrypted = openssl_encrypt($_POST['password'], $method, $_SESSION['sessionpassword'], 0, $iv);
-				$insert_group = $_POST['group'];
-				if($insert_group == "NULL") $insert_group = NULL;
-
-				$sql = "UPDATE password "
-					 . "SET title = ?, username = ?, password = ?, iv = ?, description = ?, url = ?, group_id = ? "
-					 . "WHERE id = ?;";
+				// check if values changed through another user
+				$values_changed = false;
+				$sql = "SELECT * FROM password WHERE id = ?;";
 				$statement = $mysqli->prepare($sql);
-				$statement->bind_param('ssssssii',
-									   $_POST['title'],
-									   $_POST['username'],
-									   $encrypted,
-									   $iv,
-									   $_POST['description'],
-									   $_POST['url'],
-									   $insert_group,
-									   $_POST['doedit']
-				);
-				if (!$statement->execute()) {
-					$info = "Execute failed: (" . $statement->errno . ") " . $statement->error;
-					$infotype = "red";
-				} else {
-					$info = translate("Successfully edited entry") . " '".$_POST['title']."'";
-					$infotype = "green";
+				$statement->bind_param('i', $_POST['doedit']);
+				$statement->execute();
+				$result = $statement->get_result();
+				while($row = $result->fetch_object()) {
+					$decrypted = openssl_decrypt($row->password, $method, $_SESSION['sessionpassword'], 0, $row->iv);
+					if(!($row->title == $_POST['old_title']
+					  && $row->url == $_POST['old_url']
+					  && $row->username == $_POST['old_username']
+					  && $decrypted == $_POST['old_password']
+					  && $row->description == $_POST['old_description']
+					  && $row->group_id == $_POST['old_group']
+					)) {
+						$info = translate('This entry was already edited by another user. Your changes were discarded.');
+						$infotype = "red";
+						$values_changed = true;
+						$_POST['edit'] = $row->id;
+						break;
+					}
+				}
+
+				// edit entry
+				if(!$values_changed) {
+					$iv = generateIV();
+					$encrypted = openssl_encrypt($_POST['password'], $method, $_SESSION['sessionpassword'], 0, $iv);
+					$insert_group = $_POST['group'];
+					if($insert_group == "NULL") $insert_group = NULL;
+					$sql = "UPDATE password "
+					 	. "SET title = ?, username = ?, password = ?, iv = ?, description = ?, url = ?, group_id = ? "
+					 	. "WHERE id = ?;";
+					$statement = $mysqli->prepare($sql);
+					$statement->bind_param('ssssssii',
+							   	$_POST['title'],
+							   	$_POST['username'],
+							   	$encrypted,
+							   	$iv,
+							   	$_POST['description'],
+							   	$_POST['url'],
+							   	$insert_group,
+							   	$_POST['doedit']
+					);
+					if (!$statement->execute()) {
+						$info = "Execute failed: (" . $statement->errno . ") " . $statement->error;
+						$infotype = "red";
+					} else {
+						$info = translate("Successfully edited entry") . " '".$_POST['title']."'";
+						$infotype = "green";
+					}
 				}
 			}
 
@@ -124,6 +148,12 @@
 
 	<form method="POST">
 		<?php echo $hiddeninput; ?>
+		<input type="hidden" name="old_group" value="<?php echo htmlspecialchars($default_group); ?>">
+		<input type="hidden" name="old_title" value="<?php echo htmlspecialchars($default_title); ?>">
+		<input type="hidden" name="old_url" value="<?php echo htmlspecialchars($default_url); ?>">
+		<input type="hidden" name="old_username" value="<?php echo htmlspecialchars($default_username); ?>">
+		<input type="hidden" name="old_password" value="<?php echo htmlspecialchars($default_password); ?>">
+		<input type="hidden" name="old_description" value="<?php echo htmlspecialchars($default_description); ?>">
 		<table class="inputtable">
 			<tr>
 				<th><?php __('Group'); ?>:&nbsp;</th>
@@ -149,10 +179,6 @@
 				<td><input type="text" name="title" value="<?php echo htmlspecialchars($default_title); ?>"></td>
 			</tr>
 			<tr>
-				<th><?php __('Description'); ?>:&nbsp;</th>
-				<td><input type="text" name="description" value="<?php echo htmlspecialchars($default_description); ?>"></td>
-			</tr>
-			<tr>
 				<th><?php __('URL to service'); ?>:&nbsp;</th>
 				<td><input type="text" name="url" value="<?php echo htmlspecialchars($default_url); ?>"></td>
 			</tr>
@@ -163,6 +189,10 @@
 			<tr>
 				<th><?php __('Password'); ?>:&nbsp;</th>
 				<td><input type="password" id="password" name="password" value="<?php echo htmlspecialchars($default_password); ?>"></td>
+			</tr>
+			<tr>
+				<th><?php __('Description'); ?>:&nbsp;</th>
+				<td><textarea name="description"><?php echo htmlspecialchars($default_description); ?></textarea></td>
 			</tr>
 			<tr>
 				<td></td>

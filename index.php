@@ -34,7 +34,7 @@
 
 <?php require_once("menu.php"); ?>
 
-<div id="contentcontainer">
+<div id="contentcontainer" class="passwordentries">
 	<h1><?php echo htmlspecialchars($_SESSION['vaultname']); ?></h1>
 	<div id="searchresults" style="display:none">
 		<span id="searchresultstext"><span id="searchresultcount"></span>&nbsp;<?php __('result(s)'); ?>&nbsp;<button onclick="clearSearch()"><?php __('Close Search'); ?></button></span>
@@ -43,10 +43,10 @@
 	<br>
 	<?php if($info != "") { ?><div class="infobox <?php echo $infotype; ?>"><?php echo $info; ?></div><?php } ?>
 
-	<table class="resulttable">
+	<table class="resulttable" id="passwordentriestable">
 		<tr>
 			<th><?php __('Title'); ?></th>
-			<th><?php __('Description'); ?></th>
+			<th class="description"><?php __('Description'); ?></th>
 			<th><?php __('URL to service'); ?></th>
 			<th><?php __('Username'); ?></th>
 			<th><?php __('Password'); ?></th>
@@ -92,7 +92,7 @@
 				$decrypted = openssl_decrypt($row->password, $method, $_SESSION['sessionpassword'], 0, $row->iv);
 				$url = $row->url; if(!(startsWith($row->url, "http://") || startsWith($row->url, "https://") || startsWith($row->url, "ftp://"))) $url = "http://".$url;
 				echo "<tr class='entry $entry_class' group='".$row->group_id."' style='$entry_style'>\n";
-				echo "<td class='title'>" . htmlspecialchars($row->title, ENT_QUOTES) . "</td>\n";
+				echo "<td class='title' title='" . htmlspecialchars($row->title, ENT_QUOTES) . "'>" . htmlspecialchars(shortText($row->title), ENT_QUOTES) . "</td>\n";
 				echo "<td class='description' title='" . htmlspecialchars($row->description, ENT_QUOTES) . "'>" . htmlspecialchars(shortText($row->description), ENT_QUOTES) . "</td>\n";
 				echo "<td>"
 				   . "<a class='url' target='_blank' href='" . $url . "'>" . htmlspecialchars(shortText($row->url), ENT_QUOTES) . "</a>"
@@ -103,8 +103,10 @@
 				   . "</td>\n";
 				echo "<td>"
 				   . "<input class='password' type='password' value='" . htmlspecialchars($decrypted, ENT_QUOTES) . "' id='pwbox".$row->id."' readonly>"
+				   . "<div class='inlineblock'>"
 				   . "<button title='".translate("show or hide password")."' onclick='toggleView(\"pwbox".$row->id."\");'>&#9678;</button>"
 				   . "<button title='".translate("copy password to clipboard")."' onclick='toClipboard(\"pwbox".$row->id."\");'>&#9997;</button>"
+				   . "</div>"
 				   . "</td>\n";
 				echo "<td>"
 				   . "<form method='POST' action='new.php'><input type='hidden' name='edit' value='".$row->id."'><button title='".translate("edit this password entry")."' type='submit'>&#9998;</button></form>"

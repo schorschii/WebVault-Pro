@@ -1,3 +1,7 @@
+v0.0.7
+- index.php main div keeps same size on expanding/collasping groups
+- description row is hidden if browser width is smaller than 900px
+
 v0.0.6
 - db connection now uses UTF-8 charset
 

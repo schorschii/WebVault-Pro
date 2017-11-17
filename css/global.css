@@ -56,6 +56,29 @@ input[type=submit] {
 	box-sizing: border-box;
 }
 
+.inlineblock {
+	display: inline-block;
+}
+
+#passwordentriestable {
+	min-width: 1100px;
+}
+@media (max-width: 1200px) {
+	#contentcontainer.passwordentries {
+		width: 100%;
+		box-sizing: border-box;
+	}
+	#passwordentriestable {
+		min-width: auto;
+		width: 100%;
+	}
+}
+@media (max-width: 900px) {
+	#passwordentriestable td.description, #passwordentriestable th.description {
+		display: none;
+	}
+}
+
 .resulttable {
 	border-collapse: collapse;
 }

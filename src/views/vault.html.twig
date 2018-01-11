@@ -1,0 +1,53 @@
+{% extends "layout.html.twig" %}
+
+
+{% macro printGroup(root) %}
+<ul>
+	{% for entry in root.entries %}
+	<li class="entry" group="{{ entry.group_id }}"><!--
+		--><div>
+			<a href='viewentry?popup=1&id={{ entry.id }}' onclick='popupCenter("viewentry?popup=1&id={{ entry.id }}", "_blank", 900, 750);return false;'>{{ entry.title|e }}{% if entry.username %} <span class='username'>[{{ entry.username|e }}]</span>{% endif %}</a>
+			<div class='entrydescription'>
+				{% if entry.url %}<a target='_blank' href='{{ entry.url|e }}'>{{ entry.url|short|e }}</a>{% endif %}{% if entry.url and entry.description %} - {% endif %}{{ entry.description|short|e }}
+			</div>
+		</div>
+	</li>
+	{% endfor %}
+	{% for group in root.groups %}
+	<li class="group"><!--
+		--><div class="groupheader" group="{{ group.id }}">
+			<a href='#' onclick='expandOrCollapseGroup(this.parentElement.parentElement);return false;'>{{ group.title|e }}</a>
+			<div class='groupdescription'>{{ group.description|e }}</div>
+		</div>
+		{% import _self as printGroupImportSub %}
+		{{ printGroupImportSub.printGroup(group.items) }}
+	</li>
+	{% endfor %}
+</ul>
+{% endmacro printGroup %}
+
+
+{% block content %}
+	<div id="searchresults" style="display:none">
+		<span id="searchresultstext"><span id="searchresultcount"></span>&nbsp;{{ "result(s)"|trans }}&nbsp;<button onclick="clearSearch()">{{ "Close Search"|trans }}</button></span>
+	</div>
+
+{% if items and (items.entries|length > 0 or items.groups|length > 0) %}
+
+	<div id="entriestree">
+	{% import _self as printGroupImport %}
+	{{ printGroupImport.printGroup(items) }}
+	</div>
+
+	<div id="entrydetails">
+	</div>
+
+{% else %}
+<div class='infobox'>{{ "This vault is empty"|trans }}</div>
+{% endif %}
+
+{% if menu == "popup" %}
+<script>close();</script>
+{% endif %}
+
+{% endblock %}

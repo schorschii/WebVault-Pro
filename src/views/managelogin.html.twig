@@ -1,0 +1,17 @@
+{% extends "layout.html.twig" %}
+
+{% block content %}
+<form method="POST">
+	<table class="inputtable">
+		<tr>
+			<td>{{ "Enter management password"|trans }}:</td>
+		</tr>
+		<tr>
+			<td><input type="password" name="managementpassword" autofocus></td>
+		</tr>
+		<tr>
+			<td><input type="submit" value="{{ "Login"|trans }}"></td>
+		</tr>
+	</table>
+</form>
+{% endblock %}

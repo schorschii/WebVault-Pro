@@ -1,0 +1,57 @@
+{% extends "layout.html.twig" %}
+
+{% block content %}
+<form method="POST" action="?{% if menu == "popup" %}popup=1{% endif %}">
+	<input type="hidden" name="id" value="{{ entry.id }}">
+	<input type="hidden" name="old_group" value="{{ entry.group_id }}">
+	<input type="hidden" name="old_title" value="{{ entry.title }}">
+	<input type="hidden" name="old_url" value="{{ entry.url }}">
+	<input type="hidden" name="old_username" value="{{ entry.username }}">
+	<input type="hidden" name="old_password" value="{{ entry.password }}">
+	<input type="hidden" name="old_description" value="{{ entry.description }}">
+	<table class="inputtable">
+		<tr>
+			<th>{{ "Group"|trans }}:&nbsp;</th>
+			<td>
+				<select name="group" autofocus="true">
+					<option value='NULL'>{{ "No group"|trans }}</option>
+					{% for group in groups %}
+						<option {% if group.id == entry.group_id %}selected='true'{% endif %} value='{{ group.id }}'>{{ group.title }}</option>
+					{% endfor %}
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<th>{{ 'Title'|trans }}:&nbsp;</th>
+			<td><input type="text" name="title" value="{{ entry.title }}"></td>
+		</tr>
+		<tr>
+			<th>{{ 'URL to service'|trans }}:&nbsp;</th>
+			<td><input type="text" name="url" value="{{ entry.url }}"></td>
+		</tr>
+		<tr>
+			<th>{{ 'Username'|trans }}:&nbsp;</th>
+			<td>
+				<input type="text" name="username" value="{{ entry.username }}">
+			</td>
+		</tr>
+		<tr>
+			<th>{{ 'Password'|trans }}:&nbsp;</th>
+			<td>
+				<div class="input">
+					<input type="password" id="password" name="password" value="{{ entry.password }}"><!--
+					--><button type="button" title='{{ "show or hide password"|trans }}' onclick='toggleView("password");'>&#9678;</button>
+				</div>
+			</td>
+		</tr>
+		<tr>
+			<th>{{ 'Description'|trans }}:&nbsp;</th>
+			<td><textarea name="description">{{ entry.description }}</textarea></td>
+		</tr>
+		<tr>
+			<th></th>
+			<td><input type="submit" value="{{ 'Save'|trans }}"></td>
+		</tr>
+	</table>
+</form>
+{% endblock %}

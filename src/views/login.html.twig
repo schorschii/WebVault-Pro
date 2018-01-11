@@ -1,0 +1,37 @@
+{% extends "layout.html.twig" %}
+
+{% block content %}
+<form method="POST" action="login">
+	<br>
+	<table class="inputtable">
+		<tr>
+			<th>{{ "Vault"|trans }}:&nbsp;</th>
+			<td>
+				<div id="vault" class="inputwithimg">
+					<select name="vault" autofocus="true" title="{{ "select vault to unlock"|trans }}">
+						{% if vaults and vaults|length > 0 %}
+							{% for vaultlistitem in vaults %}
+								<option {% if vaultlistitem.selected or (vaultlistitem.id == vault) %}selected="true"{% endif %} value='{{ vaultlistitem.id }}'>{{ vaultlistitem.title|trans }}</option>
+							{% endfor %}
+						{% else %}
+							<option>{{ "No vault found"|trans }}</option>
+						{% endif %}
+					</select>
+				</div>
+			</td>
+		</tr>
+		<tr>
+			<th>{{ "Password"|trans }}:&nbsp;</th>
+			<td>
+				<div id="password" class="inputwithimg">
+					<input type="password" name="password" title="{{ "enter password"|trans }}" {% if not vaults|length > 0 %}disabled{% endif %}>
+				</div>
+			</td>
+		</tr>
+		<tr>
+			<th></th>
+			<td><input type="submit" value="{{ "Open Vault"|trans }}" {% if not vaults|length > 0 %}disabled{% endif %}></td>
+		</tr>
+	</table>
+</form>
+{% endblock %}

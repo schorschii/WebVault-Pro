@@ -1,0 +1,18 @@
+{% macro printGroup(root) %}
+{% for entry in root.entries %}
+{{ entry.grouptitle|raw }}	{{ entry.username|raw }}	{{ entry.password|raw }}	{{ entry.url|raw }}								"{{ entry.description|raw }}"
+{% endfor %}
+{% for group in root.groups %}
+{% import _self as printGroupImportSub %}
+{{ printGroupImportSub.printGroup(group.items) }}
+{% endfor %}
+{% endmacro printGroup %}
+{% spaceless %}
+{% if items and (items.entries|length > 0 or items.groups|length > 0) %}
+Group/Title	Username	Password	URL	AutoType	Created Time	Password Modified Time	Last Access Time	Password Expiry Date	Record Modified Time	History	Notes
+{% import _self as printGroupImport %}
+{{ printGroupImport.printGroup(items) }}
+{% else %}
+{{ "This vault is empty"|trans }}
+{% endif %}
+{% endspaceless %}

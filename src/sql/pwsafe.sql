@@ -8,7 +8,7 @@ CREATE TABLE `password` (
   `title` text CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
   `username` text CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
   `password` text CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
-  `iv` text CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
+  `iv` blob NOT NULL,
   `description` text CHARACTER SET utf8 COLLATE utf8_unicode_ci,
   `url` text CHARACTER SET utf8 COLLATE utf8_unicode_ci
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
@@ -59,10 +59,8 @@ ALTER TABLE `vault`
 --
 -- Constraints der exportierten Tabellen
 --
-
 ALTER TABLE `password`
   ADD CONSTRAINT `fk_group` FOREIGN KEY (`group_id`) REFERENCES `passwordgroup` (`id`),
   ADD CONSTRAINT `fk_vault` FOREIGN KEY (`vault_id`) REFERENCES `vault` (`id`);
-
 ALTER TABLE `passwordgroup`
   ADD CONSTRAINT `fk_vault_group` FOREIGN KEY (`vault_id`) REFERENCES `vault` (`id`);

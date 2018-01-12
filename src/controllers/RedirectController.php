@@ -31,8 +31,6 @@ class RedirectController {
 
 	public function redirect(Request $request, Response $response, $args)
 	{
-		// ToDo: Weiterleitung nach /vault je nach dem, ob der Benutzer angemeldet ist
-		// ansonsten: Weiterleitung nach /login
 		$targetPathName = "login";
 		if(!$this->isAlreadyEstablished()) $targetPathName = "setup";
 		if(isset($_SESSION['vault']) && $_SESSION['vault'] != "") $targetPathName = "vault";

@@ -152,6 +152,50 @@ function expandOrCollapseGroup(obj) {
 	}
 }
 
+function ajaxInnerHTML(obj, url) {
+	var xhttp = new XMLHttpRequest();
+	xhttp.onreadystatechange = function() {
+		if (this.readyState == 4 && this.status == 200) {
+			obj.innerHTML = this.responseText;
+		}
+	};
+	xhttp.open("GET", url, true);
+	xhttp.send();
+}
+function ajaxValue(obj, url) {
+	var xhttp = new XMLHttpRequest();
+	xhttp.onreadystatechange = function() {
+		if (this.readyState == 4 && this.status == 200) {
+			obj.value = this.responseText;
+		}
+	};
+	xhttp.open("GET", url, true);
+	xhttp.send();
+}
+
+function hideDetails() {
+	obj('detail_title').innerHTML = "";
+	obj('detail_group').innerHTML = "";
+	obj('detail_url').innerHTML = "";
+	obj('username').value = "";
+	obj('password').value = "";
+	obj('detail_id_edit').value = "";
+	obj('detail_id_remove').value = "";
+	obj('detail_description').innerHTML = "";
+	obj('entrydetailscontainer').style.display = "none";
+}
+function showDetails(id) {
+	let pre = "ajax" + "?id="+id;
+	ajaxInnerHTML(obj('detail_title'), pre+"&param=title");
+	ajaxInnerHTML(obj('detail_group'), pre+"&param=group");
+	ajaxInnerHTML(obj('detail_url'), pre+"&param=url");
+	ajaxValue(obj('username'), pre+"&param=username");
+	ajaxValue(obj('password'), pre+"&param=password");
+	ajaxValue(obj('detail_id_edit'), pre+"&param=id");
+	ajaxValue(obj('detail_id_remove'), pre+"&param=id");
+	ajaxInnerHTML(obj('detail_description'), pre+"&param=description");
+	obj('entrydetailscontainer').style.display = "block";
+}
 function popupCenter(url, title, w, h) {
 	// Fixes dual-screen position                         Most browsers      Firefox
 	var dualScreenLeft = window.screenLeft != undefined ? window.screenLeft : screen.left;

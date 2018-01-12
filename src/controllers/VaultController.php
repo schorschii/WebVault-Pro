@@ -23,7 +23,7 @@ class VaultController {
 	}
 
 
-	function generateRandomString($length, $keyspace = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ') {
+	private function generateRandomString($length, $keyspace = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ') {
 		$str = '';
 		$max = mb_strlen($keyspace, '8bit') - 1;
 		for ($i = 0; $i < $length; ++$i) {
@@ -33,7 +33,14 @@ class VaultController {
 	}
 
 	private function generateIV() {
-		return $this->generateRandomString(16);
+		$wasItSecure = false;
+		$iv = openssl_random_pseudo_bytes(16, $wasItSecure);
+		if ($wasItSecure) {
+			return $iv;
+		} else {
+			// fallback if "crypto_strong" bool is false
+			return $this->generateRandomString(16);
+		}
 	}
 
 	private function getEntry($id, $decrypt_password) {
@@ -437,6 +444,7 @@ class VaultController {
 			'pagetitle' => 'Vault',
 			'pageheader' => $_SESSION['vaulttitle'],
 			'pagesubheader' => '',
+			'httpwarn' => (!isset($_SERVER['HTTPS'])),
 			'items' => $this->getItems($_SESSION['vault'], null, $_SESSION['sessionpassword'])
 		]);
 	}
@@ -451,6 +459,7 @@ class VaultController {
 			'pagetitle' => 'Import',
 			'pageheader' => $_SESSION['vaulttitle'],
 			'pagesubheader' => 'Import',
+			'httpwarn' => (!isset($_SERVER['HTTPS'])),
 		]);
 	}
 
@@ -536,6 +545,7 @@ class VaultController {
 			'pagetitle' => 'Import',
 			'pageheader' => $_SESSION['vaulttitle'],
 			'pagesubheader' => 'Import',
+			'httpwarn' => (!isset($_SERVER['HTTPS'])),
 			'infotype' => $infotype,
 			'info' => $info,
 			'importrows' => $entries
@@ -584,6 +594,7 @@ class VaultController {
 			'pagetitle' => 'Export',
 			'pageheader' => $_SESSION['vaulttitle'],
 			'pagesubheader' => 'Export',
+			'httpwarn' => (!isset($_SERVER['HTTPS'])),
 			'info' => isset($args['info']) ? $args['info'] : null,
 			'infotype' => isset($args['infotype']) ? $args['infotype'] : null
 		]);
@@ -637,22 +648,37 @@ class VaultController {
 		}
 	}
 
-	public function viewPassword(Request $request, Response $response, $args)
+	public function ajax(Request $request, Response $response, $args)
 	{
 		$login = $this->checkLogin($response);
-		if($login !== true) return $login;
+		if($login !== true) return $response->withHeader('Content-Type', 'text/plain');
 
-		if(isset($_GET['id']) && $_GET['id'] != "") {
+		if(isset($_GET['id']) && isset($_GET['param']) && $_GET['id'] != "") {
 			$entry = $this->getEntry($_GET['id'], $_SESSION['sessionpassword']);
-			return $this->container['view']->render($response, 'viewentry.html.twig', [
-				'menu' => isset($_GET['popup']) ? 'popup' : 'loggedin',
-				'pagetitle' => 'View Entry',
-				'pageheader' => $_SESSION['vaulttitle'],
-				'pagesubheader' => $entry['title'],
-				'entry' => $entry
-			]);
-		} else {
-			return $response->withRedirect($this->container->router->pathFor("vault"), 303);
+			switch($_GET['param']) {
+				case "id":
+				echo $entry['id'];
+				break;
+				case "title":
+				echo $entry['title'];
+				break;
+				case "url":
+				echo $entry['url'];
+				break;
+				case "group":
+				echo $entry['group'];
+				break;
+				case "username":
+				echo $entry['username'];
+				break;
+				case "password":
+				echo $entry['password'];
+				break;
+				case "description":
+				echo $entry['description'];
+				break;
+			}
+			return $response->withHeader('Content-Type', 'text/plain');
 		}
 	}
 
@@ -676,6 +702,7 @@ class VaultController {
 			'pagetitle' => $title,
 			'pageheader' => $_SESSION['vaulttitle'],
 			'pagesubheader' => $title,
+			'httpwarn' => (!isset($_SERVER['HTTPS'])),
 			'groups' => $this->getAllGroups($_SESSION['vault']),
 			'entry' => $entry,
 			'info' => isset($args['info']) ? $args['info'] : null,
@@ -690,13 +717,13 @@ class VaultController {
 
 		if(isset($_POST['remove'])) {
 			$this->removeEntry($_SESSION['vault'], $_POST['remove']);
-			$get_args = "?";
-			if(isset($_GET['popup'])) $get_args .= "popup=1";
-			return $response->withRedirect($this->container->router->pathFor("vault") . $get_args, 303);
+			return $response->withRedirect($this->container->router->pathFor("vault"), 303);
 		}
 
 		if(isset($_POST['title']) && isset($_POST['description'])) {
-			if(trim($_POST['title']) != "") {
+
+			if(trim($_POST['title']) == "")
+				return $this->editPassword($request, $response, [ 'info' => "Title should not be empty", 'infotype' => "red" ]);
 
 				$id = null;
 				if(isset($_POST['id']) && $_POST['id'] != "") {
@@ -724,13 +751,8 @@ class VaultController {
 					$_POST['group']
 				);
 
-				$get_args = "id=" . $id;
-				if(isset($_GET['popup'])) $get_args .= "&popup=1";
-				return $response->withRedirect($this->container->router->pathFor("viewentry") . "?" . $get_args, 303);
+				return $response->withRedirect($this->container->router->pathFor("vault"), 303);
 
-			} else {
-				return $this->editPassword($request, $response, [ 'info' => "Title should not be empty", 'infotype' => "red" ]);
-			}
 		}
 
 		return $response->withRedirect($this->container->router->pathFor("vault"), 303);
@@ -745,6 +767,7 @@ class VaultController {
 			'pagetitle' => 'Groups',
 			'pageheader' => $_SESSION['vaulttitle'],
 			'pagesubheader' => '',
+			'httpwarn' => (!isset($_SERVER['HTTPS'])),
 			'groups' => $this->getAllGroups($_SESSION['vault']),
 			'info' => isset($args['info']) ? $args['info'] : null,
 			'infotype' => isset($args['infotype']) ? $args['infotype'] : null
@@ -768,6 +791,9 @@ class VaultController {
 		) {
 			$id = null;
 			$superior_group_id = null;
+
+			if(trim($_POST['title']) == "")
+				return $this->editGroup($request, $response, [ 'info' => "Title should not be empty", 'infotype' => "red" ]);
 
 			if(isset($_POST['group_id']) && $_POST['group_id'] == $_POST['superior_group_id'])
 				return $this->editGroup($request, $response, [ 'info' => "Please choose another superior group", 'infotype' => "red" ]);

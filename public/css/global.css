@@ -28,21 +28,23 @@ a {
 	text-decoration: none;
 }
 
-#contentcontainer {
+#contentcontainer,
+#entrydetails {
 	margin-top: 15px;
 	border-radius: 2px;
 	background-color: rgba(255,255,255,0.4);
+	border: 1px solid rgba(255,255,255,0.6);
 	padding: 40px;
 	display: inline-block;
 	text-align: left;
-	box-shadow: 0px 0px 5px 0px rgba(0,0,0,0.3);
+	box-shadow: 0px 0px 6px 0px rgba(0,0,0,0.3);
 }
 
 input, select, button, textarea {
 	font-family: inherit;
 	font-size: inherit;
 }
-input[type=submit] {
+input[type=submit]:not(.nobold) {
 	font-weight: bold;
 }
 .inputtable {
@@ -67,6 +69,51 @@ input[type=submit] {
 input.invisible, textarea.invisible, select.invisible {
 	background-color: transparent;
 	border: none;
+}
+
+#entrydetailscontainer {
+	display: none;
+	text-align: center;
+	position: fixed;
+	top: 17%;
+	left: 0;
+	right: 0;
+	height: 0;
+}
+#entrydetails {
+	backdrop-filter: blur(5px);
+	left: 0px; top: 0px;
+	display: inline-block;
+	text-align: left;
+	overflow: auto;
+	padding: 0px;
+	position: relative;
+}
+#entrydetailsheader {
+	border-radius: 2px;
+	background-color: rgba(255,255,255,0.4);
+	border-bottom: 1px solid rgba(255,255,255,0.6);
+	padding: 10px;
+	width: 100%;
+	box-sizing: border-box;
+	vertical-align: middle;
+}
+.entrydetailscontent {
+	padding: 40px;
+}
+#closedetails {
+	font-weight: bold;
+	color: red;
+	display: inline;
+	float: right;
+}
+#detail_title {
+	font-weight: bold;
+	vertical-align: middle;
+}
+#detail_group {
+	opacity: 0.5;
+	vertical-align: middle;
 }
 
 .inlineblock {

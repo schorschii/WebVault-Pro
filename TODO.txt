@@ -1,0 +1,1 @@
+- move.js : password view window movement not working properly

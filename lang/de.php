@@ -85,5 +85,6 @@ $LANG['Entry was changed by another user'] = "Der Eintrag wurde von einem andere
 $LANG['Please choose another superior group'] = "Bitte wählen Sie eine andere übergeordnete Gruppe";
 $LANG['Successfully removed group'] = "Gruppe erfolgreich entfernt";
 $LANG['Successfully created/edited group'] = "Gruppe erfolgreich erstellt/bearbeitet";
+$LANG['This will only work if the group is empty.'] = "Die Gruppe muss leer sein, um sie löschen zu können.";
 
 $LANG['You are accessing this site via HTTP. This is very insecure. Please consider using HTTPS.'] = "Sie greifen auf diese Seite via HTTP zu, dies ist sehr unsicher. Bitte denken Sie daran, HTTPS zu verwenden.";

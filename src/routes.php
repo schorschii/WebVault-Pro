@@ -11,6 +11,9 @@ $app->get('/licenseText', 'RedirectController:licenseText')
 $app->post('/setlang', 'RedirectController:setLanguage')
 	->setName('setlang');
 
+$app->get('/ajax', 'VaultController:ajax')
+	->setName('ajax');
+
 $app->get('/setup', 'RedirectController:setup')
 	->setName('setup');
 $app->post('/setup', 'RedirectController:doSetup')
@@ -38,8 +41,6 @@ $app->get('/editentry', 'VaultController:editPassword')
 	->setName('editentry');
 $app->post('/editentry', 'VaultController:doEditPassword')
 	->setName('doeditentry');
-$app->get('/viewentry', 'VaultController:viewPassword')
-	->setName('viewentry');
 $app->get('/editgroup', 'VaultController:editGroup')
 	->setName('editgroup');
 $app->post('/editgroup', 'VaultController:doEditGroup')

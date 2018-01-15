@@ -155,6 +155,9 @@ function ajaxInnerHTML(obj, url) {
 	xhttp.onreadystatechange = function() {
 		if (this.readyState == 4 && this.status == 200) {
 			obj.innerHTML = this.responseText;
+			// empty title means session timed out, because title cannot be empty
+			if(this.responseText == "" && obj.id == "detail_title")
+				window.location.replace("login");
 		}
 	};
 	xhttp.open("GET", url, true);

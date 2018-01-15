@@ -42,7 +42,7 @@ class RedirectController {
 		return $this->container['view']->render($response, 'about.html.twig', [
 			'menu' => 'loggedout',
 			'pagetitle' => 'About',
-			'pageheader' => 'About WebPW' . ' ' . 'v0.1.0',
+			'pageheader' => 'About WebPW' . ' ' . 'v0.1.1',
 			'pagesubheader' => 'web based password safe',
 			'languages' => $this->langctrl->getLanguages($this->container->get('settings')['defaultLanguage'])
 		]);
@@ -56,7 +56,7 @@ class RedirectController {
 		if(file_exists($licenseFilePath))
 			$licenseText = file_get_contents($licenseFilePath);
 
-		return $response->withHeader('Content-Type', 'text/plain')->write();
+		return $response->withHeader('Content-Type', 'text/plain')->write($licenseText);
 	}
 
 	public function setLanguage(Request $request, Response $response, $args)

@@ -86,11 +86,9 @@ function search($q) {
 		// iterate over all fields of this entry
 		for(var j = 0; j < c.length; j++) {
 			// check entry contents if they match the search query
-			//if(hasClass(c[j], "title") || hasClass(c[j], "description") || hasClass(c[j], "url")) {
-				if(c[j].innerHTML.toUpperCase().indexOf(filter) > -1) {
-					match = true;
-				}
-			//}
+			if(c[j].innerHTML.toUpperCase().indexOf(filter) > -1) {
+				match = true;
+			}
 		}
 		// show or hide entry
 		if(match == true) {
@@ -172,11 +170,22 @@ function ajaxValue(obj, url) {
 	xhttp.open("GET", url, true);
 	xhttp.send();
 }
+function ajaxHref(obj, url) {
+	var xhttp = new XMLHttpRequest();
+	xhttp.onreadystatechange = function() {
+		if (this.readyState == 4 && this.status == 200) {
+			obj.href = this.responseText;
+		}
+	};
+	xhttp.open("GET", url, true);
+	xhttp.send();
+}
 
 function hideDetails() {
 	obj('detail_title').innerHTML = "";
 	obj('detail_group').innerHTML = "";
 	obj('detail_url').innerHTML = "";
+	obj('detail_url').href = "";
 	obj('username').value = "";
 	obj('password').value = "";
 	obj('detail_id_edit').value = "";
@@ -189,6 +198,7 @@ function showDetails(id) {
 	ajaxInnerHTML(obj('detail_title'), pre+"&param=title");
 	ajaxInnerHTML(obj('detail_group'), pre+"&param=group");
 	ajaxInnerHTML(obj('detail_url'), pre+"&param=url");
+	ajaxHref(obj('detail_url'), pre+"&param=url");
 	ajaxValue(obj('username'), pre+"&param=username");
 	ajaxValue(obj('password'), pre+"&param=password");
 	ajaxValue(obj('detail_id_edit'), pre+"&param=id");

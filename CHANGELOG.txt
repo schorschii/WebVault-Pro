@@ -1,2 +1,8 @@
+v0.1.1
+- added apache htaccess into /public
+- new password view popup (does not open a new window, shows up in same tab)
+- use openssl_random_bytes -> updates database structure (iv is now blob)
+- fix: license text was not shown when opening /licenseText
+
 v0.1.0
 - rewrite (initial commit): using slim framework & twig template engine

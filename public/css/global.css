@@ -50,8 +50,9 @@ input[type=submit]:not(.nobold) {
 .inputtable {
 	width: 100%;
 }
-.inputtable th {
+.inputtable th:not(.file) {
 	text-align: left;
+	vertical-align: top;
 }
 .inputtable input:not([type=checkbox]):not([type=radio]),
 .inputtable select, .inputtable button, .inputtable textarea {
@@ -61,10 +62,22 @@ input[type=submit]:not(.nobold) {
 .inputtable div.input {
 	white-space: nowrap;
 }
-.inputtable div.input input,
-.inputtable div.input button,
-.inputtable div.input select {
-	width: auto !important;
+.inputtable div.input button {
+	width: auto;
+}
+.inputtable div.input.withbutton {
+	width: 100%;
+	display: table;
+	border-collapse: collapse;
+}
+.inputtable div.input.withbutton > *:not(:first-child) {
+	display: table-cell;
+	white-space: nowrap;
+	width: 1px;
+}
+.inputtable div.input.withbutton > *:first-child {
+	display: table-cell;
+	width: 100%;
 }
 input.invisible, textarea.invisible, select.invisible {
 	background-color: transparent;
@@ -109,9 +122,6 @@ input.invisible, textarea.invisible, select.invisible {
 	max-width: 300px;
 	overflow: auto;
 	white-space: nowrap;
-}
-.entrydetailscontent .inputoperations {
-	float: right;
 }
 #closedetails {
 	font-weight: bold;

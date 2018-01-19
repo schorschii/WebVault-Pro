@@ -49,7 +49,7 @@
 			<td>
 				<span id="detail_title" title="{{ "Title"|trans }}"></span>&nbsp;&nbsp;<span id="detail_group" title="{{ "Group"|trans }}"></span>
 			</td>
-			<td><button id="closedetails" onclick="hideDetails()">&#9932;</button></td>
+			<td><button id="closedetails" onclick="hideDetails()" title="{{ 'Close'|trans }}">&#9932;</button></td>
 		</table>
 		<div class="entrydetailscontent">
 		<table class="inputtable">
@@ -60,9 +60,9 @@
 			<tr>
 				<th>{{ 'Username'|trans }}:&nbsp;</th>
 				<td>
-					<div class="input">
-						<input type="text" id="username" name="username" class="invisible" value="" readonly="true"><!--
-						--><span class="inputoperations"><!--
+					<div class="input withbutton">
+						<span><input type="text" id="username" name="username" class="invisible" value="" readonly="true"></span><!--
+						--><span><!--
 							--><button id="btnUsernameToClipboard" type="button" title='{{ "copy username to clipboard"|trans }}' onclick='toClipboard("username");'>&#9997;</button>
 						</span>
 					</div>
@@ -71,12 +71,22 @@
 			<tr>
 				<th>{{ 'Password'|trans }}:&nbsp;</th>
 				<td>
-					<div class="input">
-						<input type="password" id="password" name="password" class="invisible" value="" readonly="true"><!--
-						--><span class="inputoperations"><!--
+					<div class="input withbutton">
+						<span><input type="password" id="password" name="password" class="invisible" value="" readonly="true"></span><!--
+						--><span><!--
 							--><button id="btnPasswordShowHide" type="button" title='{{ "show or hide password"|trans }}' onclick='toggleView("password");'>&#9678;</button><!--
 							--><button id="btnPasswordToClipboard" type="button" title='{{ "copy password to clipboard"|trans }}' onclick='toClipboard("password");'>&#9997;</button>
 						</span>
+					</div>
+				</td>
+			</tr>
+			<tr>
+				<th class="file">{{ 'File'|trans }}:&nbsp;</th>
+				<td>
+					<div class="input">
+						<a href="#" class="download" id="download"><!--
+							--><button id="downloadbutton" type="button" class="download" nofile="{{ 'No File'|trans }}">{{ 'Download'|trans }}</button>
+						</a>
 					</div>
 				</td>
 			</tr>

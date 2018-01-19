@@ -1,6 +1,3 @@
---
--- Datenbank: `pwsafe`
---
 CREATE TABLE `password` (
   `id` int(11) NOT NULL,
   `vault_id` int(11) NOT NULL,
@@ -8,6 +5,8 @@ CREATE TABLE `password` (
   `title` text CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
   `username` text CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
   `password` text CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
+  `file` longblob,
+  `filename` text CHARACTER SET utf8 COLLATE utf8_unicode_ci,
   `iv` blob NOT NULL,
   `description` text CHARACTER SET utf8 COLLATE utf8_unicode_ci,
   `url` text CHARACTER SET utf8 COLLATE utf8_unicode_ci
@@ -56,11 +55,16 @@ ALTER TABLE `setting`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
 ALTER TABLE `vault`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
+
 --
--- Constraints der exportierten Tabellen
+-- Constraints der Tabelle `password`
 --
 ALTER TABLE `password`
   ADD CONSTRAINT `fk_group` FOREIGN KEY (`group_id`) REFERENCES `passwordgroup` (`id`),
   ADD CONSTRAINT `fk_vault` FOREIGN KEY (`vault_id`) REFERENCES `vault` (`id`);
+
+--
+-- Constraints der Tabelle `passwordgroup`
+--
 ALTER TABLE `passwordgroup`
   ADD CONSTRAINT `fk_vault_group` FOREIGN KEY (`vault_id`) REFERENCES `vault` (`id`);

@@ -150,6 +150,13 @@ function expandOrCollapseGroup(obj) {
 	}
 }
 
+function onFileChanged(fileInputObj, keepFilesInputObj) {
+	if(fileInputObj.value == "")
+		keepFilesInputObj.setAttribute('checked', 'true');
+	else
+		keepFilesInputObj.removeAttribute('checked');
+}
+
 function ajaxInnerHTML(obj, url) {
 	var xhttp = new XMLHttpRequest();
 	xhttp.onreadystatechange = function() {
@@ -158,6 +165,13 @@ function ajaxInnerHTML(obj, url) {
 			// empty title means session timed out, because title cannot be empty
 			if(this.responseText == "" && obj.id == "detail_title")
 				window.location.replace("login");
+			// empty download file name means there is no file saved in this record
+			if(this.responseText == "" && obj.id == "downloadbutton") {
+				obj.innerHTML = obj.getAttribute('nofile');
+				obj.setAttribute('disabled', 'true');
+			} else {
+				obj.removeAttribute('disabled');
+			}
 		}
 	};
 	xhttp.open("GET", url, true);
@@ -191,6 +205,8 @@ function hideDetails() {
 	obj('detail_url').href = "";
 	obj('username').value = "";
 	obj('password').value = "";
+	obj('download').href = "";
+	obj('downloadbutton').innerHTML = "...";
 	obj('detail_id_edit').value = "";
 	obj('detail_id_remove').value = "";
 	obj('detail_description').innerHTML = "";
@@ -204,6 +220,8 @@ function showDetails(id) {
 	ajaxHref(obj('detail_url'), pre+"&param=url");
 	ajaxValue(obj('username'), pre+"&param=username");
 	ajaxValue(obj('password'), pre+"&param=password");
+	ajaxHref(obj('download'), pre+"&param=download");
+	ajaxInnerHTML(obj('downloadbutton'), pre+"&param=filename");
 	ajaxValue(obj('detail_id_edit'), pre+"&param=id");
 	ajaxValue(obj('detail_id_remove'), pre+"&param=id");
 	ajaxInnerHTML(obj('detail_description'), pre+"&param=description");

@@ -3,6 +3,8 @@ v0.1.1
 - new password view popup (does not open a new window, shows up in same tab)
 - use openssl_random_bytes -> updates database structure (iv is now blob)
 - fix: license text was not shown when opening /licenseText
+- new: file upload
+- minor gui improvements
 
 v0.1.0
 - rewrite (initial commit): using slim framework & twig template engine

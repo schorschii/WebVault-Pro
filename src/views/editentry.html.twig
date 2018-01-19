@@ -1,7 +1,7 @@
 {% extends "layout.html.twig" %}
 
 {% block content %}
-<form method="POST" action="?{% if menu == "popup" %}popup=1{% endif %}">
+<form enctype="multipart/form-data" method="POST" action="?{% if menu == "popup" %}popup=1{% endif %}">
 	<input type="hidden" name="id" value="{{ entry.id }}">
 	<input type="hidden" name="old_group" value="{{ entry.group_id }}">
 	<input type="hidden" name="old_title" value="{{ entry.title }}">
@@ -38,9 +38,18 @@
 		<tr>
 			<th>{{ 'Password'|trans }}:&nbsp;</th>
 			<td>
+				<div class="input withbutton">
+					<span><input type="password" id="password" name="password" value="{{ entry.password }}"></span><!--
+					--><span><button type="button" title='{{ "show or hide password"|trans }}' onclick='toggleView("password");'>&#9678;</button></span>
+				</div>
+			</td>
+		</tr>
+		<tr>
+			<th>{{ 'File'|trans }}:&nbsp;</th>
+			<td>
 				<div class="input">
-					<input type="password" id="password" name="password" value="{{ entry.password }}"><!--
-					--><button type="button" title='{{ "show or hide password"|trans }}' onclick='toggleView("password");'>&#9678;</button>
+					<input type="file" id="file" name="file" onchange="onFileChanged(this, obj('keepfile'))"><br>
+					{% if entry %}<label><input type="checkbox" id="keepfile" name="keepfile" value="true" checked="true">{{ "Keep old file"|trans }}</input></label>{% endif %}
 				</div>
 			</td>
 		</tr>

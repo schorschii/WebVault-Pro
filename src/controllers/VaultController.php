@@ -60,7 +60,9 @@ class VaultController {
 				'password' => openssl_decrypt($row->password, $this->method, $decrypt_password, 0, $row->iv),
 				'iv' => $row->iv,
 				'description' => $row->description,
-				'url' => $row->url
+				'url' => $row->url,
+				'file' => ($row->file != null) ? openssl_decrypt($row->file, $this->method, $decrypt_password, 0, $row->iv) : "",
+				'filename' => $row->filename
 			];
 		}
 	}
@@ -206,16 +208,21 @@ class VaultController {
 		}
 	}
 
-	private function createOrUpdateEntry($id, $title, $username, $password, $encrypt_password, $iv, $description, $url, $group) {
+	private function createOrUpdateEntry($id, $title, $username, $password, $encrypt_password, $iv, $description, $url, $group, $file, $filename) {
 		if($url != "" && substr($url, 0, 7) != "http://" && substr($url, 0, 8) != "https://" && substr($url, 0, 6) != "ftp://")
 			$url = "http://".$url;
 
 		$encrypted = openssl_encrypt($password, $this->method, $encrypt_password, 0, $iv);
+		if($file == null)
+			$encrypted_file = null;
+		else
+			$encrypted_file = openssl_encrypt($file, $this->method, $encrypt_password, 0, $iv);
+
 		if($group == "NULL") $group = NULL;
-		$sql = "REPLACE INTO password (id, group_id, vault_id, title, username, password, iv, description, url) "
-			 . "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+		$sql = "REPLACE INTO password (id, group_id, vault_id, title, username, password, iv, description, url, file, filename) "
+			 . "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 		$statement = $this->mysqli->prepare($sql);
-		$statement->bind_param('iiissssss',
+		$statement->bind_param('iiissssssss',
 							   $id,
 							   $group,
 							   $_SESSION['vault'],
@@ -224,7 +231,9 @@ class VaultController {
 							   $encrypted,
 							   $iv,
 							   $description,
-							   $url
+							   $url,
+							   $encrypted_file,
+							   $filename
 		);
 		if (!$statement->execute())
 			die("Execute failed: (" . $statement->errno . ") " . $statement->error);
@@ -299,7 +308,7 @@ class VaultController {
 
 	private function editVault($id, $title, $password, $oldpassword) {
 		$this->mysqli->autocommit(false);
-		$sql = "SELECT id, password, iv FROM password WHERE vault_id = ?";
+		$sql = "SELECT id, password, file, iv FROM password WHERE vault_id = ?";
 		$statement = $this->mysqli->prepare($sql);
 		$statement->bind_param('i', $_POST['changepassword']);
 		$statement->execute();
@@ -307,14 +316,15 @@ class VaultController {
 		while($row = $result->fetch_object()) {
 			// update all password entries
 			$decrypted = openssl_decrypt($row->password, $this->method, $_POST['oldpassword'], 0, $row->iv);
+			$decrypted_file = openssl_decrypt($row->file, $this->method, $_POST['oldpassword'], 0, $row->iv);
 			$iv = $this->generateIV();
 			$encrypted = openssl_encrypt($decrypted, $this->method, $_POST['password'], 0, $iv);
-			$sql = "UPDATE password SET password = ?, iv = ? WHERE id = ?";
+			$encrypted_file = openssl_encrypt($decrypted_file, $this->method, $_POST['password'], 0, $iv);
+			$sql = "UPDATE password SET password = ?, file = ?, iv = ? WHERE id = ?";
 			$statement = $this->mysqli->prepare($sql);
-			$statement->bind_param('ssi', $encrypted, $iv, $row->id);
-			if (!$statement->execute()) {
+			$statement->bind_param('sssi', $encrypted, $encrypted_file, $iv, $row->id);
+			if (!$statement->execute())
 				return "Execute failed: (" . $statement->errno . ") " . $statement->error;
-			}
 		}
 
 		$sql = "UPDATE vault SET title = ?, password = ? WHERE id = ?";
@@ -533,7 +543,7 @@ class VaultController {
 				$group_id = null;
 				if($entry['group'] != "") $group_id = $this->createGroups($_SESSION['vault'], $entry['group']);
 				$iv = $this->generateIV();
-				$this->createOrUpdateEntry(null, $entry['title'], $entry['username'], $entry['password'], $_SESSION['sessionpassword'], $iv, $entry['notes'], $entry['url'], $group_id);
+				$this->createOrUpdateEntry(null, $entry['title'], $entry['username'], $entry['password'], $_SESSION['sessionpassword'], $iv, $entry['notes'], $entry['url'], $group_id, null, null);
 			}
 			$infotype = "green";
 			$info = "Imported $counter entries";
@@ -552,7 +562,7 @@ class VaultController {
 		]);
 	}
 
-	private function createGroups($groupString) {
+	private function createGroups($vault_id, $groupString) {
 		// $groupString = string of groups, dot-separated
 		$superior_group_id = null;
 		foreach(explode(".", $groupString) as $group) {
@@ -677,8 +687,31 @@ class VaultController {
 				case "description":
 				echo $entry['description'];
 				break;
+				case "download":
+				if($entry['file'] == null) echo "";
+				else echo 'download?id='.$entry['id'];
+				break;
+				case "filename":
+				if($entry['filename'] == null) echo "";
+				else echo $entry['filename'];
+				break;
 			}
 			return $response->withHeader('Content-Type', 'text/plain');
+		}
+	}
+
+	public function download(Request $request, Response $response, $args)
+	{
+		$login = $this->checkLogin($response);
+		if($login !== true) return $response->withHeader('Content-Type', 'text/plain');
+
+		if(isset($_GET['id']) && $_GET['id'] != "") {
+			$entry = $this->getEntry($_GET['id'], $_SESSION['sessionpassword']);
+			$filename = $entry['filename'];
+			if($filename == null || $filename == "")
+				$filename = "download.txt";
+			echo $entry['file'];
+			return $response->withHeader('Content-Disposition', 'attachment; filename="'.$filename.'"');
 		}
 	}
 
@@ -740,6 +773,19 @@ class VaultController {
 					return $this->editPassword($request, $response, [ 'id' => $id, 'info' => "Entry was changed by another user", 'infotype' => "yellow" ]);
 				}
 
+				$filecontent = null;
+				$filename = null;
+				if(isset($_POST['keepfile']) && $_POST['keepfile'] == "true") {
+					$entry = $this->getEntry($id, $_SESSION['sessionpassword']);
+					$filecontent = $entry['file'];
+					$filename = $entry['filename'];
+				} elseif(isset($_FILES['file']['tmp_name']) && file_exists($_FILES['file']['tmp_name'])) {
+					$filename = urldecode($_FILES['file']['name']);
+					$handle = fopen($_FILES['file']['tmp_name'], "r");
+					$filecontent = fread($handle, filesize($_FILES['file']['tmp_name']));
+					fclose($handle);
+				}
+
 				$this->createOrUpdateEntry($id,
 					$_POST['title'],
 					$_POST['username'],
@@ -748,7 +794,9 @@ class VaultController {
 					$this->generateIV(),
 					$_POST['description'],
 					$_POST['url'],
-					$_POST['group']
+					$_POST['group'],
+					$filecontent,
+					$filename
 				);
 
 				return $response->withRedirect($this->container->router->pathFor("vault"), 303);

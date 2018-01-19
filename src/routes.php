@@ -13,6 +13,8 @@ $app->post('/setlang', 'RedirectController:setLanguage')
 
 $app->get('/ajax', 'VaultController:ajax')
 	->setName('ajax');
+$app->get('/download', 'VaultController:download')
+	->setName('download');
 
 $app->get('/setup', 'RedirectController:setup')
 	->setName('setup');

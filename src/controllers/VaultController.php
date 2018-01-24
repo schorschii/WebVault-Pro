@@ -480,9 +480,7 @@ class VaultController {
 
 		$is_preview = (isset($_POST['preview']) && $_POST['preview'] == "1");
 
-		$parsecsvlib = __DIR__.'/../components/parsecsv-for-php/parsecsv.lib.php';
-		if(file_exists($parsecsvlib)) {
-			require_once($parsecsvlib);
+		if(class_exists("parseCSV")) {
 			if(isset($_FILES['importfile']) && $_FILES['importfile']['tmp_name'] != "") {
 
 				$csv = new \parseCSV();
@@ -532,7 +530,7 @@ class VaultController {
 
 		} else {
 			$infotype = "red";
-			$info = 'ParseCSV-Library not found. Please download it from Github and place the "parsecsv.lib.php"-file into "src/components/parsecsv-for-php" directory.';
+			$info = 'ParseCSV-Library not found. Run composer update.';
 		}
 
 		// do the import

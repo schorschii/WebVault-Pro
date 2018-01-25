@@ -16,8 +16,8 @@ $container['view'] = function ($container) {
 		#'cache' => '../cache' // enable in productive environment
 	]);
 	$lang = (isset($_SESSION['lang'])) ? $_SESSION['lang'] : $container->get('settings')['defaultLanguage'];
-	$view->addExtension(new TranslateFilterExtension($lang));
-	$view->addExtension(new ShortFilterExtension(21));
+	$view->addExtension(new \WebPW\Twig_Extensions\TranslateFilterExtension($lang));
+	$view->addExtension(new \WebPW\Twig_Extensions\ShortFilterExtension(21));
 	return $view;
 };
 

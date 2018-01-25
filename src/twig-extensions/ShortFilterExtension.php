@@ -1,4 +1,5 @@
 <?php
+namespace WebPW\Twig_Extensions;
 
 class ShortFilterExtension extends \Twig_Extension
 {

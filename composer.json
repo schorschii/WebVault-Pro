@@ -16,6 +16,11 @@
         "issues": "https://github.com/schorschii/webpw/issues",
         "source": "https://github.com/schorschii/webpw"
     },
+    "autoload": {
+        "psr-4": {
+            "WebPW\\":"src/"
+        }
+    },
     "require": {
         "slim/slim": "^3.9",
         "slim/twig-view": "^2.3",

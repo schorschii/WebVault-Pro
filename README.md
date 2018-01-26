@@ -19,15 +19,15 @@ Store and view your passwords platform-independent with this PHP web application
 ### Server
 To set up this web app you need a database (MySQL) server and an Linux-based apache webserver running PHP 7.
   1. Create a virtual host for this application on your webserver, then copy all files into its root directory.
-  2. Run "php composer.phar install" inside the application directory to install the dependencies.
-  3. Edit "config/database.php" and enter your MySQL connection credentials.
-  4. Ensure that "AllowOverride All" is set for your application directory in your apache configuration.
-  5. Open "http://<NAME_OF_YOUR_VIRTUAL_HOST>/setup" in your webbrowser and follow the setup.
-  6. Thats it. You can now log in on the "Manage Vaults" page with the management passwort you haven chosen in the previous step and create a vault. After that, you can open this newly created vault and store your passwords.
+  2. Run `composer install -o` inside the application directory to install the dependencies.
+  3. Edit `config/database.php` and enter your MySQL connection credentials.
+  4. Ensure that `AllowOverride All` is set for your application directory in your apache configuration.
+  5. Open `http://<NAME_OF_YOUR_VIRTUAL_HOST>/setup` in your webbrowser and follow the setup.
+  6. Thats it. You can now log in on the "Manage Vaults" page with the management password you haven chosen in the previous step and create a vault. After that, you can open this newly created vault and store your passwords.
 
 ### Additional Steps (recommended)
   - It is highly recommended to use HTTPS instead of HTTP (except you are accessing the site only via localhost)! Set up your webserver appropriate.
-  - You can set your preferred language as default language in "config/general.php" file.
+  - You can set your preferred language as default language in `config/general.php` file.
 
 ### Client
   - Chrome/Chromium, Firefox, Opera (both desktop and mobile)

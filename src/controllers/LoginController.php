@@ -3,61 +3,51 @@ namespace WebPW\Controllers;
 
 use Slim\Http\Request as Request;
 use Slim\Http\Response as Response;
+use Illuminate\Database\Capsule\Manager as Capsule;
+use \WebPW\Models\Vault as Vault;
+use \WebPW\Models\Setting as Setting;
 
 class LoginController {
 
 	private $container = null;
 	private $langctrl = null;
-	private $mysqli = null;
+	private $capsule = null;
 
 	public function __construct($container)
 	{
 		$this->container = $container;
 		$this->langctrl = new LanguageController;
-		$db = $this->container->get('settings')['db'];
-		$this->mysqli = new \mysqli($db['host'], $db['user'], $db['password'], $db['dbname']);
-		if ($this->mysqli->connect_errno)
-			die("Failed to connect to database server: " . $this->mysqli->connect_error);
-		$this->mysqli->set_charset("utf8");
+		$this->capsule = new Capsule;
+		$this->capsule->addConnection($this->container->get('settings')['db']);
+		$this->capsule->setAsGlobal();
+		$this->capsule->bootEloquent();
 	}
 
 
 	private function getVaults() {
-		$sql = "SELECT id, title FROM vault";
-		$statement = $this->mysqli->prepare($sql);
-		$statement->execute();
-		$result = $statement->get_result();
-		$vaults = [];
-		while($row = $result->fetch_object()) {
-			$vaults[] = [ 'id' => $row->id, 'title' => $row->title ];
+		$allVaults = Vault::all();
+		$arrayVaults = [];
+		foreach($allVaults as $vault) {
+			$arrayVaults[] = [ 'id' => $vault->id, 'title' => $vault->title ];
 		}
-		return $vaults;
+		return $arrayVaults;
 	}
 
 	private function correctManagementPassword($password) {
-		$sql = "SELECT * FROM setting WHERE title = \"managementpassword\"";
-		$statement = $this->mysqli->prepare($sql);
-		$statement->execute();
-		$result = $statement->get_result();
-		while($row = $result->fetch_object()) {
-			if(password_verify($_POST['managementpassword'], $row->value)) {
-				return true;
-			}
+		$mgmtPassword = Setting::where('title', 'managementpassword')->get()[0];
+		if($mgmtPassword == null) return false;
+		if(password_verify($password, $mgmtPassword->value)) {
+			return true;
 		}
 		return false;
 	}
 
 	public function correctVaultPassword($vault_id, $password) {
-		$sql = "SELECT title, password FROM vault WHERE id = ?";
-		$statement = $this->mysqli->prepare($sql);
-		$statement->bind_param('i', $vault_id);
-		$statement->execute();
-		$result = $statement->get_result();
-		while($row = $result->fetch_object()) {
-			if(password_verify($password, $row->password)) {
-				$_SESSION['vaulttitle'] = $row->title;
-				return true;
-			}
+		$openVault = Vault::find($vault_id);
+		if($openVault == null) return false;
+		if(password_verify($password, $openVault->password)) {
+			$_SESSION['vaulttitle'] = $openVault->title;
+			return true;
 		}
 		return false;
 	}

@@ -3,26 +3,31 @@ namespace WebPW\Controllers;
 
 use Slim\Http\Request as Request;
 use Slim\Http\Response as Response;
+use Illuminate\Database\Capsule\Manager as Capsule;
+use \WebPW\Models\PasswordEntry as PasswordEntry;
+use \WebPW\Models\PasswordGroup as PasswordGroup;
+use \WebPW\Models\Vault as Vault;
+use \WebPW\Models\Setting as Setting;
 
 class VaultController {
 
 	private $container = null;
 	private $langctrl = null;
-	private $mysqli = null;
+	private $capsule = null;
 	private $method = "AES-256-CBC";
 
 	public function __construct($container)
 	{
 		$this->container = $container;
 		$this->langctrl = new LanguageController;
-		$db = $this->container->get('settings')['db'];
-		$this->mysqli = new \mysqli($db['host'], $db['user'], $db['password'], $db['dbname']);
-		if ($this->mysqli->connect_errno)
-			die("Failed to connect to database server: " . $this->mysqli->connect_error);
-		$this->mysqli->set_charset("utf8");
+		$this->capsule = new Capsule;
+		$this->capsule->addConnection($this->container->get('settings')['db']);
+		$this->capsule->setAsGlobal();
+		$this->capsule->bootEloquent();
 	}
 
 
+	/*** IV Generator ***/
 	private function generateRandomString($length, $keyspace = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ') {
 		$str = '';
 		$max = mb_strlen($keyspace, '8bit') - 1;
@@ -43,13 +48,17 @@ class VaultController {
 		}
 	}
 
+	/*** Entry Functions ***/
 	private function getEntry($id, $decrypt_password) {
-		$sql = "SELECT p.*, pg.title AS 'group_title' FROM password p LEFT JOIN passwordgroup pg ON p.group_id = pg.id WHERE p.id = ?";
-		$statement = $this->mysqli->prepare($sql);
-		$statement->bind_param('i', $id);
-		$statement->execute();
-		$result = $statement->get_result();
-		while($row = $result->fetch_object()) {
+		try {
+			$results = Capsule::select(
+				"SELECT p.*, pg.title AS 'group_title' FROM password p LEFT JOIN passwordgroup pg ON p.group_id = pg.id WHERE p.id = ?",
+				[ $id ]
+			);
+		} catch (\Exception $e) {
+			die("Database error: {$e->getMessage()}");
+		}
+		foreach($results as $row) {
 			return [
 				'id' => $row->id,
 				'group_id' => $row->group_id,
@@ -67,61 +76,16 @@ class VaultController {
 		}
 	}
 
-	private function quoteGroupTitle($title) {
-		if(strpos($title, '.') !== false)
-			return '"' . str_replace('"', "'", $title) . '"';
-		else
-			return $title;
-	}
-
-	private function getGroupTitle($id) {
-		// return entry title in format: [GroupTitle[.GroupTitle].]EntryTitle
-		$strResult = "";
-		$search_group = null;
-		$finished = false;
-		$sql = "SELECT * FROM password WHERE id = ?";
-		$statement = $this->mysqli->prepare($sql);
-		$statement->bind_param('i', $id);
-		$statement->execute();
-		$result = $statement->get_result();
-		while($row = $result->fetch_object()) {
-			if($row->group_id == null)
-				return $this->quoteGroupTitle($row->title);
-			else {
-				$strResult = $this->quoteGroupTitle($row->title);
-				$search_group = $row->group_id;
-			}
-		}
-		while($finished == false) {
-			$sql = "SELECT * FROM passwordgroup WHERE id = ?";
-			$statement = $this->mysqli->prepare($sql);
-			$statement->bind_param('i', $search_group);
-			$statement->execute();
-			$result = $statement->get_result();
-			while($row = $result->fetch_object()) {
-				$strResult = $this->quoteGroupTitle($row->title) . "." . $strResult;
-				if($row->superior_group_id == null)
-					$finished = true;
-				$search_group = $row->superior_group_id;
-			}
-		}
-		return $strResult;
-	}
-
 	private function getEntries($vault_id, $group_id, $decrypt_password) {
-		if($group_id == null) {
-			$sql = "SELECT * FROM password WHERE vault_id = ? AND group_id IS NULL";
-			$statement = $this->mysqli->prepare($sql);
-			$statement->bind_param('i', $vault_id);
-		} else {
-			$sql = "SELECT * FROM password WHERE vault_id = ? AND group_id = ?";
-			$statement = $this->mysqli->prepare($sql);
-			$statement->bind_param('ii', $vault_id, $group_id);
+		try {
+			$allEntries = PasswordEntry::where('vault_id', $vault_id)
+				->where('group_id', $group_id)
+				->get();
+		} catch (\Exception $e) {
+			die("Database error: {$e->getMessage()}");
 		}
-		$statement->execute();
-		$result = $statement->get_result();
 		$entries = [];
-		while($row = $result->fetch_object()) {
+		foreach($allEntries as $row) {
 			$entries[] = [
 				'id' => $row->id,
 				'group_id' => $row->group_id,
@@ -138,33 +102,129 @@ class VaultController {
 		return $entries;
 	}
 
+	private function checkEntryChanged($id, $title, $username, $password, $decrypt_password, $description, $url, $group_id) {
+		if($group_id == "NULL") $group_id = NULL;
+		try {
+			$entry = PasswordEntry::find($id);
+		} catch (\Exception $e) {
+			die("Database error: {$e->getMessage()}");
+		}
+		if($entry == null) return true;
+		return (!($entry->title == $title
+		&& $entry->username == $username
+		&& openssl_decrypt($entry->password, $this->method, $decrypt_password, 0, $entry->iv) == $password
+		&& $entry->description == $description
+		&& $entry->url == $url
+		&& $entry->group_id == $group_id));
+	}
+
+	private function createOrUpdateEntry($id, $title, $username, $password, $encrypt_password, $iv, $description, $url, $group, $file, $filename) {
+		if($url != "" && substr($url, 0, 7) != "http://"
+		&& substr($url, 0, 8) != "https://"
+		&& substr($url, 0, 6) != "ftp://")
+			$url = "http://".$url;
+
+		if($group == "NULL") $group = NULL;
+
+		$encrypted = openssl_encrypt($password, $this->method, $encrypt_password, 0, $iv);
+		if($file == null) $encrypted_file = null;
+		else $encrypted_file = openssl_encrypt($file, $this->method, $encrypt_password, 0, $iv);
+
+		try {
+			if($id == null) $entry = new PasswordEntry();
+			else $entry = PasswordEntry::find($id);
+			if($entry == null) $entry = new PasswordEntry();
+			$entry->group_id = $group;
+			$entry->vault_id = $_SESSION['vault'];
+			$entry->title = $title;
+			$entry->username = $username;
+			$entry->password = $encrypted;
+			$entry->iv = $iv;
+			$entry->description = $description;
+			$entry->url = $url;
+			$entry->file = $encrypted_file;
+			$entry->filename = $filename;
+			$entry->save();
+		} catch (\Exception $e) {
+			die("Database error: {$e->getMessage()}");
+		}
+		return true;
+	}
+
+	private function getItems($vault_id, $group_id, $decrypt_password) {
+		$node = array();
+		$node['entries'] = $this->getEntries($vault_id, $group_id, $decrypt_password);
+		$node['groups'] = $this->getGroups($vault_id, $group_id, $decrypt_password);
+		return $node;
+	}
+
+	private function removeEntry($vault_id, $id) {
+		// also check vault_id so that the user can't send an id from another vault via POST
+		try {
+			PasswordEntry::where('id', $id)->where('vault_id', $vault_id)->delete();
+		} catch (\Exception $e) {
+			die("Database error: {$e->getMessage()}");
+		}
+		return true;
+	}
+
+	/*** Group Functions ***/
+	private function quoteGroupTitle($title) {
+		if(strpos($title, '.') !== false)
+			return '"' . str_replace('"', "'", $title) . '"';
+		else
+			return $title;
+	}
+
+	private function getGroupTitle($id) {
+		// return entry title in format: [GroupTitle[.GroupTitle].]EntryTitle for export
+		try {
+			$strResult = "";
+			$search_group = null;
+			$finished = false;
+			$entry = PasswordEntry::find($id);
+			if($entry == null) return null;
+			if($entry->group_id == null)
+				return $this->quoteGroupTitle($entry->title);
+			else {
+				$strResult = $this->quoteGroupTitle($entry->title);
+				$search_group = $entry->group_id;
+			}
+			while($finished == false) {
+				$group = PasswordGroup::find($search_group);
+				$strResult = $this->quoteGroupTitle($group->title) . "." . $strResult;
+				if($group->superior_group_id == null) $finished = true;
+				$search_group = $group->superior_group_id;
+			}
+		} catch (\Exception $e) {
+			die("Database error: {$e->getMessage()}");
+		}
+		return $strResult;
+	}
+
 	private function getAllGroups($vault_id) {
-		$sql = "SELECT * FROM passwordgroup WHERE vault_id = ?";
-		$statement = $this->mysqli->prepare($sql);
-		$statement->bind_param('i', $vault_id);
-		$statement->execute();
-		$result = $statement->get_result();
+		try {
+			$allGroups = PasswordGroup::where('vault_id', $vault_id)->get();
+		} catch (\Exception $e) {
+			die("Database error: {$e->getMessage()}");
+		}
 		$groups = [];
-		while($row = $result->fetch_object()) {
+		foreach($allGroups as $row) {
 			$groups[] = [ 'id' => $row->id, 'title' => $row->title, 'description' => $row->description, 'superior_group_id' => $row->superior_group_id ];
 		}
 		return $groups;
 	}
 
 	private function getGroups($vault_id, $superior_group_id = null, $decrypt_password) {
-		if($superior_group_id == null) {
-			$sql = "SELECT * FROM passwordgroup WHERE vault_id = ? AND superior_group_id IS NULL";
-			$statement = $this->mysqli->prepare($sql);
-			$statement->bind_param('i', $vault_id);
-		} else {
-			$sql = "SELECT * FROM passwordgroup WHERE superior_group_id = ?";
-			$statement = $this->mysqli->prepare($sql);
-			$statement->bind_param('i', $superior_group_id);
+		try {
+			$allGroups = PasswordGroup::where('vault_id', $vault_id)
+				->where('superior_group_id', $superior_group_id)
+				->get();
+		} catch (\Exception $e) {
+			die("Database error: {$e->getMessage()}");
 		}
-		$statement->execute();
-		$result = $statement->get_result();
 		$groups = array();
-		while($row = $result->fetch_object()) {
+		foreach($allGroups as $row) {
 			$items = array();
 			$items['entries'] = $this->getEntries($vault_id, $row->id, $decrypt_password);
 			$items['groups'] = $this->getGroups($vault_id, $row->id, $decrypt_password);
@@ -173,6 +233,60 @@ class VaultController {
 		return $groups;
 	}
 
+	private function createOrUpdateGroup($id, $vault_id, $title, $description, $superior_group_id) {
+		try {
+			if($id == null) $group = new PasswordGroup();
+			else $group = PasswordGroup::find($id);
+			if($group == null) $group = new PasswordGroup();
+			$group->vault_id = $vault_id;
+			$group->title = $title;
+			$group->description = $description;
+			$group->superior_group_id = $superior_group_id;
+			$group->save();
+		} catch (\Exception $e) {
+			die("Database error: {$e->getMessage()}");
+		}
+		return $group->id;
+	}
+
+	private function createGroups($vault_id, $groupString) {
+		// $groupString = string of groups, dot-separated
+		$superior_group_id = null;
+		foreach(explode(".", $groupString) as $group) {
+			$group_id = $this->getGroupId($vault_id, $group, $superior_group_id);
+			if($group_id == null) {
+				$group_id = $this->createOrUpdateGroup(null, $_SESSION['vault'], $group, null, $superior_group_id);
+			}
+			$superior_group_id = $group_id;
+		}
+		return $superior_group_id;
+	}
+
+	private function getGroupId($vault_id, $group, $superior_group_id) {
+		try {
+			$groups = PasswordGroup::where('vault_id', $vault_id)
+				->where('title', $group)
+				->where('superior_group_id', $superior_group_id)
+				->get();
+			foreach($groups as $group) {
+				return $group->id;
+			}
+		} catch (\Exception $e) {
+			die("Database error: {$e->getMessage()}");
+		}
+		return null;
+	}
+
+	private function removeGroup($vault_id, $id) {
+		try {
+			PasswordGroup::where('id', $id)->where('vault_id', $vault_id)->delete();
+		} catch (\Exception $e) {
+			die("Database error: {$e->getMessage()}");
+		}
+		return true;
+	}
+
+	/*** Login Functions ***/
 	private function checkLogin($response) {
 		if(!(isset($_SESSION['vault']) && $_SESSION['vault'] != "")) {
 			return $response->withRedirect($this->container->router->pathFor("login"), 303);
@@ -189,180 +303,83 @@ class VaultController {
 		}
 	}
 
-	private function checkEntryChanged($id, $title, $username, $password, $decrypt_password, $description, $url, $group_id) {
-		if($group_id == "NULL") $group_id = NULL;
-		$sql = "SELECT * FROM password WHERE id = ?";
-		$statement = $this->mysqli->prepare($sql);
-		$statement->bind_param('i', $id);
-		if (!$statement->execute())
-			die("Execute failed: (" . $statement->errno . ") " . $statement->error);
-
-		$result = $statement->get_result();
-		while($row = $result->fetch_object()) {
-			return (!($row->title == $title
-			&& $row->username == $username
-			&& openssl_decrypt($row->password, $this->method, $decrypt_password, 0, $row->iv) == $password
-			&& $row->description == $description
-			&& $row->url == $url
-			&& $row->group_id == $group_id));
-		}
-	}
-
-	private function createOrUpdateEntry($id, $title, $username, $password, $encrypt_password, $iv, $description, $url, $group, $file, $filename) {
-		if($url != "" && substr($url, 0, 7) != "http://" && substr($url, 0, 8) != "https://" && substr($url, 0, 6) != "ftp://")
-			$url = "http://".$url;
-
-		$encrypted = openssl_encrypt($password, $this->method, $encrypt_password, 0, $iv);
-		if($file == null)
-			$encrypted_file = null;
-		else
-			$encrypted_file = openssl_encrypt($file, $this->method, $encrypt_password, 0, $iv);
-
-		if($group == "NULL") $group = NULL;
-		$sql = "REPLACE INTO password (id, group_id, vault_id, title, username, password, iv, description, url, file, filename) "
-			 . "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-		$statement = $this->mysqli->prepare($sql);
-		$statement->bind_param('iiissssssss',
-							   $id,
-							   $group,
-							   $_SESSION['vault'],
-							   $title,
-							   $username,
-							   $encrypted,
-							   $iv,
-							   $description,
-							   $url,
-							   $encrypted_file,
-							   $filename
-		);
-		if (!$statement->execute())
-			die("Execute failed: (" . $statement->errno . ") " . $statement->error);
-		else
-			return true;
-	}
-
-	private function removeEntry($vault_id, $id) {
-		$sql = "DELETE FROM password WHERE vault_id = ? AND id = ?";
-		$statement = $this->mysqli->prepare($sql);
-		$statement->bind_param('ii', $vault_id, $id);
-		if (!$statement->execute())
-			return "Execute failed: (" . $statement->errno . ") " . $statement->error;
-		else
-			return true;
-	}
-
-	private function createOrUpdateGroup($id, $vault_id, $title, $description, $superior_group_id) {
-		$sql = "REPLACE INTO passwordgroup (id, vault_id, title, description, superior_group_id) VALUES (?, ?, ?, ?, ?)";
-		$statement = $this->mysqli->prepare($sql);
-		$statement->bind_param('iissi', $id, $vault_id, $title, $description, $superior_group_id);
-		if (!$statement->execute()) {
-			echo "Execute failed: (" . $statement->errno . ") " . $statement->error;
-			return false;
-		} else
-			return $statement->insert_id;
-	}
-
-	private function removeGroup($vault_id, $id) {
-		$sql = "DELETE FROM passwordgroup WHERE vault_id = ? AND id = ?";
-		$statement = $this->mysqli->prepare($sql);
-		$statement->bind_param('ii', $vault_id, $id);
-		if (!$statement->execute())
-			return "Execute failed: (" . $statement->errno . ") " . $statement->error;
-		else
-			return true;
-	}
-
-	private function getItems($vault_id, $group_id, $decrypt_password) {
-		$node = array();
-		$node['entries'] = $this->getEntries($vault_id, $group_id, $decrypt_password);
-		$node['groups'] = $this->getGroups($vault_id, $group_id, $decrypt_password);
-		return $node;
-	}
-
 	private function escapeOnlyQuotes($string) {
 		return str_replace('"', '\"', $string);
 	}
 
+	/*** Vault Functions ***/
 	private function getVaults() {
-		$sql = "SELECT id, title FROM vault";
-		$statement = $this->mysqli->prepare($sql);
-		$statement->execute();
-		$result = $statement->get_result();
+		try {
+			$allVaults = Vault::all();
+		} catch (\Exception $e) {
+			die("Database error: {$e->getMessage()}");
+		}
 		$vaults = [];
-		while($row = $result->fetch_object()) {
-			$vaults[] = [ 'id' => $row->id, 'title' => $row->title ];
+		foreach($allVaults as $vault) {
+			$vaults[] = [ 'id' => $vault->id, 'title' => $vault->title ];
 		}
 		return $vaults;
 	}
 
 	private function createVault($title, $password) {
-		$sql = "INSERT INTO vault (title, password) VALUES (?, ?)";
-		$statement = $this->mysqli->prepare($sql);
 		$password_hash = password_hash($password, PASSWORD_BCRYPT);
-		$statement->bind_param('ss', $title, $password_hash);
-		if (!$statement->execute())
-			return "Execute failed: (" . $statement->errno . ") " . $statement->error;
-
+		try {
+			$newVault = new Vault();
+			$newVault->title = $title;
+			$newVault->password = $password_hash;
+			$newVault->save();
+		} catch (\Exception $e) {
+			die("Database error: {$e->getMessage()}");
+		}
 		return true;
 	}
 
 	private function editVault($id, $title, $password, $oldpassword) {
-		$this->mysqli->autocommit(false);
-		$sql = "SELECT id, password, file, iv FROM password WHERE vault_id = ?";
-		$statement = $this->mysqli->prepare($sql);
-		$statement->bind_param('i', $_POST['changepassword']);
-		$statement->execute();
-		$result = $statement->get_result();
-		while($row = $result->fetch_object()) {
-			// update all password entries
-			$decrypted = openssl_decrypt($row->password, $this->method, $_POST['oldpassword'], 0, $row->iv);
-			$decrypted_file = openssl_decrypt($row->file, $this->method, $_POST['oldpassword'], 0, $row->iv);
-			$iv = $this->generateIV();
-			$encrypted = openssl_encrypt($decrypted, $this->method, $_POST['password'], 0, $iv);
-			$encrypted_file = openssl_encrypt($decrypted_file, $this->method, $_POST['password'], 0, $iv);
-			$sql = "UPDATE password SET password = ?, file = ?, iv = ? WHERE id = ?";
-			$statement = $this->mysqli->prepare($sql);
-			$statement->bind_param('sssi', $encrypted, $encrypted_file, $iv, $row->id);
-			if (!$statement->execute())
-				return "Execute failed: (" . $statement->errno . ") " . $statement->error;
+		try {
+			Capsule::beginTransaction();
+			$updatePasswordEntries = PasswordEntry::where('vault_id', $id)->get();
+			foreach($updatePasswordEntries as $entry) {
+				$decrypted = openssl_decrypt($entry->password, $this->method, $oldpassword, 0, $entry->iv);
+				$decrypted_file = openssl_decrypt($entry->file, $this->method, $oldpassword, 0, $entry->iv);
+				$iv = $this->generateIV();
+				$encrypted = openssl_encrypt($decrypted, $this->method, $password, 0, $iv);
+				$encrypted_file = openssl_encrypt($decrypted_file, $this->method, $password, 0, $iv);
+				$entry->password = $encrypted;
+				$entry->file = $encrypted_file;
+				$entry->iv = $iv;
+				$entry->save();
+			}
+			$updateVault = Vault::find($id);
+			$updateVault->title = $title;
+			$updateVault->password = password_hash($password, PASSWORD_BCRYPT);
+			$updateVault->save();
+			Capsule::commit();
+		} catch (\Exception $e) {
+			die("Database error: {$e->getMessage()}");
 		}
-
-		$sql = "UPDATE vault SET title = ?, password = ? WHERE id = ?";
-		$statement = $this->mysqli->prepare($sql);
-		$password_hash = password_hash($password, PASSWORD_BCRYPT);
-		$statement->bind_param('ssi', $title, $password_hash, $id);
-		if (!$statement->execute())
-			return "Execute failed: (" . $statement->errno . ") " . $statement->error;
-
-		if (!$this->mysqli->commit())
-			return "Transaction commit failed";
-
 		return true;
 	}
 
 	private function removeVault($id) {
-		$sql = "DELETE FROM password WHERE vault_id = ?";
-		$statement = $this->mysqli->prepare($sql);
-		$statement->bind_param('i', $id);
-		if (!$statement->execute())
-			return "Execute failed: (" . $statement->errno . ") " . $statement->error;
-		$sql = "DELETE FROM vault WHERE id = ?";
-		$statement = $this->mysqli->prepare($sql);
-		$statement->bind_param('i', $id);
-		if (!$statement->execute())
-			return "Execute failed: (" . $statement->errno . ") " . $statement->error;
-
+		try {
+			Capsule::beginTransaction();
+			PasswordEntry::where('vault_id', $id)->delete();
+			PasswordGroup::where('vault_id', $id)->delete();
+			Vault::find($id)->delete();
+			Capsule::commit();
+		} catch (\Exception $e) {
+			die("Database error: {$e->getMessage()}");
+		}
 		return true;
 	}
 
 	private function changeManagementPassword($newpassword) {
-		$sql = "UPDATE setting SET value = ? WHERE title = 'managementpassword'";
-		$statement = $this->mysqli->prepare($sql);
-		$password_hash = password_hash($newpassword, PASSWORD_BCRYPT);
-		$statement->bind_param('s', $password_hash);
-		if (!$statement->execute())
-			return "Execute failed: (" . $statement->errno . ") " . $statement->error;
-
+		try {
+			Setting::where('title', 'managementpassword')
+				->update(['value' => password_hash($newpassword, PASSWORD_BCRYPT)]);
+		} catch (\Exception $e) {
+			die("Database error: {$e->getMessage()}");
+		}
 		return true;
 	}
 
@@ -558,38 +575,6 @@ class VaultController {
 			'info' => $info,
 			'importrows' => $entries
 		]);
-	}
-
-	private function createGroups($vault_id, $groupString) {
-		// $groupString = string of groups, dot-separated
-		$superior_group_id = null;
-		foreach(explode(".", $groupString) as $group) {
-			$group_id = $this->getGroupId($vault_id, $group, $superior_group_id);
-			if($group_id == null) {
-				$group_id = $this->createOrUpdateGroup(null, $_SESSION['vault'], $group, null, $superior_group_id);
-			}
-			$superior_group_id = $group_id;
-		}
-		return $superior_group_id;
-	}
-
-	private function getGroupId($vault_id, $group, $superior_group_id) {
-		if(!$superior_group_id == null) {
-			$sql = "SELECT pg.id AS 'id', pg.title AS 'title' FROM passwordgroup pg WHERE vault_id = ? AND title = ? AND superior_group_id = ?";
-			$statement = $this->mysqli->prepare($sql);
-			$statement->bind_param('isi', $vault_id, $group, $superior_group_id);
-		} else {
-			$sql = "SELECT pg.id AS 'id', pg.title AS 'title' FROM passwordgroup pg WHERE vault_id = ? AND title = ? AND superior_group_id IS NULL";
-			$statement = $this->mysqli->prepare($sql);
-			$statement->bind_param('is', $vault_id, $group);
-		}
-		if(!$statement->execute())
-			die("Execute failed: " . $statement->error);
-		$result = $statement->get_result();
-		while($row = $result->fetch_object()) {
-			return $row->id;
-		}
-		return null;
 	}
 
 	public function export(Request $request, Response $response, $args)

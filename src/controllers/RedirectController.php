@@ -3,29 +3,35 @@ namespace WebPW\Controllers;
 
 use Slim\Http\Request as Request;
 use Slim\Http\Response as Response;
+use Illuminate\Database\Capsule\Manager as Capsule;
+use \WebPW\Models\Vault as Vault;
+use \WebPW\Models\Setting as Setting;
 
 class RedirectController {
 
 	private $container = null;
 	private $langctrl = null;
-	private $mysqli = null;
+	private $capsule = null;
 
 	public function __construct($container)
 	{
 		$this->container = $container;
 		$this->langctrl = new LanguageController;
-		$db = $this->container->get('settings')['db'];
-		$this->mysqli = new \mysqli($db['host'], $db['user'], $db['password'], $db['dbname']);
-		if ($this->mysqli->connect_errno)
-			die("Failed to connect to database server: " . $this->mysqli->connect_error);
-		$this->mysqli->set_charset("utf8");
+		$this->capsule = new Capsule;
+		$this->capsule->addConnection($this->container->get('settings')['db']);
+		$this->capsule->setAsGlobal();
+		$this->capsule->bootEloquent();
 	}
 
 	private function isAlreadyEstablished() {
-		$statement = $this->mysqli->prepare("SHOW TABLES LIKE 'setting'");
-		$statement->execute();
-		$statement->store_result();
-		return $statement->num_rows > 0;
+		try {
+			$results = Capsule::select(
+				"SHOW TABLES LIKE 'setting'", [ ]
+			);
+		} catch (\Exception $e) {
+			die("Unable to check if 'setting' table exists: {$e->getMessage()}");
+		}
+		return isset($results[0]);
 	}
 
 
@@ -33,7 +39,7 @@ class RedirectController {
 	{
 		$targetPathName = "login";
 		if(!$this->isAlreadyEstablished()) $targetPathName = "setup";
-		if(isset($_SESSION['vault']) && $_SESSION['vault'] != "") $targetPathName = "vault";
+		elseif(isset($_SESSION['vault']) && $_SESSION['vault'] != "") $targetPathName = "vault";
 		return $response->withRedirect($this->container->router->pathFor($targetPathName), 303);
 	}
 
@@ -89,29 +95,66 @@ class RedirectController {
 	{
 		if(!$this->isAlreadyEstablished()) {
 			if(isset($_POST['action']) && $_POST['action'] == "setup") {
-				#if (!$this->mysqli->multi_query(file_get_contents("sql/clean.sql")))
-				#	echo("<b>ERROR DROPPING TABLES:</b><br>" . $this->mysqli->error . "<br>");
-				#$this->clearStoredResults();
-				if (!$this->mysqli->multi_query(file_get_contents(__DIR__."/../sql/pwsafe.sql")))
-				die("<b>ERROR CREATING TABLES:</b><br>" . $this->mysqli->error . "<br>");
-				$this->clearStoredResults();
-				$sql = "INSERT INTO setting (title, value) VALUES (\"managementpassword\", ?)";
-				$passwordhash = password_hash($_POST['managementpassword'], PASSWORD_DEFAULT);
-				$statement = $this->mysqli->prepare($sql);
-				$statement->bind_param('s', $passwordhash);
-				if (!$statement->execute())
-					die("Execute failed: (" . $statement->errno . ") " . $statement->error);
+				try {
+					Capsule::schema()->create(
+						'vault',
+						function ($table) {
+							$table->increments('id');
+							$table->text('title');
+							$table->text('password');
+							$table->timestamps();
+						}
+					);
+					Capsule::schema()->create(
+						'passwordgroup',
+						function ($table) {
+							$table->increments('id');
+							$table->integer('vault_id')->unsigned();
+							$table->foreign('vault_id')->references('id')->on('vault');
+							$table->integer('superior_group_id')->nullable();
+							$table->text('title');
+							$table->text('description')->nullable();
+							$table->timestamps();
+						}
+					);
+					Capsule::schema()->create(
+						'password',
+						function ($table) {
+							$table->increments('id');
+							$table->integer('vault_id')->unsigned();
+							$table->foreign('vault_id')->references('id')->on('vault');
+							$table->integer('group_id')->unsigned()->nullable();
+							$table->foreign('group_id')->references('id')->on('passwordgroup')->nullable();
+							$table->text('title');
+							$table->text('username');
+							$table->text('password');
+							$table->longtext('file')->nullable();
+							$table->text('filename')->nullable();
+							$table->binary('iv');
+							$table->text('description')->nullable();
+							$table->text('url')->nullable();
+							$table->timestamps();
+						}
+					);
+					Capsule::schema()->create(
+						'setting',
+						function ($table) {
+							$table->increments('id');
+							$table->text('title');
+							$table->text('value');
+							$table->timestamps();
+						}
+					);
+					$mgmtPasswordSetting = new Setting();
+					$mgmtPasswordSetting->title = "managementpassword";
+					$mgmtPasswordSetting->value = password_hash($_POST['managementpassword'], PASSWORD_DEFAULT);
+					$mgmtPasswordSetting->save();
+				} catch (\Exception $e) {
+					die("Unable to setup required tables: {$e->getMessage()}");
+				}
 			}
 		}
 		return $response->withRedirect($this->container->router->pathFor("root"), 303);
-	}
-
-	private function clearStoredResults(){
-		do {
-			if ($res = $this->mysqli->store_result()) {
-				$res->free();
-			}
-		} while ($this->mysqli->more_results() && $this->mysqli->next_result());
 	}
 
 }

@@ -1,5 +1,5 @@
 # WebPW
-Web based password safe with multi-language and file upload support.
+Web based password safe with multi-language, multi-user and file upload support.
 
 ## About
 * © 2017 Georg Sieber - http://georg-sieber.de
@@ -11,9 +11,9 @@ Web based password safe with multi-language and file upload support.
 Store and view your passwords platform-independent with this PHP web application. Passwords are saved AES-encrypted in a MySQL database. You can create multiple vaults with different master passwords, e.g. for different departments in your company. Inside of vaults you can group password entries and search them.
 
 ## Screenshots
-![Login page](https://raw.githubusercontent.com/schorschii/webpw/master/img/screenshot/1.png)
-![Password entries](https://raw.githubusercontent.com/schorschii/webpw/master/img/screenshot/2.png)
-![View password entry](https://raw.githubusercontent.com/schorschii/webpw/master/img/screenshot/3.png)
+![Login page](https://raw.githubusercontent.com/schorschii/webpw/master/public/img/screenshot/1.png)
+![Password entries](https://raw.githubusercontent.com/schorschii/webpw/master/public/img/screenshot/2.png)
+![View password entry](https://raw.githubusercontent.com/schorschii/webpw/master/public/img/screenshot/3.png)
 
 ## Setup
 ### Server

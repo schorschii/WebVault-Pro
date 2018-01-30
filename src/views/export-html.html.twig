@@ -1,0 +1,43 @@
+{% macro printGroup(root) %}
+<ul>
+	{% for entry in root.entries %}
+	<li class="entry" group="{{ entry.group_id }}"><!--
+		-->{{ entry.title }}
+		<ul>
+			<li>Username: {{ entry.username }}</li>
+			<li>Password: {{ entry.password }}</li>
+			<li>URL to service: {{ entry.url }}</li>
+			<li>Description: {{ entry.description }}</li>
+		</ul>
+	</li>
+	{% endfor %}
+	{% for group in root.groups %}
+	<li class="group"><!--
+		--><div class="groupheader" group="{{ group.id }}">
+			<b>{{ group.title }}</b>
+			<div class='groupdescription'>{{ group.description }}</div>
+		</div>
+		{% import _self as printGroupImportSub %}
+		{{ printGroupImportSub.printGroup(group.items) }}
+	</li>
+	{% endfor %}
+</ul>
+{% endmacro printGroup %}
+
+
+{% if items and (items.entries|length > 0 or items.groups|length > 0) %}
+
+	<style>
+	#entriestree {
+		font-family: monospace;
+	}
+	</style>
+	<h1>{{ 'Password Export'|trans }}</h1>
+	<div id="entriestree">
+	{% import _self as printGroupImport %}
+	{{ printGroupImport.printGroup(items) }}
+	</div>
+
+{% else %}
+{{ "This vault is empty"|trans }}
+{% endif %}

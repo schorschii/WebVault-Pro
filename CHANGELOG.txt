@@ -1,35 +1,10 @@
-v0.0.7
-- index.php main div keeps same size on expanding/collasping groups
-- description row is hidden if browser width is smaller than 900px
+v0.1.1
+- added apache htaccess into /public
+- new password view popup (does not open a new window, shows up in same tab)
+- use openssl_random_bytes -> updates database structure (iv is now blob)
+- fix: license text was not shown when opening /licenseText
+- new: file upload
+- minor gui improvements
 
-v0.0.6
-- db connection now uses UTF-8 charset
-
-v0.0.5
-- updated german translation
-
-v0.0.4
-- when editing an entry, new.php checks if the record was edited meanwhile from another user and cancels the action if so
-- if all groups are expanded via the "Show Entries" button, the collapse buttons are now shown correctly
-- search: group headers are now hidden when no result is left in this group
-- added import feature for tab-separated files (using parseCSV library), compatible with exported files from the Windows application "PasswordSafe"
-- added export feature (tab-separated, comma-separated, html)
-- groups are now sorted by title in index.php
-- password box autofocus on vault management page page
-
-v0.0.3
-- optimized search
-- fixed german translation (collapse/expand group)
-- changed group appearance
-- added htmlspecialchars() around database output to display chars like < > " ' correctly
-- PHP version check
-- "Show Entries"-Button now toggles the visibility of group entries
-- "login.php" shows last vault after failed login attempt
-
-v0.0.2
-- added search bar
-- added possibility to close and open groups
-- updated german translation
-
-v0.0.1
-- initial release
+v0.1.0
+- rewrite (initial commit): using slim framework & twig template engine

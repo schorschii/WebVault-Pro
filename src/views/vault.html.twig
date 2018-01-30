@@ -1,0 +1,121 @@
+{% extends "layout.html.twig" %}
+
+
+{% macro printGroup(root) %}
+<ul>
+	{% for entry in root.entries %}
+	<li class="entry" group="{{ entry.group_id }}"><!--
+		--><div>
+			<a href='viewentry?popup=1&id={{ entry.id }}' onclick='showDetails({{ entry.id }});return false;'>{{ entry.title|e }}{% if entry.username %} <span class='username'>[{{ entry.username|e }}]</span>{% endif %}</a>
+			<div class='entrydescription'>
+				{% if entry.url %}<a target='_blank' href='{{ entry.url|e }}'>{{ entry.url|short|e }}</a>{% endif %}{% if entry.url and entry.description %} - {% endif %}{{ entry.description|short|e }}
+			</div>
+		</div>
+	</li>
+	{% endfor %}
+	{% for group in root.groups %}
+	<li class="group"><!--
+		--><div class="groupheader" group="{{ group.id }}">
+			<a href='#' onclick='expandOrCollapseGroup(this.parentElement.parentElement);return false;'>{{ group.title|e }}</a>
+			<div class='groupdescription'>{{ group.description|e }}</div>
+		</div>
+		{% import _self as printGroupImportSub %}
+		{{ printGroupImportSub.printGroup(group.items) }}
+	</li>
+	{% endfor %}
+</ul>
+{% endmacro printGroup %}
+
+
+{% block content %}
+	<div id="searchresults" style="display:none">
+		<span id="searchresultstext"><span id="searchresultcount"></span>&nbsp;{{ "result(s)"|trans }}&nbsp;<button onclick="clearSearch()">{{ "Close Search"|trans }}</button></span>
+	</div>
+
+{% if items and (items.entries|length > 0 or items.groups|length > 0) %}
+
+	<div id="entriestree">
+	{% import _self as printGroupImport %}
+	{{ printGroupImport.printGroup(items) }}
+	</div>
+
+{% else %}
+<div class='infobox'>{{ "This vault is empty"|trans }}</div>
+{% endif %}
+
+<div id="entrydetailscontainer">
+	<div id="entrydetails">
+		<table id="entrydetailsheader">
+			<td>
+				<span id="detail_title" title="{{ "Title"|trans }}"></span>&nbsp;&nbsp;<span id="detail_group" title="{{ "Group"|trans }}"></span>
+			</td>
+			<td><button id="closedetails" onclick="hideDetails()" title="{{ 'Close'|trans }}">&#9932;</button></td>
+		</table>
+		<div class="entrydetailscontent">
+		<table class="inputtable">
+			<tr>
+				<th>{{ 'URL to service'|trans }}:&nbsp;</th>
+				<td><a target="_blank" href="" id="detail_url"></a></td>
+			</tr>
+			<tr>
+				<th>{{ 'Username'|trans }}:&nbsp;</th>
+				<td>
+					<div class="input withbutton">
+						<span><input type="text" id="username" name="username" class="invisible" value="" readonly="true"></span><!--
+						--><span><!--
+							--><button id="btnUsernameToClipboard" type="button" title='{{ "copy username to clipboard"|trans }}' onclick='toClipboard("username");'>&#9997;</button>
+						</span>
+					</div>
+				</td>
+			</tr>
+			<tr>
+				<th>{{ 'Password'|trans }}:&nbsp;</th>
+				<td>
+					<div class="input withbutton">
+						<span><input type="password" id="password" name="password" class="invisible" value="" readonly="true"></span><!--
+						--><span><!--
+							--><button id="btnPasswordShowHide" type="button" title='{{ "show or hide password"|trans }}' onclick='toggleView("password");'>&#9678;</button><!--
+							--><button id="btnPasswordToClipboard" type="button" title='{{ "copy password to clipboard"|trans }}' onclick='toClipboard("password");'>&#9997;</button>
+						</span>
+					</div>
+				</td>
+			</tr>
+			<tr>
+				<th class="file">{{ 'File'|trans }}:&nbsp;</th>
+				<td>
+					<div class="input">
+						<a href="#" class="download" id="download"><!--
+							--><button id="downloadbutton" type="button" class="download" nofile="{{ 'No File'|trans }}">{{ 'Download'|trans }}</button>
+						</a>
+					</div>
+				</td>
+			</tr>
+			<tr>
+				<th>{{ 'Description'|trans }}:&nbsp;</th>
+				<td><textarea name="description" class="invisible" id="detail_description"></textarea></td>
+			</tr>
+			<tr><td>&nbsp;</td></tr>
+			<tr>
+				<td colspan="100">
+					<form method="GET" action="editentry">
+						<input type="hidden" name="id" value="" id="detail_id_edit">
+						<input type="submit" class="nobold" value="{{ 'Edit'|trans }}">
+					</form>
+				</td>
+			</tr>
+			<tr>
+				<td colspan="100">
+					<form method="POST" action="editentry" onsubmit="return confirm('{{ 'Are you sure?'|trans }}');">
+						<input type="hidden" name="remove" value="" id="detail_id_remove">
+						<input type="submit" class="nobold" value="{{ 'Remove'|trans }}">
+					</form>
+				</td>
+			</tr>
+		</table>
+		</div>
+	</div>
+</div>
+
+<script>activateMouseDragForParent(obj('entrydetailsheader'));</script>
+
+{% endblock %}

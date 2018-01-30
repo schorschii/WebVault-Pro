@@ -1,4 +1,4 @@
 <?php
-$LANG['WebPW'] = "WebPW";
-/* english is the native language of this application, so there are no translation lines in this file */
-?>
+
+// english is the native language of this app, so this file contains no translation data
+// do not delete this file in order to display the "en"-entry in the language selection box

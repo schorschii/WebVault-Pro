@@ -1,28 +1,33 @@
 # WebPW
-Web based password safe with multi-language support.
+Web based password safe with multi-language and file upload support.
 
 ## About
 * © 2017 Georg Sieber - http://georg-sieber.de
 * licensed under the terms of the GPLv2 (see LICENSE.txt)
-* view source and fork me on GitHub: https://github.com/schorschii/webpw
+* using Slim Framework & Twig Template Engine
+* https://github.com/schorschii/webpw
 
 ## Description
-Store and view your passwords platform-independent with this PHP web application. Passwords are saved AES-encrypted in an MySQL database. You can create multiple vaults with different master passwords, e.g. for different departments in your company. Inside of vaults you can group passwords entries.
+Store and view your passwords platform-independent with this PHP web application. Passwords are saved AES-encrypted in a MySQL database. You can create multiple vaults with different master passwords, e.g. for different departments in your company. Inside of vaults you can group password entries and search them.
 
 ## Screenshots
 ![Login page](https://raw.githubusercontent.com/schorschii/webpw/master/img/screenshot/1.png)
 ![Password entries](https://raw.githubusercontent.com/schorschii/webpw/master/img/screenshot/2.png)
-![Vault management](https://raw.githubusercontent.com/schorschii/webpw/master/img/screenshot/3.png)
+![View password entry](https://raw.githubusercontent.com/schorschii/webpw/master/img/screenshot/3.png)
 
 ## Setup
 ### Server
-To set up this web app you need a database (MySQL) server and an Linux-based apache webserver running PHP 7.
-  1. Copy all files into a directory of your choice.
-  2. Edit "database.php" and enter your MySQL connection credentials.
-  3. Open the "setup.php" file in your webbrowser to create the required tables in your database.
-  4. Open the directory in your webbrowser (the webserver will serve the index.php file to you). Thats it. You can now log in on the "Manage Vaults" page with the management passwort you haven chosen in the previous step and create a vault. After that, you can open this newly created vault and store your passwords.
-  5. It is highly recommended to use HTTPS instead of HTTP! Set up your webserver appropriate.
-  6. (Optional) You can set your preferred language as default language in "global.php" file.
+To set up this web app you need a database (MySQL) server and a Linux-based apache webserver running PHP 7.
+  1. Set the applications `public` directory as your webservers root directory (if necessary, create a virtual host for this application on your webserver).
+  2. Run `composer install -o` inside the application root directory to install the dependencies.
+  3. Edit `config/database.php` and enter your MySQL connection credentials.
+  4. Ensure that `AllowOverride All` is set for your application directory in your apache configuration.
+  5. Open `http://<ADDRESS_OF_YOUR_WEBSERVER>/setup` in a webbrowser and follow the setup.
+  6. Thats it. You can now log in on the "Manage Vaults" page with the management password you haven chosen in the previous step and create a vault. After that, you can open this newly created vault and store your passwords.
+
+### Additional Steps (recommended)
+  - It is highly recommended to use HTTPS instead of HTTP (except you are accessing the site only via localhost)! Set up your webserver appropriate.
+  - You can set your preferred language as default language in `config/general.php` file.
 
 ### Client
   - Chrome/Chromium, Firefox, Opera (both desktop and mobile)
@@ -48,16 +53,27 @@ Free Software Foundation, Inc.
 Boston, MA  02111-1307, USA.
 
 ## Libraries
-This program uses the [parseCSV][] library  
-© 2014 Jim Myhrberg  
-Licensed under the terms of the MIT license
+This web application uses:  
+
+[parseCSV][] library  
+© 2014 Jim Myhrberg (MIT license)  
+
+[Slim][] framework  
+© 2011-2017 Josh Lockhart (MIT license)  
+
+[Twig][] template engine  
+© 2009-2017 the Twig Team (BSD 3-clause)  
+
+[illuminate/database][] toolkit  
+© Taylor Otwell (MIT license)  
 
 [parseCSV]: https://github.com/parsecsv/parsecsv-for-php
+[Slim]: https://github.com/slimphp/Slim
+[Twig]: https://github.com/twigphp/Twig
+[illuminate/database]: https://packagist.org/packages/illuminate/database
 
 ## Support
-Found a bug? Great!  
-Please report it (preferably with a ready-to-use fix for it ;-) ) on GitHub.
-Questions, ideas and feature requests are also welcome.
+Found a bug? Great! Please report it (preferably with a ready-to-use fix for it ;-) ) on GitHub. Questions, ideas and feature requests are also welcome.
 
 ## ToDo and planned features
-Visit the GitHub page for more information.
+Please visit the GitHub page for more information.

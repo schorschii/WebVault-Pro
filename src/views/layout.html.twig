@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>{{ "WebPW"|trans }}{% if pagetitle %} - {{ pagetitle|trans }}{% endif %}</title>
+	<meta charset="utf-8"/>
+	<script type="text/javascript" src="js/global.js"></script>
+	<script type="text/javascript" src="js/move.js"></script>
+	<link href="css/global.css" rel="stylesheet">
+	<link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,700" rel="stylesheet">
+	<link href="https://fonts.googleapis.com/css?family=Saira+Semi+Condensed:100,400,700,900" rel="stylesheet">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimal-ui">
+	<link rel="icon" type="image/png" href="img/vault.png"><!-- tab & bookmarks icon -->
+	<link rel="apple-touch-icon" href="img/vault.png"><!-- home shortcut icon apple -->
+	<link rel="shortcut icon" href="img/vault.png"><!-- home shortcut icon android -->
+	<link rel="apple-touch-startup-image" href="img/vault.png"><!-- splash screen -->
+	<meta name="apple-mobile-web-app-status-bar-style" content="black">
+	<meta name="apple-mobile-web-app-title" content="WebPW"><!-- home shortcut title apple -->
+	<meta name="apple-mobile-web-app-capable" content="yes"><!-- display web app as fullscreen apple -->
+	<meta name="mobile-web-app-capable" content="yes"><!-- display web app as fullscreen android -->
+</head>
+<body>
+
+
+<div id="topmenu">
+{% if menu == "loggedin" %}
+	<span class="left">
+		<a href="editentry"><button>{{ "New Entry"|trans }}</button></a>
+		<a href="editgroup"><button>{{ "New Group"|trans }}</button></a>
+		<a href="vault?{{ groupview_param }}"><button>{{ "Show Entries"|trans }}</button></a>
+	</span>
+	<span class="center">
+	</span>
+	<span class="right">
+		{% if searchbar %}
+		<input type="text" id="searchbar" autofocus="true" oninput="search(this.value)" placeholder="{{ 'Search...'|trans }}" title="{{ 'Search...'|trans }}">
+		{% endif %}
+		<a href="vaultimport"><button>{{ "Import"|trans }}</button></a>
+		<a href="vaultexport"><button>{{ "Export"|trans }}</button></a>
+		<a href="logout"><button>{{ "Close Vault"|trans }}</button></a>
+	</span>
+{% elseif menu == "loggedout" %}
+	<span class="left">
+		<a href="login"><button>{{ "Open Vault"|trans }}</button></a>
+		<a href="manage"><button>{{ "Manage Vaults"|trans }}</button></a>
+	</span>
+	<span class="center">
+	</span>
+	<span class="right">
+		<form method="POST" action="setlang">
+			<select name="lang" onchange="this.form.submit()" title="{{ "change language"|trans }}">
+				{% for lang in languages %}
+					<option {% if lang.selected %}selected="true"{% endif %}>{{ lang.title|escape }}</option>
+				{% endfor %}
+			</select>
+		</form>
+		<a href="about"><button>{{ "About"|trans }}</button></a>
+	</span>
+{% elseif menu == "popup" %}
+	<span class="center">
+		<button onclick="window.close();">{{ "Close"|trans }}</button>
+	</span>
+{% endif %}
+</div>
+<br>
+
+
+<div id="contentcontainer" class="{% if items and items|length > 0 %}passwordentries{% endif %}">
+	<h1>{{ pageheader|trans }}</h1>
+	<h2>{{ pagesubheader|trans }}</h2>
+	{% if info != "" %}<div class="infobox {{ infotype }}">{{ info|trans }}</div>{% endif %}
+	{% block content %}
+	{% endblock %}
+</div>
+
+{% if httpwarn == true %}
+<div id='httpwarn' onclick='this.style.display="none";' style='cursor:pointer;'>
+	{{ "You are accessing this site via HTTP. This is very insecure. Please consider using HTTPS."|trans }}
+</div>
+{% endif %}
+
+<canvas id="a" style="position:fixed;top:0px;left:0px;" width="10" height="10"></canvas>
+
+</body>
+</html>

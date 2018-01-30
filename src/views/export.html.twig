@@ -1,0 +1,21 @@
+{% extends "layout.html.twig" %}
+
+{% block content %}
+<form method="POST">
+	<table class="inputtable">
+	<tr><th colspan=100>{{ 'Please choose a format to export passwords.'|trans }}</th></tr>
+	<tr><td colspan=100>{{ 'Passwords will be exported in CLEARTEXT! Please be careful.'|trans }}</td></tr>
+	<tr><td>&nbsp;</td></th>
+	<tr>
+		<th>{{ 'Vault Password'|trans }}:&nbsp;</th>
+		<td colspan=100><input type="password" name="vaultpassword"></td>
+	<tr>
+		<td><label><input type="radio" name="format" value="tab">&nbsp;{{ 'Tab-Separated'|trans }}</label></td>
+		<td><label><input type="radio" name="format" value="csv">&nbsp;{{ 'Comma-Separated (CSV)'|trans }}</label></td>
+		<td><label><input type="radio" name="format" value="html">&nbsp;{{ 'HTML (for printing)'|trans }}</label></td>
+	</tr>
+	<tr>
+		<td colspan=100><input type="submit" value="{{ 'Export'|trans }}"></td>
+	</tr>
+</form>
+{% endblock %}

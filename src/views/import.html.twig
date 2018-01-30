@@ -1,0 +1,47 @@
+{% extends "layout.html.twig" %}
+
+{% block content %}
+<div>{{ 'Expected format: tab-separated, field order:'|trans }}</div>
+<div>{{ '(compatible to exported files from the "PasswordSafe" windows application)'|trans }}</div>
+<ul>
+	<li>Group/Title (&lt;Group&gt;.&lt;Title&gt;)</li>
+	<li>Username</li>
+	<li>Password</li>
+	<li>URL</li>
+	<li>AutoType</li>
+	<li>Created Time</li>
+	<li>Password Modified Time</li>
+	<li>Last Access Time</li>
+	<li>Password Expiry Date</li>
+	<li>Record Modified Time</li>
+	<li>History</li>
+	<li>Notes</li>
+</ul>
+
+<form method="POST" enctype="multipart/form-data">
+	<table class="inputtable">
+		<tr>
+			<td colspan=2><input type="file" name="importfile"></td>
+		</tr>
+		<tr>
+			<td><label><input type="checkbox" name="preview" value="1" checked>&nbsp;{{ 'Preview only'|trans }}</label></td>
+			<td><input type="submit" value="{{ 'Import'|trans }}"></td>
+		</tr>
+	</table>
+</form>
+
+{% if importrows %}
+<h2>{{ 'Preview'|trans }}</h2>
+<table border=1>
+	{% for row in importrows %}
+	<tr>
+		<td>{{ row.title }}</td>
+		<td>{{ row.username }}</td>
+		<td>{{ row.password }}</td>
+		<td>{{ row.url }}</td>
+		<td>{{ row.notes }}</td>
+	</tr>
+	{% endfor %}
+</table>
+{% endif %}
+{% endblock %}

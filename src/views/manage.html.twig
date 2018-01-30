@@ -1,0 +1,110 @@
+{% extends "layout.html.twig" %}
+
+{% block content %}
+<h2>{{ "Create Vault"|trans }}</h2>
+<form method="POST">
+	<table class="inputtable">
+		<tr>
+			<th>{{ "Title"|trans }}:&nbsp;</th>
+			<td><input type="text" name="title"></td>
+		</tr>
+		<tr>
+			<th>{{ "Password"|trans }}:&nbsp;</th>
+			<td><input type="password" name="password"></td>
+		</tr>
+		<tr>
+			<th>{{ "Repeat Password"|trans }}:&nbsp;</th>
+			<td><input type="password" name="password2"></td>
+		</tr>
+		<tr>
+			<th></th>
+			<td><input type="submit" value="{{ "Create"|trans }}"></td>
+		</tr>
+	</table>
+</form>
+
+<h2>{{ "Change Vault's Password"|trans }}</h2>
+{% if vaults and vaults|length > 0 %}
+	<form method="POST" onsubmit='return confirm("{{ "Are you sure?"|trans }}")'>
+		<table class="inputtable">
+			<tr>
+				<th>{{ "Vault"|trans }}:&nbsp;</th>
+				<td>
+					<select id="vaultlist" name="changepassword" autofocus="true" onchange="obj('newtitle').value = this.options[this.selectedIndex].innerHTML;">
+						{% for vault in vaults %}
+							<option value='{{ vault.id }}'>{{ vault.title|trans }}</option>
+						{% endfor %}
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<th>{{ "New Title"|trans }}:&nbsp;</th>
+				<td><input type="text" name="title" id="newtitle"></td>
+			</tr>
+			<tr>
+				<th>{{ "Old Password"|trans }}:&nbsp;</th>
+				<td><input type="password" name="oldpassword"></td>
+			</tr>
+			<tr>
+				<th>{{ "New Password"|trans }}:&nbsp;</th>
+				<td><input type="password" name="password"></td>
+			</tr>
+			<tr>
+				<th>{{ "Repeat Password"|trans }}:&nbsp;</th>
+				<td><input type="password" name="password2"></td>
+			</tr>
+			<tr>
+				<th></th>
+				<td><input type="submit" value="{{ "Change Password"|trans }}"></td>
+			</tr>
+		</table>
+	</form>
+	<script>obj('newtitle').value = obj('vaultlist').options[obj('vaultlist').selectedIndex].innerHTML;</script>
+{% else %}
+	<div class='infobox red'>{{ "No vault found"|trans }}</div>
+{% endif %}
+
+<h2>{{ "Remove Vault"|trans }}</h2>
+{% if vaults and vaults|length > 0 %}
+	<table class="inputtable">
+		<tr>
+			<th>{{ "Title"|trans }}</th>
+			<th>{{ "Remove"|trans }}</th>
+		</tr>
+		{% for vault in vaults %}
+			<tr>
+				<td>{{ vault.title|trans }}</td>
+				<td>
+					<form method='POST' onsubmit='return confirm("{{ 'Remove this entry?'|trans }} {{ 'All password entries will be lost!'|trans }}")';>
+						<input type='hidden' name='remove' value='{{ vault.id }}'>
+						<input type='submit' value='{{ "Remove"|trans }}' class='remove'>
+					</form>
+				</td>
+			</tr>
+		{% endfor %}
+	</table>
+{% else %}
+	<div class='infobox red'>{{ "No vault found"|trans }}</div>
+{% endif %}
+
+<h2>{{ "Change Management Password"|trans }}</h2>
+<form method="POST">
+	<table class="inputtable">
+		<tr>
+			<th>{{ "New Password"|trans }}:&nbsp;</th>
+			<td><input type="password" name="newmanagementpassword"></td>
+		</tr>
+		<tr>
+			<td></td>
+			<td><input type="submit" value="{{ "Change Password"|trans }}"></td>
+		</tr>
+	</table>
+</form>
+
+<h2>{{ "Exit Management Session"|trans }}</h2>
+<form method="GET" action="/logout">
+	<table class="inputtable">
+		<tr><td><input type="submit" value="{{ "Log Out"|trans }}"></td></tr>
+	</table>
+</form>
+{% endblock %}

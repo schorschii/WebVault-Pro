@@ -1,0 +1,15 @@
+{% extends "layout.html.twig" %}
+
+{% block content %}
+<form method="POST">
+		<div><?php echo $info; ?></div>
+		{% if setupbutton %}
+		<input type="hidden" name="action" value="setup">
+		<label>{{ 'Choose a management password'|trans }}:<br>
+		<input autofocus="true" type="text" name="managementpassword" value=""></label>
+		<input type="submit" value="{{ 'Set up database'|trans }}">
+		{% else %}
+		<div class="infobox">{{ 'Your installation is already established'|trans }}</div>
+		{% endif %}
+</form>
+{% endblock %}

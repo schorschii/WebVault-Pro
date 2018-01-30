@@ -1,0 +1,100 @@
+{% extends "layout.html.twig" %}
+
+{% block content %}
+<h2>{{ 'Create Group'|trans }}</h2>
+<form method="POST">
+	<table class="inputtable">
+		<tr>
+			<th>{{ 'Title'|trans }}:&nbsp;</th>
+			<td><input type="text" name="title" value="{{ default_title }}"></td>
+		</tr>
+		<tr>
+			<th>{{ 'Description'|trans }}:&nbsp;</th>
+			<td><input type="text" name="description" value="{{ default_description }}"></td>
+		</tr>
+		<tr>
+			<th>{{ 'Superior Group'|trans }}:&nbsp;</th>
+			<td>
+				<select name="superior_group_id">
+					<option value="NULL">{{ 'No group'|trans }}</option>
+					{% for group in groups %}
+					<option value="{{ group.id }}">{{ group.title }}</option>
+					{% endfor %}
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<th></th>
+			<td><input type="submit" value="{{ 'Save'|trans }}"></td>
+		</tr>
+	</table>
+</form>
+
+<h2>{{ 'Edit Group'|trans }}</h2>
+{% if groups and groups|length > 0 %}
+<form method="POST">
+	<table class="inputtable">
+		<tr>
+			<th>{{ 'Title'|trans }}:&nbsp;</th>
+			<td>
+				<select id="grouplist" name="group_id" autofocus="true" onchange="setGroupOldValues();">
+					{% for group in groups %}
+						<option {% if group.id == entry.group_id %}selected='true'{% endif %} value='{{ group.id }}' description='{{ group.description }}' superior_group_id='{{ group.superior_group_id }}'>{{ group.title }}</option>
+					{% endfor %}
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<th>{{ 'New Title'|trans }}:&nbsp;</th>
+			<td><input type="text" name="title" value="" id="new_title"></td>
+		</tr>
+		<tr>
+			<th>{{ 'Description'|trans }}:&nbsp;</th>
+			<td><input type="text"  name="description" id="new_description" value="{{ default_description }}"></td>
+		</tr>
+		<tr>
+			<th>{{ 'Superior Group'|trans }}:&nbsp;</th>
+			<td>
+				<select name="superior_group_id" id="new_superior_group_id">
+					<option value="NULL">{{ 'No group'|trans }}</option>
+					{% for group in groups %}
+					<option value="{{ group.id }}">{{ group.title }}</option>
+					{% endfor %}
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<th></th>
+			<td><input type="submit" value="{{ 'Save'|trans }}"></td>
+		</tr>
+	</table>
+	<script>setGroupOldValues();</script>
+</form>
+{% else %}
+	<div class="infobox">{{ "No groups found"|trans }}</div>
+{% endif %}
+
+<h2>{{ 'Remove Groups'|trans }}</h2>
+{% if groups and groups|length > 0 %}
+<table class="inputtable">
+	<tr>
+		<th>{{ 'Title'|trans }}</th>
+		<th>{{ 'Remove'|trans }}</th>
+	</tr>
+
+	{% for group in groups %}
+		<tr>
+			<td>{{ group.title }}</td>
+			<td>
+				<form method='POST' onsubmit='return confirm("{{ 'Remove this entry?'|trans }} {{ 'This will only work if the group is empty.'|trans }} ")'>
+					<input type='hidden' name='remove' value='{{ group.id }}'>
+					<input type='submit' value='{{ "Remove"|trans }}' class='remove'>
+				</form>
+			</td>
+		</tr>
+	{% endfor %}
+</table>
+{% else %}
+	<div class="infobox">{{ "No groups found"|trans }}</div>
+{% endif %}
+{% endblock %}

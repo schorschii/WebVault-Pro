@@ -15,7 +15,8 @@ $container['view'] = function ($container) {
 	$view = new \Slim\Views\Twig('../src/views', [
 		#'cache' => '../cache' // enable in productive environment
 	]);
-	$lang = (isset($_SESSION['lang'])) ? $_SESSION['lang'] : $container->get('settings')['defaultLanguage'];
+	$langCtrl = new \WebPW\Controllers\LanguageController($container);
+	$lang = $langCtrl->getCurrentLanguage();
 	$view->addExtension(new \WebPW\Twig_Extensions\TranslateFilterExtension($lang));
 	$view->addExtension(new \WebPW\Twig_Extensions\ShortFilterExtension(21));
 	return $view;

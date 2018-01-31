@@ -88,11 +88,15 @@
 {% endif %}
 
 <h2>{{ "Change Management Password"|trans }}</h2>
-<form method="POST">
+<form method="POST" onsubmit='return confirm("{{ "Are you sure?"|trans }}")'>
 	<table class="inputtable">
 		<tr>
 			<th>{{ "New Password"|trans }}:&nbsp;</th>
 			<td><input type="password" name="newmanagementpassword"></td>
+		</tr>
+		<tr>
+			<th>{{ "Repeat Password"|trans }}:&nbsp;</th>
+			<td><input type="password" name="newmanagementpassword2"></td>
 		</tr>
 		<tr>
 			<td></td>

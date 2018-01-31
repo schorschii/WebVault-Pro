@@ -16,7 +16,7 @@ class LoginController {
 	public function __construct($container)
 	{
 		$this->container = $container;
-		$this->langctrl = new LanguageController;
+		$this->langctrl = new LanguageController($container);
 		$this->capsule = new Capsule;
 		$this->capsule->addConnection($this->container->get('settings')['db']);
 		$this->capsule->setAsGlobal();
@@ -61,7 +61,7 @@ class LoginController {
 			'pageheader' => 'WebPW',
 			'pagesubheader' => 'web based password safe',
 			'httpwarn' => (!isset($_SERVER['HTTPS'])),
-			'languages' => $this->langctrl->getLanguages($this->container->get('settings')['defaultLanguage']),
+			'languages' => $this->langctrl->getLanguages(),
 			'vaults' => $this->getVaults(),
 			'vault' => isset($args['vault']) ? $args['vault'] : null,
 			'defaultvault' => isset($args['defaultvault']) ? $args['defaultvault'] : null,
@@ -78,7 +78,7 @@ class LoginController {
 			'pageheader' => 'Manage Vaults',
 			'pagesubheader' => '',
 			'httpwarn' => (!isset($_SERVER['HTTPS'])),
-			'languages' => $this->langctrl->getLanguages($this->container->get('settings')['defaultLanguage']),
+			'languages' => $this->langctrl->getLanguages(),
 			'info' => isset($args['info']) ? $args['info'] : null,
 			'infotype' => isset($args['infotype']) ? $args['infotype'] : null
 		]);

@@ -1,4 +1,4 @@
 <?php
 $config['displayErrorDetails'] = true;
 $config['addContentLengthHeader'] = false;
-$config['defaultLanguage'] = "de";
+$config['defaultLanguage'] = "en";

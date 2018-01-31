@@ -18,9 +18,11 @@ class TranslateFilterExtension extends \Twig_Extension
 
 	public function translate($string)
 	{
+		// load translation file
 		$langFilePath = __DIR__."/../../lang/".$this->language.".php";
-		if(file_exists($langFilePath))
-			require($langFilePath);
+		if(file_exists($langFilePath)) require($langFilePath);
+
+		// return translation if exists
 		if(isset($LANG[$string]))
 			return $LANG[$string];
 		else

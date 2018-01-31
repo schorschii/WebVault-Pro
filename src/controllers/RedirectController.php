@@ -16,7 +16,7 @@ class RedirectController {
 	public function __construct($container)
 	{
 		$this->container = $container;
-		$this->langctrl = new LanguageController;
+		$this->langctrl = new LanguageController($container);
 		$this->capsule = new Capsule;
 		$this->capsule->addConnection($this->container->get('settings')['db']);
 		$this->capsule->setAsGlobal();
@@ -50,7 +50,7 @@ class RedirectController {
 			'pagetitle' => 'About',
 			'pageheader' => 'About WebPW' . ' ' . 'v0.1.1',
 			'pagesubheader' => 'web based password safe',
-			'languages' => $this->langctrl->getLanguages($this->container->get('settings')['defaultLanguage'])
+			'languages' => $this->langctrl->getLanguages()
 		]);
 	}
 

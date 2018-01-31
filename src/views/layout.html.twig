@@ -49,7 +49,7 @@
 		<form method="POST" action="setlang">
 			<select name="lang" onchange="this.form.submit()" title="{{ "change language"|trans }}">
 				{% for lang in languages %}
-					<option {% if lang.selected %}selected="true"{% endif %}>{{ lang.title|escape }}</option>
+					<option value="{{ lang.filename }}" {% if lang.selected %}selected="true"{% endif %}>{{ lang.title|escape }}</option>
 				{% endfor %}
 			</select>
 		</form>

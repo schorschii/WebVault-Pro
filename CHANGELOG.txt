@@ -3,7 +3,10 @@ v0.1.1
 - new password view popup (does not open a new window, shows up in same tab)
 - use openssl_random_bytes -> updates database structure (iv is now blob)
 - fix: license text was not shown when opening /licenseText
-- new: file upload
+- new: file upload feature
+- new: usage of illuminate/database toolkit for database access
+- new: application chooses the language automatically based on the browser language
+- new: "repeat password" field when changing the management password
 - minor gui improvements
 
 v0.1.0

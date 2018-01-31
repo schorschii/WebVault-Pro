@@ -19,7 +19,7 @@ class VaultController {
 	public function __construct($container)
 	{
 		$this->container = $container;
-		$this->langctrl = new LanguageController;
+		$this->langctrl = new LanguageController($container);
 		$this->capsule = new Capsule;
 		$this->capsule->addConnection($this->container->get('settings')['db']);
 		$this->capsule->setAsGlobal();
@@ -28,15 +28,6 @@ class VaultController {
 
 
 	/*** IV Generator ***/
-	private function generateRandomString($length, $keyspace = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ') {
-		$str = '';
-		$max = mb_strlen($keyspace, '8bit') - 1;
-		for ($i = 0; $i < $length; ++$i) {
-			$str .= $keyspace[random_int(0, $max)];
-		}
-		return $str;
-	}
-
 	private function generateIV() {
 		$wasItSecure = false;
 		$iv = openssl_random_pseudo_bytes(16, $wasItSecure);
@@ -48,7 +39,16 @@ class VaultController {
 		}
 	}
 
-	/*** Entry Functions ***/
+	private function generateRandomString($length, $keyspace = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ') {
+		$str = '';
+		$max = mb_strlen($keyspace, '8bit') - 1;
+		for ($i = 0; $i < $length; ++$i) {
+			$str .= $keyspace[random_int(0, $max)];
+		}
+		return $str;
+	}
+
+	/*** Password Entry Functions ***/
 	private function getEntry($id, $decrypt_password) {
 		try {
 			$results = Capsule::select(
@@ -103,12 +103,17 @@ class VaultController {
 	}
 
 	private function checkEntryChanged($id, $title, $username, $password, $decrypt_password, $description, $url, $group_id) {
+		// html <select>-option value "NULL" means no group
 		if($group_id == "NULL") $group_id = NULL;
+
+		// find record
 		try {
 			$entry = PasswordEntry::find($id);
 		} catch (\Exception $e) {
 			die("Database error: {$e->getMessage()}");
 		}
+
+		// check if values changed
 		if($entry == null) return true;
 		return (!($entry->title == $title
 		&& $entry->username == $username
@@ -119,17 +124,21 @@ class VaultController {
 	}
 
 	private function createOrUpdateEntry($id, $title, $username, $password, $encrypt_password, $iv, $description, $url, $group, $file, $filename) {
+		// add "http://" if not set by the user in order to make links work
 		if($url != "" && substr($url, 0, 7) != "http://"
 		&& substr($url, 0, 8) != "https://"
 		&& substr($url, 0, 6) != "ftp://")
 			$url = "http://".$url;
 
+		// html <select>-option value "NULL" means no group
 		if($group == "NULL") $group = NULL;
 
+		// encrypt password and file
 		$encrypted = openssl_encrypt($password, $this->method, $encrypt_password, 0, $iv);
 		if($file == null) $encrypted_file = null;
 		else $encrypted_file = openssl_encrypt($file, $this->method, $encrypt_password, 0, $iv);
 
+		// insert or update record
 		try {
 			if($id == null) $entry = new PasswordEntry();
 			else $entry = PasswordEntry::find($id);
@@ -145,10 +154,11 @@ class VaultController {
 			$entry->file = $encrypted_file;
 			$entry->filename = $filename;
 			$entry->save();
+			return $entry->id;
 		} catch (\Exception $e) {
 			die("Database error: {$e->getMessage()}");
 		}
-		return true;
+		return false;
 	}
 
 	private function getItems($vault_id, $group_id, $decrypt_password) {
@@ -172,12 +182,11 @@ class VaultController {
 	private function quoteGroupTitle($title) {
 		if(strpos($title, '.') !== false)
 			return '"' . str_replace('"', "'", $title) . '"';
-		else
-			return $title;
+		else return $title;
 	}
 
 	private function getGroupTitle($id) {
-		// return entry title in format: [GroupTitle[.GroupTitle].]EntryTitle for export
+		// returns entry title in format: [GroupTitle[.GroupTitle].]EntryTitle (for export)
 		try {
 			$strResult = "";
 			$search_group = null;
@@ -203,6 +212,7 @@ class VaultController {
 	}
 
 	private function getAllGroups($vault_id) {
+		// returns all groups inside a vault
 		try {
 			$allGroups = PasswordGroup::where('vault_id', $vault_id)->get();
 		} catch (\Exception $e) {
@@ -216,6 +226,8 @@ class VaultController {
 	}
 
 	private function getGroups($vault_id, $superior_group_id = null, $decrypt_password) {
+		// returns groups inside a vault which are subordinate to the given $superior_group_id
+		// $superior_group_id = null means show all top-level groups
 		try {
 			$allGroups = PasswordGroup::where('vault_id', $vault_id)
 				->where('superior_group_id', $superior_group_id)
@@ -250,7 +262,7 @@ class VaultController {
 	}
 
 	private function createGroups($vault_id, $groupString) {
-		// $groupString = string of groups, dot-separated
+		// $groupString is a dot-separated string of groups (for import)
 		$superior_group_id = null;
 		foreach(explode(".", $groupString) as $group) {
 			$group_id = $this->getGroupId($vault_id, $group, $superior_group_id);
@@ -263,6 +275,7 @@ class VaultController {
 	}
 
 	private function getGroupId($vault_id, $group, $superior_group_id) {
+		// checks if a group with given title and given superior_group_id already exists (for import)
 		try {
 			$groups = PasswordGroup::where('vault_id', $vault_id)
 				->where('title', $group)
@@ -384,6 +397,7 @@ class VaultController {
 	}
 
 
+	/*** View Functions ***/
 	public function manage(Request $request, Response $response, $args)
 	{
 		if(isset($_SESSION['management']) && $_SESSION['management'] == 1) {
@@ -393,7 +407,7 @@ class VaultController {
 				'pageheader' => 'Manage Vaults',
 				'pagesubheader' => '',
 				'httpwarn' => (!isset($_SERVER['HTTPS'])),
-				'languages' => $this->langctrl->getLanguages($this->container->get('settings')['defaultLanguage']),
+				'languages' => $this->langctrl->getLanguages(),
 				'vaults' => $this->getVaults(),
 				'info' => isset($args['info']) ? $args['info'] : null,
 				'infotype' => isset($args['infotype']) ? $args['infotype'] : null
@@ -408,7 +422,11 @@ class VaultController {
 		$login = $this->checkManageLogin($response);
 		if($login !== true) return $login;
 
-		if(isset($_POST['newmanagementpassword'])) {
+		if(isset($_POST['newmanagementpassword']) && isset($_POST['newmanagementpassword2'])) {
+
+			// change management password
+			if($_POST['newmanagementpassword'] != $_POST['newmanagementpassword2'])
+				return $this->manage($request, $response, [ 'info' => 'Passwords do not match', 'infotype' => 'red' ]);
 
 			$result = $this->changeManagementPassword($_POST['newmanagementpassword']);
 			if($result === true)
@@ -418,6 +436,7 @@ class VaultController {
 
 		} elseif(isset($_POST['remove']) && $_POST['remove'] != "") {
 
+			// remove vault and its entries
 			$result = $this->removeVault($_POST['remove']);
 			if($result === true)
 				return $this->manage($request, $response, [ 'info' => 'Vault successfully deleted', 'infotype' => 'green' ]);
@@ -426,6 +445,8 @@ class VaultController {
 
 		} elseif(isset($_POST['title']) && isset($_POST['password']) && isset($_POST['password2'])) {
 
+			// add or edit vault
+
 			if($_POST['password'] != $_POST['password2'])
 				return $this->manage($request, $response, [ 'info' => 'Passwords do not match', 'infotype' => 'red' ]);
 
@@ -433,6 +454,7 @@ class VaultController {
 				return $this->manage($request, $response, [ 'info' => 'Title should not be empty', 'infotype' => 'red' ]);
 
 			if(!isset($_POST['changepassword'])) {
+
 				// create new vault
 				$result = $this->createVault($_POST['title'], $_POST['password']);
 				if($result === true)
@@ -442,7 +464,7 @@ class VaultController {
 
 			} else {
 
-				// change title and password(s)
+				// change title and vault password(s)
 				$loginCtrl = new LoginController($this->container);
 				if(!$loginCtrl->correctVaultPassword($_POST['changepassword'], $_POST['oldpassword']))
 					return $this->manage($request, $response, [ 'info' => "Invalid password", 'infotype' => 'red' ]);
@@ -497,6 +519,7 @@ class VaultController {
 
 		$is_preview = (isset($_POST['preview']) && $_POST['preview'] == "1");
 
+		// parse the import file
 		if(class_exists("parseCSV")) {
 			if(isset($_FILES['importfile']) && $_FILES['importfile']['tmp_name'] != "") {
 
@@ -562,7 +585,7 @@ class VaultController {
 			}
 			$infotype = "green";
 			$info = "Imported $counter entries";
-			$entries = null;
+			$entries = null; // not in preview mode
 		}
 
 		return $this->container['view']->render($response, 'import.html.twig', [
@@ -646,38 +669,39 @@ class VaultController {
 		$login = $this->checkLogin($response);
 		if($login !== true) return $response->withHeader('Content-Type', 'text/plain');
 
+		// return new values for the "password view windows" on the main page
 		if(isset($_GET['id']) && isset($_GET['param']) && $_GET['id'] != "") {
 			$entry = $this->getEntry($_GET['id'], $_SESSION['sessionpassword']);
 			switch($_GET['param']) {
 				case "id":
-				echo $entry['id'];
-				break;
+					echo $entry['id'];
+					break;
 				case "title":
-				echo $entry['title'];
-				break;
+					echo $entry['title'];
+					break;
 				case "url":
-				echo $entry['url'];
-				break;
+					echo $entry['url'];
+					break;
 				case "group":
-				echo $entry['group'];
-				break;
+					echo $entry['group'];
+					break;
 				case "username":
-				echo $entry['username'];
-				break;
+					echo $entry['username'];
+					break;
 				case "password":
-				echo $entry['password'];
-				break;
+					echo $entry['password'];
+					break;
 				case "description":
-				echo $entry['description'];
-				break;
+					echo $entry['description'];
+					break;
 				case "download":
-				if($entry['file'] == null) echo "";
-				else echo 'download?id='.$entry['id'];
-				break;
+					if($entry['file'] == null) echo "";
+					else echo 'download?id='.$entry['id'];
+					break;
 				case "filename":
-				if($entry['filename'] == null) echo "";
-				else echo $entry['filename'];
-				break;
+					if($entry['filename'] == null) echo "";
+					else echo $entry['filename'];
+					break;
 			}
 			return $response->withHeader('Content-Type', 'text/plain');
 		}
@@ -688,6 +712,7 @@ class VaultController {
 		$login = $this->checkLogin($response);
 		if($login !== true) return $response->withHeader('Content-Type', 'text/plain');
 
+		// download saved file
 		if(isset($_GET['id']) && $_GET['id'] != "") {
 			$entry = $this->getEntry($_GET['id'], $_SESSION['sessionpassword']);
 			$filename = $entry['filename'];
@@ -731,58 +756,63 @@ class VaultController {
 		$login = $this->checkLogin($response);
 		if($login !== true) return $login;
 
+		// remove password entry
 		if(isset($_POST['remove'])) {
 			$this->removeEntry($_SESSION['vault'], $_POST['remove']);
 			return $response->withRedirect($this->container->router->pathFor("vault"), 303);
 		}
 
+		// add or edit password entry
 		if(isset($_POST['title']) && isset($_POST['description'])) {
 
 			if(trim($_POST['title']) == "")
 				return $this->editPassword($request, $response, [ 'info' => "Title should not be empty", 'infotype' => "red" ]);
 
-				$id = null;
-				if(isset($_POST['id']) && $_POST['id'] != "") {
-					$id = $_POST['id'];
-					if($this->checkEntryChanged($id,
-						$_POST['old_title'],
-						$_POST['old_username'],
-						$_POST['old_password'],
-						$_SESSION['sessionpassword'],
-						$_POST['old_description'],
-						$_POST['old_url'],
-						$_POST['old_group']
-					))
-					return $this->editPassword($request, $response, [ 'id' => $id, 'info' => "Entry was changed by another user", 'infotype' => "yellow" ]);
-				}
-
-				$filecontent = null;
-				$filename = null;
-				if(isset($_POST['keepfile']) && $_POST['keepfile'] == "true") {
-					$entry = $this->getEntry($id, $_SESSION['sessionpassword']);
-					$filecontent = $entry['file'];
-					$filename = $entry['filename'];
-				} elseif(isset($_FILES['file']['tmp_name']) && file_exists($_FILES['file']['tmp_name'])) {
-					$filename = urldecode($_FILES['file']['name']);
-					$handle = fopen($_FILES['file']['tmp_name'], "r");
-					$filecontent = fread($handle, filesize($_FILES['file']['tmp_name']));
-					fclose($handle);
-				}
-
-				$this->createOrUpdateEntry($id,
-					$_POST['title'],
-					$_POST['username'],
-					$_POST['password'],
+			// check if entry was modified
+			$id = null;
+			if(isset($_POST['id']) && $_POST['id'] != "") {
+				$id = $_POST['id'];
+				if($this->checkEntryChanged($id,
+					$_POST['old_title'],
+					$_POST['old_username'],
+					$_POST['old_password'],
 					$_SESSION['sessionpassword'],
-					$this->generateIV(),
-					$_POST['description'],
-					$_POST['url'],
-					$_POST['group'],
-					$filecontent,
-					$filename
-				);
+					$_POST['old_description'],
+					$_POST['old_url'],
+					$_POST['old_group']
+				))
+				return $this->editPassword($request, $response, [ 'id' => $id, 'info' => "Entry was changed by another user", 'infotype' => "yellow" ]);
+			}
 
-				return $response->withRedirect($this->container->router->pathFor("vault"), 303);
+			// decide whether to keep current file or insert new file
+			$filecontent = null;
+			$filename = null;
+			if(isset($_POST['keepfile']) && $_POST['keepfile'] == "true") {
+				$entry = $this->getEntry($id, $_SESSION['sessionpassword']);
+				$filecontent = $entry['file'];
+				$filename = $entry['filename'];
+			} elseif(isset($_FILES['file']['tmp_name']) && file_exists($_FILES['file']['tmp_name'])) {
+				$filename = urldecode($_FILES['file']['name']);
+				$handle = fopen($_FILES['file']['tmp_name'], "r");
+				$filecontent = fread($handle, filesize($_FILES['file']['tmp_name']));
+				fclose($handle);
+			}
+
+			// add or edit entry
+			$id = $this->createOrUpdateEntry($id,
+				$_POST['title'],
+				$_POST['username'],
+				$_POST['password'],
+				$_SESSION['sessionpassword'],
+				$this->generateIV(),
+				$_POST['description'],
+				$_POST['url'],
+				$_POST['group'],
+				$filecontent,
+				$filename
+			);
+
+			return $this->editPassword($request, $response, [ 'id' => $id, 'info' => 'Password entry successfully updated', 'infotype' => 'green' ]);
 
 		}
 
@@ -810,12 +840,13 @@ class VaultController {
 		$login = $this->checkLogin($response);
 		if($login !== true) return $login;
 
+		// remove group
 		if(isset($_POST['remove'])) {
 			$this->removeGroup($_SESSION['vault'], $_POST['remove']);
 			return $this->editGroup($request, $response, [ 'info' => "Successfully removed group", 'infotype' => "green" ]);
 		}
 
-		// add/edit group
+		// add or edit group
 		if(isset($_POST['title'])
 		&& isset($_POST['description'])
 		&& isset($_POST['superior_group_id'])
@@ -837,9 +868,9 @@ class VaultController {
 
 			$result = $this->createOrUpdateGroup($id, $_SESSION['vault'], $_POST['title'], $_POST['description'], $superior_group_id);
 			if($result !== false) {
-				return $this->editGroup($request, $response, [ 'info' => "Successfully created/edited group", 'infotype' => "green" ]);
+				return $this->editGroup($request, $response, [ 'info' => "Successfully updated group", 'infotype' => "green" ]);
 			} else {
-				return $this->editGroup($request, $response, [ 'info' => "Error while creating/editing group", 'infotype' => "red" ]);
+				return $this->editGroup($request, $response, [ 'info' => "Error while updating group", 'infotype' => "red" ]);
 			}
 		}
 

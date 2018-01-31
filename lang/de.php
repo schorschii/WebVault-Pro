@@ -84,11 +84,13 @@ $LANG['Change Management Password'] = "Managementpasswort ändern";
 $LANG['Entry was changed by another user'] = "Der Eintrag wurde von einem anderen Benutzer geändert";
 $LANG['Please choose another superior group'] = "Bitte wählen Sie eine andere übergeordnete Gruppe";
 $LANG['Successfully removed group'] = "Gruppe erfolgreich entfernt";
-$LANG['Successfully created/edited group'] = "Gruppe erfolgreich erstellt/bearbeitet";
+$LANG['Successfully updated group'] = "Gruppe erfolgreich aktualisiert";
+$LANG['Error while updating group'] = "Fehler beim Aktualisieren der Gruppe";
 $LANG['This will only work if the group is empty.'] = "Die Gruppe muss leer sein, um sie löschen zu können.";
 $LANG['File'] = "Datei";
 $LANG['No File'] = "Keine Datei";
 $LANG['Download'] = "Download";
 $LANG['Keep old file'] = "Bestehende Datei behalten";
+$LANG['Password entry successfully updated'] = "Passworteintrag erfolgreich aktualisiert";
 
 $LANG['You are accessing this site via HTTP. This is very insecure. Please consider using HTTPS.'] = "Sie greifen auf diese Seite via HTTP zu, dies ist sehr unsicher. Bitte denken Sie daran, HTTPS zu verwenden.";

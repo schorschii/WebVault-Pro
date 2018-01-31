@@ -157,11 +157,20 @@ function onFileChanged(fileInputObj, keepFilesInputObj) {
 		keepFilesInputObj.removeAttribute('checked');
 }
 
+function escapeHtml(unsafe) {
+	return unsafe
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;")
+		.replace(/"/g, "&quot;")
+		.replace(/'/g, "&#039;");
+}
+
 function ajaxInnerHTML(obj, url) {
 	var xhttp = new XMLHttpRequest();
 	xhttp.onreadystatechange = function() {
 		if (this.readyState == 4 && this.status == 200) {
-			obj.innerHTML = this.responseText;
+			obj.innerHTML = escapeHtml(this.responseText);
 			// empty title means session timed out, because title cannot be empty
 			if(this.responseText == "" && obj.id == "detail_title")
 				window.location.replace("login");

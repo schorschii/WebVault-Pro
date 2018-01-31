@@ -17,21 +17,31 @@ Store and view your passwords platform-independent with this PHP web application
 
 ## Setup
 ### Server
-To set up this web app you need a database (MySQL) server and a Linux-based apache webserver running PHP 7.
+To set up this web app you need a database (MySQL, MariaDB) server and a Linux-based apache webserver running PHP 7.
   1. Set the applications `public` directory as your webservers root directory (if necessary, create a virtual host for this application on your webserver).
   2. Run `composer install -o` inside the application root directory to install the dependencies.
   3. Edit `config/database.php` and enter your MySQL connection credentials.
   4. Ensure that `AllowOverride All` is set for your application directory in your apache configuration.
   5. Open `http://<ADDRESS_OF_YOUR_WEBSERVER>/setup` in a webbrowser and follow the setup.
   6. Thats it. You can now log in on the "Manage Vaults" page with the management password you haven chosen in the previous step and create a vault. After that, you can open this newly created vault and store your passwords.
+  7. (optional) You can set your preferred language as default language in `config/general.php` file.
 
-### Additional Steps (recommended)
-  - It is highly recommended to use HTTPS instead of HTTP (except you are accessing the site only via localhost)! Set up your webserver appropriate.
-  - You can set your preferred language as default language in `config/general.php` file.
+### Recommendations for Hardening Your Server
+  - It is highly recommended to use HTTPS instead of HTTP (except you are accessing the site only via localhost). Redirect all HTTP requests to HTTPS.
+  - Transfer the ownership of the application files to the web server user (www-data) and deny access for all other users.
+  - Use strong passwords for the linux root user (other users too) and mysql accounts.
+  - Ensure, that the database server only listens for requests from localhost (and not from other computers inside your network).
+  - Do not install tools like `phpmyadmin`.
+  - Disable or uninstall the SSH server.
+  - Keep your server always up to date.
+  - Use an additional apache authentication for the application directory. If you use WebPW inside a company you can use apache's ldap authentication.
+  - Limit the access to the IP addresses that really need it.
 
 ### Client
   - Chrome/Chromium, Firefox, Opera (both desktop and mobile)
   - IE/Edge not tested yet
+
+  - works without JavaScript, but then some features are disabled (search)
 
 ## License
 GNU General Public License - see LICENSE.txt

@@ -1,4 +1,4 @@
-v0.1.1
+v1.0.0
 - added apache htaccess into /public
 - new password view popup (does not open a new window, shows up in same tab)
 - use openssl_random_bytes -> updates database structure (iv is now blob)
@@ -7,6 +7,7 @@ v0.1.1
 - new: usage of illuminate/database toolkit for database access
 - new: application chooses the language automatically based on the browser language
 - new: "repeat password" field when changing the management password
+- server hardening tips in readme file
 - minor gui improvements
 
 v0.1.0

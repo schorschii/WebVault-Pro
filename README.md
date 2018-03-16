@@ -15,6 +15,12 @@ Store and view your passwords platform-independent with this PHP web application
 ![Password entries](https://raw.githubusercontent.com/schorschii/webpw/master/public/img/screenshot/2.png)
 ![View password entry](https://raw.githubusercontent.com/schorschii/webpw/master/public/img/screenshot/3.png)
 
+## Advantages over conventional password safe applications
+- There is no database file which you need to share -for example- with your co-workers - this means that nobody (except the administrator) has access to the encrypted passwords. Attackers can't copy this file and run brute force attacks against it.
+- You can safely store files with WebPW.
+- It is not necessary to install or deploy any client software.
+- You can create multiple vaults for different purposes or persons within one WebPW installation and MySQL database.
+
 ## Setup
 ### Server
 To set up this web app you need a database (MySQL, MariaDB) server and a Linux-based apache webserver running PHP 7.
@@ -26,7 +32,7 @@ To set up this web app you need a database (MySQL, MariaDB) server and a Linux-b
   6. Thats it. You can now log in on the "Manage Vaults" page with the management password you haven chosen in the previous step and create a vault. After that, you can open this newly created vault and store your passwords.
   7. (optional) You can set your preferred language as default language in `config/general.php` file.
 
-### Recommendations for Hardening Your Server
+### Recommendations for hardening your server
   - It is highly recommended to use HTTPS instead of HTTP (except you are accessing the site only via localhost). Redirect all HTTP requests to HTTPS.
   - Transfer the ownership of the application files to the web server user (www-data) and deny access for all other users.
   - Use strong passwords for the linux root user (other users too) and mysql accounts.
@@ -40,7 +46,6 @@ To set up this web app you need a database (MySQL, MariaDB) server and a Linux-b
 ### Client
   - Chrome/Chromium, Firefox, Opera (both desktop and mobile)
   - IE/Edge not tested yet
-
   - works without JavaScript, but then some features are disabled (search)
 
 ## License

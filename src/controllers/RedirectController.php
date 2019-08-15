@@ -48,7 +48,7 @@ class RedirectController {
 		return $this->container['view']->render($response, 'about.html.twig', [
 			'menu' => 'loggedout',
 			'pagetitle' => 'About',
-			'pageheader' => 'About WebPW' . ' ' . 'v0.1.1',
+			'pageheader' => 'About WebPW' . ' ' . 'v'.WEBPW_VERSION,
 			'pagesubheader' => 'web based password safe',
 			'languages' => $this->langctrl->getLanguages()
 		]);
@@ -130,9 +130,9 @@ class RedirectController {
 							$table->text('password');
 							$table->longtext('file')->nullable();
 							$table->text('filename')->nullable();
-							$table->binary('iv');
 							$table->text('description')->nullable();
 							$table->text('url')->nullable();
+							$table->binary('iv');
 							$table->timestamps();
 						}
 					);

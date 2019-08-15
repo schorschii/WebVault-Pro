@@ -60,18 +60,18 @@ class VaultController {
 		}
 		foreach($results as $row) {
 			return [
-				'id' => $row->id,
-				'group_id' => $row->group_id,
-				'group' => $row->group_title,
-				'vault_id' => $row->vault_id,
-				'title' => $row->title,
-				'username' => $row->username,
-				'password' => openssl_decrypt($row->password, $this->method, $decrypt_password, 0, $row->iv),
-				'iv' => $row->iv,
-				'description' => $row->description,
-				'url' => $row->url,
-				'file' => ($row->file != null) ? openssl_decrypt($row->file, $this->method, $decrypt_password, 0, $row->iv) : "",
-				'filename' => $row->filename
+				'id'          => $row->id,
+				'group_id'    => $row->group_id,
+				'group'       => $row->group_title,
+				'vault_id'    => $row->vault_id,
+				'title'       => $row->title,
+				'username'    => openssl_decrypt($row->username, $this->method, $decrypt_password, 0, $row->iv),
+				'password'    => openssl_decrypt($row->password, $this->method, $decrypt_password, 0, $row->iv),
+				'description' => openssl_decrypt($row->description, $this->method, $decrypt_password, 0, $row->iv),
+				'url'         => $row->url,
+				'file'        => ($row->file != null) ? openssl_decrypt($row->file, $this->method, $decrypt_password, 0, $row->iv) : "",
+				'filename'    => openssl_decrypt($row->filename, $this->method, $decrypt_password, 0, $row->iv),
+				'iv'          => $row->iv,
 			];
 		}
 	}
@@ -87,16 +87,16 @@ class VaultController {
 		$entries = [];
 		foreach($allEntries as $row) {
 			$entries[] = [
-				'id' => $row->id,
-				'group_id' => $row->group_id,
-				'vault_id' => $row->vault_id,
-				'grouptitle' => $this->getGroupTitle($row->id),
-				'title' => $row->title,
-				'username' => $row->username,
-				'password' => openssl_decrypt($row->password, $this->method, $decrypt_password, 0, $row->iv),
-				'iv' => $row->iv,
-				'description' => $row->description,
-				'url' => $row->url
+				'id'          => $row->id,
+				'group_id'    => $row->group_id,
+				'vault_id'    => $row->vault_id,
+				'grouptitle'  => $this->getGroupTitle($row->id),
+				'title'       => $row->title,
+				'username'    => openssl_decrypt($row->username, $this->method, $decrypt_password, 0, $row->iv),
+				'password'    => openssl_decrypt($row->password, $this->method, $decrypt_password, 0, $row->iv),
+				'description' => openssl_decrypt($row->description, $this->method, $decrypt_password, 0, $row->iv),
+				'url'         => $row->url,
+				'iv'          => $row->iv,
 			];
 		}
 		return $entries;
@@ -116,14 +116,14 @@ class VaultController {
 		// check if values changed
 		if($entry == null) return true;
 		return (!($entry->title == $title
-		&& $entry->username == $username
-		&& openssl_decrypt($entry->password, $this->method, $decrypt_password, 0, $entry->iv) == $password
-		&& $entry->description == $description
+		&& openssl_decrypt($entry->username, $this->method, $decrypt_password, 0, $entry->iv)    == $username
+		&& openssl_decrypt($entry->password, $this->method, $decrypt_password, 0, $entry->iv)    == $password
+		&& openssl_decrypt($entry->description, $this->method, $decrypt_password, 0, $entry->iv) == $description
 		&& $entry->url == $url
 		&& $entry->group_id == $group_id));
 	}
 
-	private function createOrUpdateEntry($id, $title, $username, $password, $encrypt_password, $iv, $description, $url, $group, $file, $filename) {
+	private function createOrUpdateEntry($id, $title, $username, $password, $description, $url, $group, $file, $filename, $encrypt_password, $iv) {
 		// add "http://" if not set by the user in order to make links work
 		if($url != "" && substr($url, 0, 7) != "http://"
 		&& substr($url, 0, 8) != "https://"
@@ -133,8 +133,7 @@ class VaultController {
 		// html <select>-option value "NULL" means no group
 		if($group == "NULL") $group = NULL;
 
-		// encrypt password and file
-		$encrypted = openssl_encrypt($password, $this->method, $encrypt_password, 0, $iv);
+		// encrypt file
 		if($file == null) $encrypted_file = null;
 		else $encrypted_file = openssl_encrypt($file, $this->method, $encrypt_password, 0, $iv);
 
@@ -143,16 +142,16 @@ class VaultController {
 			if($id == null) $entry = new PasswordEntry();
 			else $entry = PasswordEntry::find($id);
 			if($entry == null) $entry = new PasswordEntry();
-			$entry->group_id = $group;
-			$entry->vault_id = $_SESSION['vault'];
-			$entry->title = $title;
-			$entry->username = $username;
-			$entry->password = $encrypted;
-			$entry->iv = $iv;
-			$entry->description = $description;
-			$entry->url = $url;
-			$entry->file = $encrypted_file;
-			$entry->filename = $filename;
+			$entry->group_id    = $group;
+			$entry->vault_id    = $_SESSION['vault'];
+			$entry->title       = $title;
+			$entry->username    = openssl_encrypt($username, $this->method, $encrypt_password, 0, $iv); // encrypt username
+			$entry->password    = openssl_encrypt($password, $this->method, $encrypt_password, 0, $iv); // encrypt password
+			$entry->description = openssl_encrypt($description, $this->method, $encrypt_password, 0, $iv); // encrypt description
+			$entry->url         = $url;
+			$entry->file        = $encrypted_file;
+			$entry->filename    = openssl_encrypt($filename, $this->method, $encrypt_password, 0, $iv); // encrypt filename
+			$entry->iv          = $iv;
 			$entry->save();
 			return $entry->id;
 		} catch (\Exception $e) {
@@ -352,14 +351,20 @@ class VaultController {
 			Capsule::beginTransaction();
 			$updatePasswordEntries = PasswordEntry::where('vault_id', $id)->get();
 			foreach($updatePasswordEntries as $entry) {
-				$decrypted = openssl_decrypt($entry->password, $this->method, $oldpassword, 0, $entry->iv);
-				$decrypted_file = openssl_decrypt($entry->file, $this->method, $oldpassword, 0, $entry->iv);
 				$iv = $this->generateIV();
-				$encrypted = openssl_encrypt($decrypted, $this->method, $password, 0, $iv);
-				$encrypted_file = openssl_encrypt($decrypted_file, $this->method, $password, 0, $iv);
-				$entry->password = $encrypted;
-				$entry->file = $encrypted_file;
-				$entry->iv = $iv;
+
+				$decrypted_user = openssl_decrypt($entry->username, $this->method, $oldpassword, 0, $entry->iv);
+				$decrypted_pass = openssl_decrypt($entry->password, $this->method, $oldpassword, 0, $entry->iv);
+				$decrypted_desc = openssl_decrypt($entry->description, $this->method, $oldpassword, 0, $entry->iv);
+				$decrypted_file = openssl_decrypt($entry->file, $this->method, $oldpassword, 0, $entry->iv);
+				$decrypted_fnme = openssl_decrypt($entry->filename, $this->method, $oldpassword, 0, $entry->iv);
+
+				$entry->username    = openssl_encrypt($decrypted_user, $this->method, $password, 0, $iv);
+				$entry->password    = openssl_encrypt($decrypted_pass, $this->method, $password, 0, $iv);
+				$entry->description = openssl_encrypt($decrypted_desc, $this->method, $password, 0, $iv);
+				$entry->file        = openssl_encrypt($decrypted_file, $this->method, $password, 0, $iv);
+				$entry->filename    = openssl_encrypt($decrypted_fnme, $this->method, $password, 0, $iv);
+				$entry->iv          = $iv;
 				$entry->save();
 			}
 			$updateVault = Vault::find($id);
@@ -581,7 +586,7 @@ class VaultController {
 				$group_id = null;
 				if($entry['group'] != "") $group_id = $this->createGroups($_SESSION['vault'], $entry['group']);
 				$iv = $this->generateIV();
-				$this->createOrUpdateEntry(null, $entry['title'], $entry['username'], $entry['password'], $_SESSION['sessionpassword'], $iv, $entry['notes'], $entry['url'], $group_id, null, null);
+				$this->createOrUpdateEntry(null, $entry['title'], $entry['username'], $entry['password'], $entry['notes'], $entry['url'], $group_id, null, null, $_SESSION['sessionpassword'], $iv);
 			}
 			$infotype = "green";
 			$info = "Imported $counter entries";
@@ -803,13 +808,13 @@ class VaultController {
 				$_POST['title'],
 				$_POST['username'],
 				$_POST['password'],
-				$_SESSION['sessionpassword'],
-				$this->generateIV(),
 				$_POST['description'],
 				$_POST['url'],
 				$_POST['group'],
 				$filecontent,
-				$filename
+				$filename,
+				$_SESSION['sessionpassword'],
+				$this->generateIV()
 			);
 
 			return $this->editPassword($request, $response, [ 'id' => $id, 'info' => 'Password entry successfully updated', 'infotype' => 'green' ]);

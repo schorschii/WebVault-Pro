@@ -1,5 +1,8 @@
 <?php
 
+const WEBPW_VERSION = '0.2';
+
+
 // set max session length
 $session_length_seconds = 60/*s*/ * 15/*m*/;
 ini_set('session.gc_maxlifetime', $session_length_seconds); // server should keep session data

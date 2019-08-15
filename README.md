@@ -1,8 +1,8 @@
 # WebPW
-Web based password safe with multi-language, multi-user and file upload support.
+Web based password safe with multi-language, multi-user and file upload support. Usernames, passwords and files are stored encrypted in a MySQL/MariaDB database.
 
 ## About
-* © 2017 Georg Sieber - http://georg-sieber.de
+* © 2017-2019 Georg Sieber - http://georg-sieber.de
 * licensed under the terms of the GPLv2 (see LICENSE.txt)
 * using Slim Framework & Twig Template Engine
 * https://github.com/schorschii/webpw
@@ -28,7 +28,7 @@ To set up this web app you need a database (MySQL, MariaDB) server and a Linux-b
   2. Run `composer install -o` inside the application root directory to install the dependencies.
   3. Edit `config/database.php` and enter your MySQL connection credentials.
   4. Ensure that `AllowOverride All` is set for your application directory in your apache configuration.
-  5. Open `http://<ADDRESS_OF_YOUR_WEBSERVER>/setup` in a webbrowser and follow the setup.
+  5. Open a webbrowser and navigate to your WebPW installation. You will be redirected to `/setup`. Follow the instructions on the page to create the database structure.
   6. Thats it. You can now log in on the "Manage Vaults" page with the management password you haven chosen in the previous step and create a vault. After that, you can open this newly created vault and store your passwords.
   7. (optional) You can set your preferred language as default language in `config/general.php` file.
 
@@ -37,6 +37,7 @@ To set up this web app you need a database (MySQL, MariaDB) server and a Linux-b
   - Transfer the ownership of the application files to the web server user (www-data) and deny access for all other users.
   - Use strong passwords for the linux root user (other users too) and mysql accounts.
   - Ensure, that the database server only listens for requests from localhost (and not from other computers inside your network).
+  - Install `fail2ban` to limit brute force attacks.
   - Do not install tools like `phpmyadmin`.
   - Disable or uninstall the SSH server.
   - Keep your server always up to date.
@@ -47,6 +48,9 @@ To set up this web app you need a database (MySQL, MariaDB) server and a Linux-b
   - Chrome/Chromium, Firefox, Opera (both desktop and mobile)
   - IE/Edge not tested yet
   - works without JavaScript, but then some features are disabled (search)
+
+### Update notes for v0.1.1 users
+WebPW now also encrypts username, description and file name of a password record. Therefore, v0.1.1 databases are not compatible to v0.2. Please export your passwords, create a new WebPW v0.2 installation and then re-import your passwords.
 
 ## License
 GNU General Public License - see LICENSE.txt

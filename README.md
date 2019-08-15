@@ -26,7 +26,7 @@ Store and view your passwords platform-independent with this PHP web application
 To set up this web app you need a database (MySQL, MariaDB) server and a Linux-based apache webserver running PHP 7.
   1. Set the applications `public` directory as your webservers root directory (if necessary, create a virtual host for this application on your webserver).
   2. Run `composer install -o` inside the application root directory to install the dependencies.
-  3. Edit `config/database.php` and enter your MySQL connection credentials.
+  3. Create an empty database on your MySQL serevr. Then, edit `config/database.php` and enter your MySQL connection credentials.
   4. Ensure that `AllowOverride All` is set for your application directory in your apache configuration.
   5. Open a webbrowser and navigate to your WebPW installation. You will be redirected to `/setup`. Follow the instructions on the page to create the database structure.
   6. Thats it. You can now log in on the "Manage Vaults" page with the management password you haven chosen in the previous step and create a vault. After that, you can open this newly created vault and store your passwords.

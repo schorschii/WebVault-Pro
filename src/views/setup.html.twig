@@ -7,7 +7,7 @@
 		<input type="hidden" name="action" value="setup">
 		<label>{{ 'Choose a management password'|trans }}:<br>
 		<input autofocus="true" type="text" name="managementpassword" value=""></label>
-		<input type="submit" value="{{ 'Set up database'|trans }}">
+		<button class="img mainaction">{{ 'Set up database'|trans }}</button>
 		{% else %}
 		<div class="infobox">{{ 'Your installation is already established'|trans }}</div>
 		{% endif %}

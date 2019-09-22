@@ -6,7 +6,7 @@
 	{% for entry in root.entries %}
 	<li class="entry" group="{{ entry.group_id }}"><!--
 		--><div>
-			<a href='viewentry?popup=1&id={{ entry.id }}' onclick='showDetails({{ entry.id }});return false;'>{{ entry.title|e }}{% if entry.username %} <span class='username'>[{{ entry.username|e }}]</span>{% endif %}</a>
+			<a href='editentry?id={{ entry.id }}' onclick='showDetails({{ entry.id }});return false;'>{{ entry.title|e }}{% if entry.username %} <span class='username'>[{{ entry.username|e }}]</span>{% endif %}</a>
 			<div class='entrydescription'>
 				{% if entry.url %}<a target='_blank' href='{{ entry.url|e }}'>{{ entry.url|short|e }}</a>{% endif %}{% if entry.url and entry.description %} - {% endif %}{{ entry.description|short|e }}
 			</div>
@@ -49,9 +49,11 @@
 			<td>
 				<span id="detail_title" title="{{ "Title"|trans }}"></span>&nbsp;&nbsp;<span id="detail_group" title="{{ "Group"|trans }}"></span>
 			</td>
-			<td><button id="closedetails" onclick="hideDetails()" title="{{ 'Close'|trans }}">&#9932;</button></td>
+			<td>
+				<button id="closedetails" class="img" onclick="hideDetails()" title="{{ 'Close'|trans }}"><img src="img/close.svg"></button>
+			</td>
 		</table>
-		<div class="entrydetailscontent">
+		<div id="entrydetailscontent">
 		<table class="inputtable">
 			<tr>
 				<th>{{ 'URL to service'|trans }}:&nbsp;</th>
@@ -63,7 +65,7 @@
 					<div class="input withbutton">
 						<span><input type="text" id="username" name="username" class="invisible" value="" readonly="true"></span><!--
 						--><span><!--
-							--><button id="btnUsernameToClipboard" type="button" title='{{ "copy username to clipboard"|trans }}' onclick='toClipboard("username");'>&#9997;</button>
+							--><button id="btnUsernameToClipboard" class="img" type="button" title='{{ "copy username to clipboard"|trans }}' onclick='toClipboard("username");'><img src="img/clipboard.svg"></button>
 						</span>
 					</div>
 				</td>
@@ -74,8 +76,8 @@
 					<div class="input withbutton">
 						<span><input type="password" id="password" name="password" class="invisible" value="" readonly="true"></span><!--
 						--><span><!--
-							--><button id="btnPasswordShowHide" type="button" title='{{ "show or hide password"|trans }}' onclick='toggleView("password");'>&#9678;</button><!--
-							--><button id="btnPasswordToClipboard" type="button" title='{{ "copy password to clipboard"|trans }}' onclick='toClipboard("password");'>&#9997;</button>
+							--><button id="btnPasswordShowHide" class="img" type="button" title='{{ "show or hide password"|trans }}' onclick='toggleView("password");'><img src="img/view.svg"></button><!--
+							--><button id="btnPasswordToClipboard" class="img" type="button" title='{{ "copy password to clipboard"|trans }}' onclick='toClipboard("password");'><img src="img/clipboard.svg"></button>
 						</span>
 					</div>
 				</td>
@@ -99,7 +101,7 @@
 				<td colspan="100">
 					<form method="GET" action="editentry">
 						<input type="hidden" name="id" value="" id="detail_id_edit">
-						<input type="submit" class="nobold" value="&#9997;&nbsp;&nbsp;{{ 'Edit'|trans }}">
+						<button class="img"><img src="img/edit.svg"><span>&nbsp;{{ 'Edit'|trans }}</span></button>
 					</form>
 				</td>
 			</tr>
@@ -107,7 +109,7 @@
 				<td colspan="100">
 					<form method="POST" action="editentry" onsubmit="return confirm('{{ 'Are you sure?'|trans }}');">
 						<input type="hidden" name="remove" value="" id="detail_id_remove">
-						<input type="submit" class="nobold" value="&#9932;&nbsp;&nbsp;{{ 'Remove'|trans }}">
+						<button class="img"><img src="img/trash.svg"><span>&nbsp;{{ 'Remove'|trans }}</span></button>
 					</form>
 				</td>
 			</tr>

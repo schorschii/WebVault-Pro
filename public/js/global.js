@@ -2,6 +2,15 @@ function obj($id) {
 	return document.getElementById($id);
 }
 
+function generate($id) {
+	var length = 12;
+	var charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+	var generated = "";
+	for(var i = 0, n = charset.length; i < length; ++i) {
+		generated += charset.charAt(Math.floor(Math.random() * n));
+	}
+	obj($id).value = generated;
+}
 function toggleView($id) {
 	if(obj($id).type == "password") {
 		obj($id).type = "text";

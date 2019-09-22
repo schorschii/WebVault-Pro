@@ -40,7 +40,8 @@
 			<td>
 				<div class="input withbutton">
 					<span><input type="password" id="password" name="password" value="{{ entry.password }}"></span><!--
-					--><span><button type="button" title='{{ "show or hide password"|trans }}' onclick='toggleView("password");'>&#9678;</button></span>
+					--><span><button type="button" class="img" title='{{ "show or hide password"|trans }}' onclick='toggleView("password");'><img src="img/view.svg"></button></span><!--
+					--><span><button type="button" class="img" title='{{ "generate password"|trans }}' onclick='generate("password");'><img src="img/generator.svg"></button></span>
 				</div>
 			</td>
 		</tr>
@@ -59,7 +60,7 @@
 		</tr>
 		<tr>
 			<th></th>
-			<td><input type="submit" value="{{ 'Save'|trans }}"></td>
+			<td><button class="img mainaction">{{ 'Save'|trans }}</button></td>
 		</tr>
 	</table>
 </form>

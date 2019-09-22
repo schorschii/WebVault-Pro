@@ -24,28 +24,29 @@
 <div id="topmenu">
 {% if menu == "loggedin" %}
 	<span class="left">
-		<a href="editentry"><button>{{ "New Entry"|trans }}</button></a>
-		<a href="editgroup"><button>{{ "New Group"|trans }}</button></a>
-		<a href="vault?{{ groupview_param }}"><button>{{ "Show Entries"|trans }}</button></a>
+		<a href="editentry" class="img button"><img src="img/add.svg"><span>&nbsp;{{ "Entry"|trans }}</span></a><!--
+		--><a href="editgroup" class="img button"><img src="img/add.svg"><span>&nbsp;{{ "Group"|trans }}</span></a><!--
+		--><a href="vault?{{ groupview_param }}" class="img button"><img src="img/list.svg"><span>&nbsp;{{ "Show Entries"|trans }}</span></a>
 	</span>
 	<span class="center">
-	</span>
-	<span class="right">
 		{% if searchbar %}
 		<input type="text" id="searchbar" autofocus="true" oninput="search(this.value)" placeholder="{{ 'Search...'|trans }}" title="{{ 'Search...'|trans }}">
 		{% endif %}
-		<a href="vaultimport"><button>{{ "Import"|trans }}</button></a>
-		<a href="vaultexport"><button>{{ "Export"|trans }}</button></a>
-		<a href="logout"><button>{{ "Close Vault"|trans }}</button></a>
+	</span>
+	<span class="right">
+		<a href="vaultimport" class="img button"><img src="img/down.svg"><span>&nbsp;{{ "Import"|trans }}</span></a><!--
+		--><a href="vaultexport" class="img button"><img src="img/up.svg"><span>&nbsp;{{ "Export"|trans }}</span></a><!--
+		--><a href="logout" class="img button"><img src="img/close.svg"><span>&nbsp;{{ "Close Vault"|trans }}</span></a>
 	</span>
 {% elseif menu == "loggedout" %}
 	<span class="left">
-		<a href="login"><button>{{ "Open Vault"|trans }}</button></a>
-		<a href="manage"><button>{{ "Manage Vaults"|trans }}</button></a>
+		<a href="login" class="img button"><img src="img/openvault.svg"><span>&nbsp;{{ "Open Vault"|trans }}</span></a>
+		<a href="manage" class="img button"><img src="img/manage.svg"><span>&nbsp;{{ "Manage Vaults"|trans }}</span></a>
 	</span>
 	<span class="center">
 	</span>
 	<span class="right">
+		<!--
 		<form method="POST" action="setlang">
 			<select name="lang" onchange="this.form.submit()" title="{{ "change language"|trans }}">
 				{% for lang in languages %}
@@ -53,7 +54,8 @@
 				{% endfor %}
 			</select>
 		</form>
-		<a href="about"><button>{{ "About"|trans }}</button></a>
+		-->
+		<a href="about" class="img button"><img src="img/info.svg"><span>&nbsp;{{ "About"|trans }}</span></a>
 	</span>
 {% elseif menu == "popup" %}
 	<span class="center">

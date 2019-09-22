@@ -30,7 +30,7 @@
 		</tr>
 		<tr>
 			<th></th>
-			<td><input type="submit" value="{{ "Open Vault"|trans }}" {% if not vaults|length > 0 %}disabled{% endif %}></td>
+			<td><button class="img mainaction" {% if not vaults|length > 0 %}disabled{% endif %}>{{ "Open Vault"|trans }}</button></td>
 		</tr>
 	</table>
 </form>

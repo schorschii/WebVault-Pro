@@ -18,7 +18,7 @@
 		</tr>
 		<tr>
 			<th></th>
-			<td><input type="submit" value="{{ "Create"|trans }}"></td>
+			<td><button class="img mainaction">{{ "Create"|trans }}</button></td>
 		</tr>
 	</table>
 </form>
@@ -55,7 +55,7 @@
 			</tr>
 			<tr>
 				<th></th>
-				<td><input type="submit" value="{{ "Change Password"|trans }}"></td>
+				<td><button class="img mainaction">{{ "Change Password"|trans }}</button></td>
 			</tr>
 		</table>
 	</form>
@@ -77,7 +77,7 @@
 				<td>
 					<form method='POST' onsubmit='return confirm("{{ 'Remove this entry?'|trans }} {{ 'All password entries will be lost!'|trans }}")';>
 						<input type='hidden' name='remove' value='{{ vault.id }}'>
-						<input type='submit' value='{{ "Remove"|trans }}' class='remove'>
+						<button class="img mainaction remove">{{ "Remove"|trans }}</button>
 					</form>
 				</td>
 			</tr>
@@ -100,7 +100,7 @@
 		</tr>
 		<tr>
 			<td></td>
-			<td><input type="submit" value="{{ "Change Password"|trans }}"></td>
+			<td><button class="img mainaction">{{ "Change Password"|trans }}</button></td>
 		</tr>
 	</table>
 </form>
@@ -108,7 +108,7 @@
 <h2>{{ "Exit Management Session"|trans }}</h2>
 <form method="GET" action="logout">
 	<table class="inputtable">
-		<tr><td><input type="submit" value="{{ "Log Out"|trans }}"></td></tr>
+		<tr><td><button class="img mainaction">{{ "Log Out"|trans }}</button></td></tr>
 	</table>
 </form>
 {% endblock %}

@@ -817,7 +817,7 @@ class VaultController {
 				$this->generateIV()
 			);
 
-			return $this->editPassword($request, $response, [ 'id' => $id, 'info' => 'Password entry successfully updated', 'infotype' => 'green' ]);
+			//return $this->editPassword($request, $response, [ 'id' => $id, 'info' => 'Password entry successfully updated', 'infotype' => 'green' ]);
 
 		}
 

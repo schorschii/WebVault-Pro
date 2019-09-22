@@ -25,7 +25,7 @@
 		</tr>
 		<tr>
 			<th></th>
-			<td><input type="submit" value="{{ 'Save'|trans }}"></td>
+			<td><button class="img mainaction">{{ 'Save'|trans }}</button></td>
 		</tr>
 	</table>
 </form>
@@ -65,7 +65,7 @@
 		</tr>
 		<tr>
 			<th></th>
-			<td><input type="submit" value="{{ 'Save'|trans }}"></td>
+			<td><button class="img mainaction">{{ 'Save'|trans }}</button></td>
 		</tr>
 	</table>
 	<script>setGroupOldValues();</script>
@@ -88,7 +88,7 @@
 			<td>
 				<form method='POST' onsubmit='return confirm("{{ 'Remove this entry?'|trans }} {{ 'This will only work if the group is empty.'|trans }} ")'>
 					<input type='hidden' name='remove' value='{{ group.id }}'>
-					<input type='submit' value='{{ "Remove"|trans }}' class='remove'>
+					<button class="img mainaction remove">{{ "Remove"|trans }}</button>
 				</form>
 			</td>
 		</tr>

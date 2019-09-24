@@ -1,6 +1,6 @@
 <?php
 
-const WEBPW_VERSION = '0.3';
+const WEBPW_VERSION = '0.3.1';
 
 
 // set max session length

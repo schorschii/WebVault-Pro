@@ -1,3 +1,58 @@
+@font-face {
+	font-family: 'Open Sans';
+	font-weight: bold;
+	font-style: normal;
+	src: url('../font/OpenSans-Bold.ttf');
+}
+@font-face {
+	font-family: 'Open Sans';
+	font-weight: bold;
+	font-style: italic;
+	src: url('../font/OpenSans-BoldItalic.ttf');
+}
+@font-face {
+	font-family: 'Open Sans';
+	font-weight: lighter;
+	font-style: normal;
+	src: url('../font/OpenSans-Light.ttf');
+}
+@font-face {
+	font-family: 'Open Sans';
+	font-weight: lighter;
+	font-style: italic;
+	src: url('../font/OpenSans-LightItalic.ttf');
+}
+@font-face {
+	font-family: 'Open Sans';
+	font-weight: normal;
+	font-style: normal;
+	src: url('../font/OpenSans-Regular.ttf');
+}
+@font-face {
+	font-family: 'Open Sans';
+	font-weight: normal;
+	font-style: italic;
+	src: url('../font/OpenSans-RegularItalic.ttf');
+}
+@font-face {
+	font-family: 'Saira Semi Condensed';
+	font-weight: bold;
+	font-style: normal;
+	src: url('../font/SairaSemiCondensed-Bold.ttf');
+}
+@font-face {
+	font-family: 'Saira Semi Condensed';
+	font-weight: normal;
+	font-style: normal;
+	src: url('../font/SairaSemiCondensed-Regular.ttf');
+}
+@font-face {
+	font-family: 'Saira Semi Condensed';
+	font-weight: lighter;
+	font-style: normal;
+	src: url('../font/SairaSemiCondensed-Thin.ttf');
+}
+
 html {
 	font-family: 'Open Sans', sans-serif;
 	font-size: 16px;

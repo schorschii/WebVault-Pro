@@ -2,8 +2,7 @@
 Web based password safe with multi-language, multi-user and file upload support. Usernames, passwords and files are stored encrypted in a MySQL/MariaDB database.
 
 ## About
-* © 2017-2019 Georg Sieber - http://georg-sieber.de
-* licensed under the terms of the GPLv2 (see LICENSE.txt)
+* © 2017-2021 Georg Sieber, GPLv2 (see LICENSE.txt)
 * using Slim Framework & Twig Template Engine
 * https://github.com/schorschii/webpw
 
@@ -13,7 +12,6 @@ Store and view your passwords platform-independent with this PHP web application
 ## Screenshots
 ![Login page](https://raw.githubusercontent.com/schorschii/webpw/master/public/img/screenshot/1.png)
 ![Password entries](https://raw.githubusercontent.com/schorschii/webpw/master/public/img/screenshot/2.png)
-![View password entry](https://raw.githubusercontent.com/schorschii/webpw/master/public/img/screenshot/3.png)
 
 ## Advantages over conventional password safe applications
 - There is no database file which you need to share -for example- with your co-workers - this means that nobody (except the administrator) has access to the encrypted passwords. Attackers can't copy this file and run brute force attacks against it.
@@ -25,7 +23,7 @@ Store and view your passwords platform-independent with this PHP web application
 ### Server
 To set up this web app you need a database (MySQL, MariaDB) server and a Linux-based apache webserver running PHP 7.
   1. Set the applications `public` directory as your webservers root directory (if necessary, create a virtual host for this application on your webserver).
-  2. Run `composer install -o` inside the application root directory to install the dependencies.
+  2. Run `composer install` inside the application root directory to install the dependencies.
   3. Create an empty database on your MySQL server. Then, edit `config/database.php` and enter your MySQL connection credentials.
   4. Ensure that `AllowOverride All` is set for your application directory in your apache configuration.
   5. Open a webbrowser and navigate to your WebPW installation. You will be redirected to `/setup`. Follow the instructions on the page to create the database structure.

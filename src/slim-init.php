@@ -15,7 +15,7 @@ $app = new \Slim\App([
 ]);
 $container = $app->getContainer();
 $container['view'] = function ($container) {
-	$view = new \Slim\Views\Twig('../src/views', [
+	$view = new \Slim\Views\Twig(__DIR__.'/Views', [
 		#'cache' => '../cache' // enable in productive environment
 	]);
 	$langCtrl = new \WebPW\Controllers\LanguageController($container);

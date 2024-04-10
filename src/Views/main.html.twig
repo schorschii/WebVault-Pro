@@ -1,0 +1,244 @@
+{% extends "layout.html.twig" %}
+
+{% block head %}
+	<script type="text/javascript" src="js/main.js?v={{ version }}"></script>
+	<script type="text/javascript" src="js/crypto.js?v={{ version }}"></script>
+	<script type="text/javascript" src="js/window.js?v={{ version }}"></script>
+{% endblock %}
+
+{% block content %}
+<span id="preloadedImages">
+	<img src="img/minus.svg">
+</span>
+
+<div id="divLoginContainer">
+	<div id="divLogin" class="box">
+		<img id="logo" src="img/logo.png">
+		<h3 id="subtitle">{{ subtitle }}</h3>
+		<div id="divLoginInfoBox" class="infobox invisible"></div>
+		<div class="form">
+			<div class="inputwithimg">
+				<input type="text" id="txtUsername" name="username" placeholder="{{ "Username"|trans }}" autofocus="true" value="">
+			</div>
+			<div class="inputwithimg">
+				<input type="password" id="txtPassword" name="password" placeholder="{{ "Password"|trans }}" value="">
+			</div>
+			<div class="inputwithimg">
+				<input type="password" id="txtOldPassword" class="invisible" name="password" placeholder="{{ "Old Password"|trans }}" value="">
+			</div>
+			<button id="btnLogin" class="primary mainaction">
+				<span>{{ "Log In"|trans }}</span>
+				<img class="loader" src="img/loader.svg">
+			</button>
+		</div>
+	</div>
+	<div id="footer">
+		<a href="about">{{ "About"|trans }}</a>
+	</div>
+</div>
+
+<div id="divVaultContainer" class="box opaquebox fullscreen invisible">
+	<div id="divVaultTitlebar" class="titlebar">
+		<input id="txtSearch" type="text" placeholder="{{ "Search..."|trans }}">
+		<span></span>
+		<button id="btnNewPassword" title="{{ "New Entry"|trans }}"><img src="img/add.svg"></button>
+		<button id="btnNewGroup" title="{{ "New Group"|trans }}"><img src="img/folder_new.svg"></button>
+		<button id="btnUserGroups" title="{{ "User Group Management"|trans }}"><img src="img/group.svg"></button>
+		<button id="btnReload" title="{{ "Reload"|trans }}"><img id="imgReload" src="img/reload.svg"></button>
+		<button id="btnLogout" title="{{ "Log Out"|trans }}"><img src="img/logout.svg"></button>
+	</div>
+	<div id="divVault" class="box">
+		<div id="entries">
+			<ul id="ulEntriesTree">
+			</ul>
+		</div>
+	</div>
+</div>
+
+<div id="divGroupTemplateContainer" class="childWindow box opaquebox fullscreen invisible">
+	<div class="titlebar">
+		<button class="btnContents" title="{{ "Contents"|trans }}"><img src="img/list.svg"></button>
+		<button class="btnShare" title="{{ "Share"|trans }}"><img src="img/group.svg"></button>
+		<span></span>
+		<button class="btnDelete" title="{{ "Delete"|trans }}"><img src="img/trash.svg"></button>
+		<button class="btnSave" title="{{ "Save"|trans }}"><img src="img/tick.svg"></button>
+		<button class="btnClose" title="{{ "Close"|trans }}"><img src="img/close.svg"></button>
+	</div>
+	<div class="contents box">
+		<table class="inputtable">
+			<tr>
+				<th>{{ "Title"|trans }}</th>
+				<td>
+					<input type="text" name="txtTitle" value="">
+				</td>
+			</tr>
+			<tr>
+				<th>{{ "Parent Group"|trans }}</th>
+				<td>
+					<select name="sltGroup">
+						<option value="-">-</option>
+					</select>
+				</td>
+			</tr>
+		</table>
+	</div>
+	<div class="share box invisible">
+		<table class="inputtable shares">
+			<tr>
+				<th>{{ "Add User"|trans }}</th>
+				<td>
+					<select name="sltShareUser">
+					</select>
+				</td>
+				<td>
+					<button class="btnAddUserShare"><img src="img/add.svg"></button>
+				</td>
+			</tr>
+			<tr>
+				<th>{{ "Add Group"|trans }}</th>
+				<td>
+					<select name="sltShareUserGroup">
+					</select>
+				</td>
+				<td>
+					<button class="btnAddUserGroupShare"><img src="img/add.svg"></button>
+				</td>
+			</tr>
+			<tr>
+				<td colspan="3"><hr/></td>
+			</tr>
+		</table>
+	</div>
+</div>
+
+<div id="divPasswordTemplateContainer" class="childWindow box opaquebox fullscreen invisible">
+	<div class="titlebar">
+		<button class="btnContents" title="{{ "Contents"|trans }}"><img src="img/list.svg"></button>
+		<button class="btnShare" title="{{ "Share"|trans }}"><img src="img/group.svg"></button>
+		<span></span>
+		<button class="btnDelete" title="{{ "Delete"|trans }}"><img src="img/trash.svg"></button>
+		<button class="btnSave" title="{{ "Save"|trans }}"><img src="img/tick.svg"></button>
+		<button class="btnClose" title="{{ "Close"|trans }}"><img src="img/close.svg"></button>
+	</div>
+	<div class="contents box">
+		<input type="hidden" name="txtRevision">
+		<table class="inputtable">
+			<tr>
+				<th>{{ "Group"|trans }}</th>
+				<td>
+					<select name="sltGroup">
+						<option value="-">-</option>
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<th>{{ "Title"|trans }}</th>
+				<td>
+					<input type="text" name="txtTitle" autocomplete="new-password">
+				</td>
+			</tr>
+			<tr>
+				<th>{{ "Username"|trans }}</th>
+				<td>
+					<div class="with1button">
+						<input type="text" name="txtUsername" autocomplete="new-password">
+						<button class="btnCopyUsername" title="{{ "Copy to clipboard"|trans }}"><img src="img/clipboard.svg"></button>
+					</div>
+				</td>
+			</tr>
+			<tr>
+				<th>{{ "Password"|trans }}</th>
+				<td>
+					<div class="with3button">
+						<input type="password" name="txtPassword" autocomplete="new-password">
+						<button class="btnShowHidePassword" title="{{ "Show or hide password"|trans }}"><img src="img/eye.svg"></button>
+						<button class="btnGeneratePassword" title="{{ "Generate password"|trans }}"><img src="img/generator.svg"></button>
+						<button class="btnCopyPassword" title="{{ "Copy to clipboard"|trans }}"><img src="img/clipboard.svg"></button>
+					</div>
+				</td>
+			</tr>
+			<tr>
+				<th>{{ "URL"|trans }}</th>
+				<td>
+					<input type="text" name="txtUrl" autocomplete="new-password">
+				</td>
+			</tr>
+			<tr>
+				<th>{{ "Description"|trans }}</th>
+				<td>
+					<textarea name="txtDescription"></textarea>
+				</td>
+			</tr>
+		</table>
+	</div>
+	<div class="share box invisible">
+		<table class="inputtable shares">
+			<tr>
+				<th>{{ "Add User"|trans }}</th>
+				<td>
+					<select name="sltShareUser">
+					</select>
+				</td>
+				<td>
+					<button class="btnAddUserShare"><img src="img/add.svg"></button>
+				</td>
+			</tr>
+			<tr>
+				<th>{{ "Add Group"|trans }}</th>
+				<td>
+					<select name="sltShareUserGroup">
+					</select>
+				</td>
+				<td>
+					<button class="btnAddUserGroupShare"><img src="img/add.svg"></button>
+				</td>
+			</tr>
+			<tr>
+				<td colspan="3"><hr/></td>
+			</tr>
+		</table>
+	</div>
+</div>
+
+<div id="divUserGroupsContainer" class="childWindow box opaquebox fullscreen invisible">
+	<div class="titlebar">
+		<button class="btnClose" title="{{ "Close"|trans }}"><img src="img/close.svg"></button>
+	</div>
+	<div class="usergroups box">
+		<table class="inputtable groupmembers">
+			<tr>
+				<th>{{ "Add Group"|trans }}</th>
+				<td>
+					<input type="text" name="txtUserGroupTitle">
+				</td>
+				<td>
+					<button class="btnAddUserGroup"><img src="img/add.svg"></button>
+				</td>
+			</tr>
+			<tr>
+				<td colspan="3"><hr/></td>
+			</tr>
+			<tr>
+				<th>{{ "Edit Group"|trans }}</th>
+				<td>
+					<select name="sltUserGroup">
+					</select>
+				</td>
+				<td>
+					<button class="btnDeleteUserGroup"><img src="img/trash.svg"></button>
+				</td>
+			</tr>
+			<tr>
+				<th>{{ "Add User"|trans }}</th>
+				<td>
+					<select name="sltGroupUser">
+					</select>
+				</td>
+				<td>
+					<button class="btnAddGroupUser"><img src="img/add.svg"></button>
+				</td>
+			</tr>
+		</table>
+	</div>
+</div>
+{% endblock %}

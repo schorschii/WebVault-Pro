@@ -1,0 +1,30 @@
+{
+	"name": "schorschii/xvault",
+    "description": "End-to-end encrypted web based password safe with multi-language support.",
+    "version": "1.0.0",
+    "type": "application",
+    "homepage": "https://georg-sieber.de",
+    "license": "GPL-2.0",
+    "authors": [
+        {
+            "name": "Georg Sieber",
+            "homepage": "https://georg-sieber.de",
+            "role": "Maintainer, Developer"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/schorschii/xvault/issues",
+        "source": "https://github.com/schorschii/xvault"
+    },
+    "autoload": {
+        "psr-4": {
+            "XVault\\":"src/"
+        }
+    },
+    "require": {
+        "slim/slim": "^4.13",
+        "slim/twig-view": "^3.3",
+        "slim/psr7": "^1.6",
+        "php-di/php-di": "^7.0"
+    }
+}

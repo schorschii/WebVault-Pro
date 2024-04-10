@@ -1,0 +1,499 @@
+@font-face {
+	font-family: 'Open Sans';
+	font-weight: bold;
+	font-style: normal;
+	src: url('../font/OpenSans-Bold.ttf');
+}
+@font-face {
+	font-family: 'Open Sans';
+	font-weight: bold;
+	font-style: italic;
+	src: url('../font/OpenSans-BoldItalic.ttf');
+}
+@font-face {
+	font-family: 'Open Sans';
+	font-weight: lighter;
+	font-style: normal;
+	src: url('../font/OpenSans-Light.ttf');
+}
+@font-face {
+	font-family: 'Open Sans';
+	font-weight: lighter;
+	font-style: italic;
+	src: url('../font/OpenSans-LightItalic.ttf');
+}
+@font-face {
+	font-family: 'Open Sans';
+	font-weight: normal;
+	font-style: normal;
+	src: url('../font/OpenSans-Regular.ttf');
+}
+@font-face {
+	font-family: 'Open Sans';
+	font-weight: normal;
+	font-style: italic;
+	src: url('../font/OpenSans-RegularItalic.ttf');
+}
+@font-face {
+	font-family: 'Saira Semi Condensed';
+	font-weight: bold;
+	font-style: normal;
+	src: url('../font/SairaSemiCondensed-Bold.ttf');
+}
+@font-face {
+	font-family: 'Saira Semi Condensed';
+	font-weight: normal;
+	font-style: normal;
+	src: url('../font/SairaSemiCondensed-Regular.ttf');
+}
+@font-face {
+	font-family: 'Saira Semi Condensed';
+	font-weight: lighter;
+	font-style: normal;
+	src: url('../font/SairaSemiCondensed-Thin.ttf');
+}
+
+#preloadedImages {
+	width: 0px;
+	height: 0px;
+	display: inline;
+	overflow: hidden;
+}
+
+html {
+	font-family: 'Open Sans', sans-serif;
+	font-size: 16px;
+	height: 100%;
+	margin: 0px;
+	padding: 0px;
+	background-image: url('../img/bg.svg');
+	background-position: center;
+	background-size: cover;
+	background-attachment: fixed;
+}
+body {
+	text-align: center;
+	display: flex;
+	margin: 0;
+	height: 100%;
+	align-items: center;
+	justify-content: center;
+}
+h1:first-child, h2:first-child, h3:first-child, h4:first-child, h5:first-child, h6:first-child {
+	margin-top: 0px;
+}
+h1, h2, h3, h4, h5, h6 {
+	font-family: 'Saira Semi Condensed', sans-serif;
+	font-weight: 100;
+	margin-bottom: 10px;
+	text-align: center;
+}
+h1 {
+	font-size: 50px;
+}
+
+a {
+	color: navy;
+	text-decoration: none;
+}
+a:hover {
+	color: blue;
+}
+a:active {
+	opacity: 0.5;
+}
+
+button img, .button img {
+	display: block;
+	pointer-events: none;
+}
+button img.loader, .button img.loader {
+	visibility: hidden;
+	position: absolute;
+	top: calc(50% - 12px);
+	left: calc(50% - 12px);
+}
+button.loading img.loader, .button.loading img.loader {
+	visibility: visible;
+}
+button.loading span, .button.loading span {
+	visibility: hidden;
+}
+button, .button {
+	position: relative;
+	outline: none;
+	display: inline-block;
+	background-color: rgb(223,223,223);
+	background: rgb(230,230,230);
+	border-radius: 2px;
+	border-bottom: 1px solid rgb(145,145,140);
+	border-left: 1px solid rgb(182,182,179);
+	border-top: 1px solid rgb(182,182,179);
+	border-right: 1px solid rgb(182,182,179);
+	padding: 9px 18px;
+	color: black;
+	cursor: pointer;
+}
+button.primary, .button.primary {
+	background-color: #36cd9a;
+	color: white;
+}
+button.mainaction {
+	font-weight: bold;
+}
+
+#contentcontainer {
+	display: inline-block;
+	text-align: left;
+	margin-bottom: 10%;
+}
+#logo {
+	display: block;
+	margin: auto;
+	height: 140px;
+}
+#footer {
+	margin-top: 5px;
+	font-size: 90%;
+	opacity: 0.65;
+	text-align: right;
+	color: white;
+}
+#footer a {
+	color: inherit;
+}
+
+.box {
+	padding: 40px;
+	border-radius: 12px;
+	background-color: rgba(255,255,255,1);
+	box-shadow: 0px 0px 18px 0px rgba(0,0,0,0.25);
+	overflow: hidden;
+}
+.opaquebox {
+	padding: 0px;
+	background-color: rgba(255,255,255,0.75);
+	backdrop-filter: blur(4px);
+}
+.opaquebox > .box {
+	box-shadow: none;
+	overflow: auto;
+	padding: 25px;
+}
+.box.fullscreen {
+	display: flex;
+	flex-direction: column;
+	position: absolute;
+	top: 0;
+	left: 0;
+	max-width: 100%;
+	max-height: 100%;
+	min-width: 250px;
+	min-height: 200px;
+	resize: both;
+}
+.box.fullscreen > .box {
+	flex-grow: 1;
+}
+.titlebar {
+	display: flex;
+	justify-content: end;
+	padding: 1px 1px 0px 1px;
+	cursor: move;
+}
+.titlebar button,
+.titlebar input {
+	border-radius: 12px;
+	background-color: transparent;
+	box-sizing: border-box;
+}
+.titlebar input,
+.titlebar span {
+	flex-grow: 1;
+	flex-shrink: 1;
+}
+.titlebar span {
+	flex-basis: 4px;
+}
+.titlebar input {
+	margin-bottom: 2px;
+	margin-right: 25px;
+	min-width: 25px;
+	flex-basis: 1px;
+}
+.scroll {
+	overflow-y: auto;
+}
+.invisible {
+	display: none !important;
+}
+#divLogin {
+	max-width: 400px;
+}
+#divLogin > div.form > * {
+	margin-top: 10px;
+	width: 100%;
+}
+#divVaultContainer {
+	width: 60%;
+	height: 60%;
+}
+#divVault {
+	transition: opacity 0.5s ease, filter 0.5s ease;
+}
+#divVault.loading {
+	opacity: 0.5;
+	filter: blur(4px);
+	pointer-events: none;
+}
+#divAbout ul {
+	text-align: left;
+}
+
+input, select, button, textarea {
+	font-family: inherit;
+	font-size: inherit;
+	border-radius: 24px;
+	border: none;
+	padding: 9px 18px;
+	background-color: #F0F0F0;
+}
+input:focus, select:focus, button:focus, textarea:focus,
+input:active, select:active, button:active, textarea:active {
+	outline: 2px solid #007aff;
+}
+input[type=submit]:not(.nobold) {
+	font-weight: bold;
+}
+.inputtable {
+	width: 100%;
+}
+.inputtable th:not(.file) {
+	text-align: left;
+	vertical-align: middle;
+}
+.inputtable input:not([type=checkbox]):not([type=radio]),
+.inputtable select, .inputtable button, .inputtable textarea {
+	width: 100%;
+	box-sizing: border-box;
+}
+.inputtable div.input {
+	white-space: nowrap;
+}
+.inputtable div.input button {
+	width: auto;
+}
+.inputtable .with1button,
+.inputtable .with3button {
+	position: relative;
+}
+.inputtable .with1button input {
+	padding-right: 35px;
+}
+.inputtable .with3button input {
+	padding-right: 90px;
+}
+.inputtable .with1button button,
+.inputtable .with3button button {
+	position: absolute;
+	right: 4px; top: 4px;
+	width: auto;
+	padding: 4px;
+	background-color: transparent;
+}
+.inputtable .with3button button:nth-of-type(1) {
+	right: 62px;
+}
+.inputtable .with3button button:nth-of-type(2) {
+	right: 32px;
+}
+.inputtable .with1button button img,
+.inputtable .with3button button img {
+	display: block;
+}
+input.invisible, textarea.invisible, select.invisible {
+	background-color: transparent;
+	border: none;
+}
+
+.inlineblock {
+	display: inline-block;
+}
+
+#ulEntriesTree,
+#ulEntriesTree ul {
+	margin: 0px;
+	padding-left: 34px;
+	white-space: nowrap;
+}
+#ulEntriesTree {
+	padding: 0px;
+	text-align: left;
+}
+#ulEntriesTree li > div > button {
+	margin: -4px 4px 0px 4px;
+	padding: 0px;
+	background-color: transparent;
+	vertical-align: middle;
+	opacity: 0;
+	transition: opacity 0.5s ease;
+}
+#ulEntriesTree li > div:hover > button,
+#ulEntriesTree li > div > button:focus {
+	opacity: 1;
+}
+#ulEntriesTree li > div > button img {
+	height: 18px;
+}
+#ulEntriesTree li.password,
+#ulEntriesTree li.group {
+	list-style-type: none;
+	vertical-align: middle;
+	margin-bottom: 4px;
+}
+#ulEntriesTree li.password:before,
+#ulEntriesTree li.group:before {
+	display: inline-block;
+	margin-right: 10px;
+	margin-top: 6px;
+	vertical-align: middle;
+	font-size: 125%;
+}
+#ulEntriesTree li.password:before {
+	content: url('../img/key.svg');
+}
+#ulEntriesTree li.group:before {
+	content: url('../img/folder_open.svg');
+}
+#ulEntriesTree li.group.closed:before {
+	content: url('../img/folder.svg');
+}
+#ulEntriesTree li.group.closed > ul {
+	display: none;
+}
+#ulEntriesTree li.password > div {
+	display: inline-block;
+	vertical-align: middle;
+}
+#ulEntriesTree li.password > div .username {
+	margin-inline-start: 5px;
+}
+#ulEntriesTree li.group .groupheader {
+	display: inline-block;
+	vertical-align: middle;
+}
+#ulEntriesTree li.password > div .username,
+#ulEntriesTree li.password > div .entrydescription,
+#ulEntriesTree li.group .groupheader .groupdescription {
+	font-size: 80%;
+	opacity: 0.5;
+}
+#ulEntriesTree li .shares::before {
+	content: ' ';
+	display: inline-block;
+	background-image: url('../img/group.svg');
+	background-size: 18px 18px;
+	height: 18px;
+	width: 18px;
+	vertical-align: bottom;
+	margin-inline-end: 5px;
+}
+
+#httpwarn {
+	text-align: center;
+	position: fixed;
+	bottom: 10px; left: 10px; right: 10px;
+	border-radius: 2px;
+	border: 2px solid rgb(120,10,10);
+	background: rgba(120,0,0,0.8);
+	color: white;
+	padding: 10px;
+}
+#disableinfo {
+	text-align: center;
+	position: fixed;
+	bottom: 10px; left: 10px; right: 10px;
+	border-radius: 2px;
+	border: 2px solid rgb(255,255,255);
+	background: rgba(255,255,255,0.8);
+	color: black;
+	padding: 10px;
+}
+
+.infobox {
+	margin-top: 5px;
+	margin-bottom: 15px;
+	text-align: center;
+	border-radius: 2px;
+	border: 2px solid rgb(10,10,130);
+	background: rgba(10,10,130,0.8);
+	color: white;
+	padding: 10px;
+}
+.infobox.green {
+	border: 2px solid rgb(10,100,10);
+	background: rgba(10,100,10,0.8);
+}
+.infobox.yellow {
+	border: 2px solid rgb(190,190,10);
+	background: rgba(190,190,10,0.8);
+	color: black;
+}
+.infobox.red {
+	border: 2px solid rgb(120,10,10);
+	background: rgba(120,10,10,0.8);
+}
+
+@keyframes rotating {
+	from { transform: rotate(0deg); }
+	to { transform: rotate(360deg); }
+}
+.rotating {
+	animation: rotating 1s linear infinite;
+}
+
+@media (prefers-color-scheme: dark) {
+	html, body {
+		color: white;
+	}
+	a {
+		color: #007aff;
+	}
+	a:hover {
+		color: rgb(80,80,220);
+	}
+	.box {
+		background-color: rgba(25,25,25,1);
+	}
+	.opaquebox {
+		background-color: rgba(25,25,25,0.75);
+	}
+	input, select, button, textarea {
+		background-color: rgb(50,50,50);
+		color: white;
+	}
+	button.primary, .button.primary {
+		background-color: #12af6d;
+	}
+	#ulEntriesTree li.password > div .username,
+	#ulEntriesTree li.password > div .entrydescription,
+	#ulEntriesTree li.group .groupheader .groupdescription {
+		opacity: 0.6;
+	}
+}
+
+@media(max-width: 500px) {
+	html {
+		font-size: 12px;
+	}
+	input, select, button, textarea {
+		padding: 6px 12px;
+	}
+	button img {
+		height: 18px;
+	}
+	#divVaultContainer {
+		width: 80%;
+		height: 70%;
+	}
+}

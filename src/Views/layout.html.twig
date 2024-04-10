@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>{{ subtitle|default("XVault") }}{% if pagetitle %} - {{ pagetitle|trans }}{% endif %}</title>
+	<meta charset="utf-8"/>
+
+	{% block head %}{% endblock %}
+
+	<link href="css/main.css?v={{ version }}" rel="stylesheet">
+	{% if customcss %}<link href="{{ customcss }}" rel="stylesheet">{% endif %}
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimal-ui">
+
+	<link rel="icon" type="image/png" href="img/logo.png"><!-- tab & bookmarks icon -->
+	<link rel="apple-touch-icon" href="img/logo.png"><!-- home shortcut icon apple -->
+	<link rel="shortcut icon" href="img/logo.png"><!-- home shortcut icon android -->
+	<link rel="apple-touch-startup-image" href="img/logo.png"><!-- splash screen -->
+
+	<meta name="apple-mobile-web-app-status-bar-style" content="black">
+	<meta name="apple-mobile-web-app-title" content="XVault"><!-- home shortcut title apple -->
+	<meta name="apple-mobile-web-app-capable" content="yes"><!-- display web app as fullscreen apple -->
+	<meta name="mobile-web-app-capable" content="yes"><!-- display web app as fullscreen android -->
+</head>
+<body>
+
+
+{% block content %}{% endblock %}
+
+
+{% if httpwarn == true %}
+<div id='httpwarn' onclick='this.style.display="none";' style='cursor:pointer;'>
+	{{ "You are accessing this site via HTTP. This is insecure and furthermore, the crypto API of the browsers only work with HTTPS."|trans }}
+</div>
+{% endif %}
+
+</body>
+</html>

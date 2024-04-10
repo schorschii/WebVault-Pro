@@ -1,0 +1,76 @@
+<?php
+/***
+   Enter your database credentials here:
+   Don't forget to import the database schema from /sql/SCHEMA.sql.
+***/
+$settings['db'] = [
+    'driver'    => 'mysql',
+    'host'      => 'localhost',
+    'database'  => 'pwsafe',
+    'username'  => 'pwsafe',
+    'password'  => '<PASSWORD>',
+];
+
+/***
+   Configure your LDAP server here:
+   - Array Key: an integer greater that 0 which uniquely identifies a LDAP server pool
+   - `address` Server IP address or DNS name as LDAP URL, e.g. 'ldap://192.168.56.101' (single) or 'ldaps://192.168.56.101' (secure) or 'ldaps://192.168.56.101 ldaps://192.168.56.102' (multiple).
+   - `username`: The username of the LDAP reader user.
+   - `password`: The password of the LDAP reader user.
+   - `query-root`: The LDAP query root, e.g. 'OU=Benutzer,DC=sieber,DC=systems'.
+   - `queries`: Array of LDAP queries for syncing. The array values must me a valid LDAP query string.
+     - You can use any LDAP filter you like. If supported by your LDAP server, you can also resolve recursive group memberships ("group in group"), e.g. with a filter like: `(memberof:1.2.840.113556.1.4.1941:=cn=testgroup,dc=domain,dc=tld)`.
+   - `login-binddn-query`: The LDAP query to determine the login DN for LDAP authentication attempts. If you leave this empty, `(&(objectClass=user)(samaccountname=%s))` will be used for use with Active Directory. Note: AD allows LDAP bind in form `DOMAIN\username` or `username@domain.tld`, but other LDAP servers require the login via DN as username (e.g. `cn=user,dc=domain,dc=tld`). `%s` is used as placeholder for the entered username.
+   - `attribute-matching`: LDAP attribute matching. You can leave this empty if you are using Active Directory - the Active Directory attribute names will be used as default. You can adjust it if you are using an other LDAP servers like OpenLDAP, e.g.:
+     ```
+     "attribute-matching": {
+       "uid": "entryUUID", "username": "cn",
+       "first_name": "givenname", "last_name": "sn", "display_name": "displayname",
+       "email": "mail", "description": "description"
+     }
+     ```
+   - `lock-deleted-users`: Set to true if you want to lock deleted LDAP users instead of deleting them directly.
+
+   After that, start the first sync manually by executing `php bin/ldapsync.php`.  
+   Now you can log in with the synced accounts on the web frontend.
+
+   Finally, set up a cron job executing `php bin/ldapsync.php` every 30 minutes as webserver user (`www-data`).
+   ```
+   */10 *  * * *  www-data  cd /srv/www/xvault && php bin/ldapsync.php
+   ```
+***/
+$settings['ldapSync'] = [
+    1 => [
+        'address'    => 'ldap://192.168.56.110',
+        'username'   => 'administrator@sieber.systems',
+        'password'   => '<PASSWORD>',
+        'query-root' => 'OU=Benutzer,DC=sieber,DC=systems',
+        'queries'    => [
+            '(objectClass=user)'
+        ],
+        'login-binddn-query' => '(&(objectClass=user)(samaccountname=%s))',
+        'attribute-matching' => [],
+        'lock-deleted-users' => true
+    ]
+];
+
+/***
+   Misc settings:
+   - 'baseDir': you need to adjust this accordingly if your use this app in subdirectory of your webserver
+   - 'templateCache': can be false for disabling the cache or a path to a template cache directory, writeable for the webserver user
+   - 'sessionTimeout': session timeout in seconds
+   - 'displayErrorDetails': whether to display PHP errors to the user
+   - 'defaultLanguage': default language to use (2 char lang code)
+   - 'shortenText': char amount for shortening texts
+   - 'customStylesheet': optional path to a custom stylesheet to include with your corporate design
+   - 'subtitle': optional web app title (branding)
+***/
+$settings['baseDir']                = '/';
+$settings['templateCache']          = false;
+$settings['sessionTimeout']         = 60/*s*/ * 15/*m*/;
+$settings['displayErrorDetails']    = true;
+$settings['addContentLengthHeader'] = false;
+$settings['defaultLanguage']        = 'en';
+$settings['shortenText']            = 21;
+$settings['customStylesheet']       = '';
+$settings['subtitle']               = '';

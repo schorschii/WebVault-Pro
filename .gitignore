@@ -1,0 +1,6 @@
+config/settings.php
+public/css/custom.css
+vendor/*
+composer.lock
+composer.phar
+ToDo.md

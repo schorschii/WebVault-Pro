@@ -4,9 +4,9 @@ XVault is a self-hosted/on-prem web based password safe with multi-language and 
 ## Concept and Advantages
 In contrast to conventional password safes, secrets are not encrypted with one static password, but individual with a per-user generated public/private key pair. This is done having enterprise usage in mind: employees should only have access to passwords they need as defined by group memberships, and not to the entire password safe. With this, there is no need to share a common master password which needs to be changed after one employee leaves the company.
 
-LDAP authentication allows seamless integration into your companies environment. Access to the passwords can immediately be denied by disabling the LDAP user account.
+LDAP authentication allows seamless integration into your companies environment. Access to the passwords can immediately be denied by disabling the LDAP user account. A flexible share function allows you to share passwords or entire password groups with specific co-workers or groups of users (you can use XVault as private password store if you don't share entries).
 
-There is no database file which you need to share with your co-workers. Nobody except the administrator has access to the *encrypted* passwords. Attackers can't copy the user keys or encrypted passwords to run efficient brute force attacks against them.
+There is no database file which needs to be shared with all employees. Nobody except the administrator has access to the *encrypted* passwords. Attackers can't copy the user keys or encrypted passwords to run efficient brute force attacks against them.
 
 Since de-/encryption only happens on the client side, passwords are still save since even if the communication between server and client is intercepted.
 
@@ -59,4 +59,6 @@ The user account doesn't have a keypair yet. Users need to log in once before pa
 - custom entry icons
 
 ## Support
-Found a bug? Great! Please report it (preferably with a ready-to-use fix for it) on GitHub. Questions, ideas, feature requests or just (hopeful positive) feedback is also welcome.
+You need support or specific adjustments for your environment? You can hire me to extend this project to your needs. Please [contact me](https://georg-sieber.de/?page=impressum) if you are interested.
+
+Found a bug? Great! Please report it (preferably with a ready-to-use fix as pull request) on GitHub. Questions, ideas, feature requests or just (hopeful positive) feedback is also welcome.

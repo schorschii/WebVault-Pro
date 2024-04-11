@@ -360,6 +360,7 @@ input.invisible, textarea.invisible, select.invisible {
 	list-style-type: none;
 	vertical-align: middle;
 	margin-bottom: 4px;
+	cursor: pointer;
 }
 #ulEntriesTree li.password:before,
 #ulEntriesTree li.group:before {
@@ -396,17 +397,19 @@ input.invisible, textarea.invisible, select.invisible {
 #ulEntriesTree li.password > div .entrydescription,
 #ulEntriesTree li.group .groupheader .groupdescription {
 	font-size: 80%;
-	opacity: 0.5;
+	opacity: 0.35;
+}
+#ulEntriesTree li .shares {
+	margin-inline-end: 10px;
 }
 #ulEntriesTree li .shares::before {
 	content: ' ';
 	display: inline-block;
 	background-image: url('../img/group.svg');
 	background-size: 18px 18px;
-	height: 18px;
-	width: 18px;
+	height: 18px; width: 18px;
 	vertical-align: bottom;
-	margin-inline-end: 5px;
+	margin-inline-end: 4px;
 }
 
 #httpwarn {

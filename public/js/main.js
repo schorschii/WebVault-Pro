@@ -215,7 +215,7 @@ function populateVaultWindowEntries() {
 		return;
 	}
 	addGroupsHtmlOfParent(null);
-	for(var key in sessionVaultContent['passwords']) {
+	for(let key in sessionVaultContent['passwords']) {
 		let password = sessionVaultContent['passwords'][key];
 		let temporaryParentGroupId = password['group'];
 		if(password['group'] !== null && !(password['group'] in sessionVaultContent['groups'])) {
@@ -229,7 +229,7 @@ function populateVaultWindowEntries() {
 	restoreGroupState();
 }
 function addGroupsHtmlOfParent(parentGroupId) {
-	for(key in sessionVaultContent['groups']) {
+	for(let key in sessionVaultContent['groups']) {
 		let group = sessionVaultContent['groups'][key];
 		let temporaryParentGroupId = group['group'];
 		if(group['group'] !== null && !(group['group'] in sessionVaultContent['groups'])) {
@@ -245,18 +245,21 @@ function addGroupsHtmlOfParent(parentGroupId) {
 	}
 }
 function addPasswordHtml(parentUl, id, passwordItem) {
+	let openDetailsAction = function(e) {
+		showPasswordDetails(id);
+		e.preventDefault();
+		e.stopPropagation();
+	};
 	let li = document.createElement('LI');
 	li.classList.add('password');
 	li.setAttribute('passwordid', id);
+	li.addEventListener('click', openDetailsAction);
 	parentUl.appendChild(li);
 	let divCont = document.createElement('DIV');
 	li.appendChild(divCont);
 	let a = document.createElement('A');
 	a.href = '#';
-	a.addEventListener('click', function(e){
-		showPasswordDetails(id);
-		e.preventDefault();
-	});
+	a.addEventListener('click', openDetailsAction);
 	divCont.appendChild(a);
 	let spanTitle = document.createElement('SPAN');
 	spanTitle.innerText = truncate(passwordItem.title);
@@ -273,13 +276,14 @@ function addPasswordHtml(parentUl, id, passwordItem) {
 		aUrl.href = passwordItem.url;
 		aUrl.innerText = truncate(passwordItem.url);
 		aUrl.target = '_blank';
+		aUrl.addEventListener('click', (e) => e.stopPropagation());
 		divDesc.appendChild(aUrl);
 	}
 	let spanDesc = document.createElement('SPAN');
 	spanDesc.innerText = (passwordItem.url&&passwordItem.description ? ' - ' : '') + truncate(passwordItem.description.replace('\n', ' '));
 	divDesc.appendChild(spanDesc);
 	if(passwordItem['share_users'].length > 1 || passwordItem['share_groups'].length > 0) {
-		let spanShares = document.createElement('DIV');
+		let spanShares = document.createElement('SPAN');
 		spanShares.classList.add('shares');
 		spanShares.innerText = passwordItem['share_users'].length+' Benutzer, '+passwordItem['share_groups'].length+' Gruppe(n)';
 		divDesc.appendChild(spanShares);
@@ -287,9 +291,16 @@ function addPasswordHtml(parentUl, id, passwordItem) {
 }
 function addGroupHtml(parentUl, id, groupItem) {
 	let li = document.createElement('LI');
+	let openDetailsAction = function(e) {
+		li.classList.toggle('closed');
+		saveGroupState();
+		e.preventDefault();
+		e.stopPropagation();
+	};
 	li.classList.add('group');
 	li.classList.add('closed');
 	li.setAttribute('groupid', id);
+	li.addEventListener('click', openDetailsAction);
 	parentUl.appendChild(li);
 	let divCont = document.createElement('DIV');
 	divCont.classList.add('groupheader');
@@ -297,11 +308,7 @@ function addGroupHtml(parentUl, id, groupItem) {
 	let a = document.createElement('A');
 	a.href = '#';
 	a.innerText = groupItem.title;
-	a.addEventListener('click', function(e){
-		li.classList.toggle('closed');
-		saveGroupState();
-		e.preventDefault();
-	});
+	a.addEventListener('click', openDetailsAction);
 	divCont.appendChild(a);
 	let btnEdit = document.createElement('BUTTON');
 	let imgEdit = document.createElement('IMG');
@@ -309,13 +316,14 @@ function addGroupHtml(parentUl, id, groupItem) {
 	btnEdit.appendChild(imgEdit);
 	btnEdit.addEventListener('click', function(e){
 		showGroupDetails(id);
+		e.stopPropagation();
 	});
 	divCont.appendChild(btnEdit);
 	let divDesc = document.createElement('DIV');
 	divDesc.classList.add('groupdescription');
 	divCont.appendChild(divDesc);
 	if(groupItem['share_users'].length > 1 || groupItem['share_groups'].length > 0) {
-		let spanShares = document.createElement('DIV');
+		let spanShares = document.createElement('SPAN');
 		spanShares.classList.add('shares');
 		spanShares.innerText = groupItem['share_users'].length+' Benutzer, '+groupItem['share_groups'].length+' Gruppe(n)';
 		divDesc.appendChild(spanShares);
@@ -428,7 +436,7 @@ function search(q) {
 		if(passwordId) item = sessionVaultContent['passwords'][passwordId];
 		else if(groupId) item = sessionVaultContent['groups'][groupId];
 		// iterate over all fields and check if contents match the search query
-		for(key in item) {
+		for(let key in item) {
 			if(!item[key] || typeof item[key] !== 'string') continue;
 			match = (item[key].toUpperCase().indexOf(filter) > -1);
 			if(match) break;
@@ -490,7 +498,7 @@ function showUserGroupManagement() {
 	let tblGroupMembers = divUserGroupsContainer.querySelectorAll('.groupmembers')[0];
 	// populate select boxes
 	sltGroupUser.innerHTML = '';
-	for(userId in sessionEnvironment['users']) {
+	for(let userId in sessionEnvironment['users']) {
 		let option = document.createElement('OPTION');
 		option.value = userId;
 		option.innerText = sessionEnvironment['users'][userId]['display_name'];
@@ -499,7 +507,7 @@ function showUserGroupManagement() {
 	}
 	let populateGroupOptions = function() {
 		sltUserGroup.innerHTML = '<option disabled selected></option>';
-		for(id in sessionEnvironment['groups']) {
+		for(let id in sessionEnvironment['groups']) {
 			let option = document.createElement('OPTION');
 			option.value = id;
 			option.innerText = sessionEnvironment['groups'][id]['title'];
@@ -609,14 +617,14 @@ function showGroupDetails(id=null) {
 	let tblShares = clone.querySelectorAll('.shares')[0];
 	// populate select boxes
 	populateGroupSelectBox(sltGroup);
-	for(userId in sessionEnvironment['users']) {
+	for(let userId in sessionEnvironment['users']) {
 		let option = document.createElement('OPTION');
 		option.value = userId;
 		option.innerText = sessionEnvironment['users'][userId]['display_name'];
 		if(!sessionEnvironment['users'][userId]['public_key']) option.disabled = true;
 		sltShareUser.appendChild(option);
 	}
-	for(userGroupId in sessionEnvironment['groups']) {
+	for(let userGroupId in sessionEnvironment['groups']) {
 		let option = document.createElement('OPTION');
 		option.value = userGroupId;
 		option.innerText = sessionEnvironment['groups'][userGroupId]['title'];
@@ -799,14 +807,14 @@ function showPasswordDetails(id=null) {
 	let tblShares = clone.querySelectorAll('.shares')[0];
 	// populate select boxes
 	populateGroupSelectBox(sltGroup);
-	for(userId in sessionEnvironment['users']) {
+	for(let userId in sessionEnvironment['users']) {
 		let option = document.createElement('OPTION');
 		option.value = userId;
 		option.innerText = sessionEnvironment['users'][userId]['display_name'];
 		if(!sessionEnvironment['users'][userId]['public_key']) option.disabled = true;
 		sltShareUser.appendChild(option);
 	}
-	for(userGroupId in sessionEnvironment['groups']) {
+	for(let userGroupId in sessionEnvironment['groups']) {
 		let option = document.createElement('OPTION');
 		option.value = userGroupId;
 		option.innerText = sessionEnvironment['groups'][userGroupId]['title'];
@@ -928,7 +936,7 @@ function showPasswordDetails(id=null) {
 		// encrypt to all target keys
 		let encrypted = {};
 		let promiseChain = [];
-		for(userId in targetPublicKeys) {
+		for(let userId in targetPublicKeys) {
 			promiseChain.push(
 				importPublicKey(targetPublicKeys[userId], userId)
 				.then((result) => {
@@ -980,12 +988,12 @@ function showPasswordDetails(id=null) {
 function getAllSubentriesOfGroup(groupId) {
 	let subPasswords = {};
 	let subGroups = {};
-	for(key in sessionVaultContent['passwords']) {
+	for(let key in sessionVaultContent['passwords']) {
 		if(sessionVaultContent['passwords'][key]['group'] == groupId) {
 			subPasswords[key] = sessionVaultContent['passwords'][key];
 		}
 	}
-	for(key in sessionVaultContent['groups']) {
+	for(let key in sessionVaultContent['groups']) {
 		if(sessionVaultContent['groups'][key]['group'] == groupId) {
 			subGroups[key] = sessionVaultContent['groups'][key];
 			let subs = getAllSubentriesOfGroup(key);
@@ -996,7 +1004,7 @@ function getAllSubentriesOfGroup(groupId) {
 	return {'passwords':subPasswords, 'groups':subGroups};
 }
 function populateGroupSelectBox(sltGroup, groupId, depth=0) {
-	for(key in sessionVaultContent['groups']) {
+	for(let key in sessionVaultContent['groups']) {
 		if(sessionVaultContent['groups'][key]['group'] == groupId) {
 			let option = document.createElement('OPTION');
 			option.value = key;

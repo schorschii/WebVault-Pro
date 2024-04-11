@@ -34,9 +34,9 @@ $settings['db'] = [
    After that, start the first sync manually by executing `php bin/ldapsync.php`.  
    Now you can log in with the synced accounts on the web frontend.
 
-   Finally, set up a cron job executing `php bin/ldapsync.php` every 30 minutes as webserver user (`www-data`).
+   Finally, set up a cron job executing `php bin/ldapsync.php` every hour as webserver user (`www-data`).
    ```
-   */10 *  * * *  www-data  cd /srv/www/xvault && php bin/ldapsync.php
+   0 *  * * *  www-data  cd /srv/www/xvault && php bin/ldapsync.php
    ```
 ***/
 $settings['ldapSync'] = [

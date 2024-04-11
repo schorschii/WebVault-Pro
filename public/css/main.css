@@ -137,9 +137,11 @@ button, .button {
 button.primary, .button.primary {
 	background-color: #36cd9a;
 	color: white;
-}
-button.mainaction {
 	font-weight: bold;
+}
+button[disabled], .button.disabled {
+	background-color: rgb(240,240,240) !important;
+	color: rgb(80,80,80) !important;
 }
 
 #contentcontainer {
@@ -256,11 +258,15 @@ input, select, button, textarea {
 	border-radius: 24px;
 	border: none;
 	padding: 9px 18px;
-	background-color: #F0F0F0;
+	background-color: rgb(240,240,240);
 }
 input:focus, select:focus, button:focus, textarea:focus,
 input:active, select:active, button:active, textarea:active {
 	outline: 2px solid #007aff;
+}
+input[disabled], select[disabled], button[disabled], textarea[disabled] {
+	cursor: not-allowed;
+	outline: none;
 }
 input[type=submit]:not(.nobold) {
 	font-weight: bold;
@@ -323,11 +329,15 @@ input.invisible, textarea.invisible, select.invisible {
 #ulEntriesTree,
 #ulEntriesTree ul {
 	margin: 0px;
-	padding-left: 34px;
+	padding-left: 22px;
+	margin-left: 10px;
+	border-left: 2px dotted rgba(160,160,160,0.4);
 	white-space: nowrap;
 }
 #ulEntriesTree {
 	padding: 0px;
+	margin: 0px;
+	border-left: none;
 	text-align: left;
 }
 #ulEntriesTree li > div > button {
@@ -409,16 +419,6 @@ input.invisible, textarea.invisible, select.invisible {
 	color: white;
 	padding: 10px;
 }
-#disableinfo {
-	text-align: center;
-	position: fixed;
-	bottom: 10px; left: 10px; right: 10px;
-	border-radius: 2px;
-	border: 2px solid rgb(255,255,255);
-	background: rgba(255,255,255,0.8);
-	color: black;
-	padding: 10px;
-}
 
 .infobox {
 	margin-top: 5px;
@@ -474,6 +474,10 @@ input.invisible, textarea.invisible, select.invisible {
 	}
 	button.primary, .button.primary {
 		background-color: #12af6d;
+	}
+	button[disabled], .button.disabled {
+		background-color: rgb(50,50,50) !important;
+		color: rgb(180,180,180) !important;
 	}
 	#ulEntriesTree li.password > div .username,
 	#ulEntriesTree li.password > div .entrydescription,

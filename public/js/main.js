@@ -72,7 +72,9 @@ function login() {
 	if(txtOldPassword.value !== '') {
 		oldPassword = txtOldPassword.value;
 	}
+
 	btnLogin.classList.add('loading');
+	btnLogin.disabled = true;
 	jsonRequest(
 		'POST', 'user/login',
 		{'username':username, 'password':password}
@@ -138,6 +140,7 @@ function login() {
 		txtPassword.value = '';
 		txtOldPassword.value = '';
 		btnLogin.classList.remove('loading');
+		btnLogin.disabled = false;
 		if(!(error instanceof PrivateKeyDecryptionError)) {
 			infobox(divLoginInfoBox, 'red', 'Anmeldung fehlgeschlagen');
 			divLoginInfoBox.classList.remove('invisible');

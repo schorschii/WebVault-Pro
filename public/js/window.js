@@ -69,6 +69,7 @@ function loginToVaultAnimation() {
 	);
 	animation.onfinish = (event) => {
 		btnLogin.classList.remove('loading');
+		btnLogin.disabled = false;
 		divLoginContainer.classList.add('invisible');
 		divVaultContainer.classList.remove('invisible');
 		divVaultContainer.style.top = ((window.innerHeight / 2) - (divVaultContainer.clientHeight / 2) - 20)+'px';

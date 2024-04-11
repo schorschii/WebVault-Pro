@@ -65,7 +65,7 @@ $settings['ldapSync'] = [
    - 'customStylesheet': optional path to a custom stylesheet to include with your corporate design
    - 'subtitle': optional web app title (branding)
 ***/
-$settings['baseDir']                = '/';
+$settings['baseDir']                = '';
 $settings['templateCache']          = false;
 $settings['sessionTimeout']         = 60/*s*/ * 15/*m*/;
 $settings['displayErrorDetails']    = true;

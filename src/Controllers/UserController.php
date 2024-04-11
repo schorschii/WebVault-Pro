@@ -89,7 +89,7 @@ class UserController {
 				// once a keypair was generated, it is not allowed to change it
 				// since the server can't re-encrypt the secrets to a new key
 				// it is only allowed to update the own private key with a new passphrase
-				$pub_key = $user->pubKey;
+				$pub_key = $user->public_key;
 			}
 			$this->db->updateUserKeys($_SESSION['user_id'],
 				$pub_key, $json['private_key'], $json['salt'], $json['iv']

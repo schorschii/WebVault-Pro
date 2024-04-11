@@ -143,7 +143,7 @@ function exportPublicKey(keys) {
 	})
 }
 function exportPrivateKey(keys, passphrase=null) {
-	return new Promise(function(resolve) {
+	return new Promise(function(resolve, reject) {
 		if(passphrase) {
 			var saltb64, ivb64;
 			const enc = new TextEncoder();
@@ -157,7 +157,7 @@ function exportPrivateKey(keys, passphrase=null) {
 				let salt = getRandomCryptoValues(16);
 				saltb64 = arrayBufferToBase64String(salt);
 				return window.crypto.subtle.deriveKey(
-					{ name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
+					{ name: 'PBKDF2', salt: salt, iterations: 100000, hash: 'SHA-256' },
 					keyMaterial,
 					{ name: 'AES-GCM', length: 256 },
 					true,
@@ -190,13 +190,13 @@ function exportPemKeys(keys, passphrase=null) {
 		exportPublicKey(keys.publicKey).then(function(pubKey) {
 			exportPrivateKey(keys.privateKey, passphrase).then(function(privKey) {
 				resolve({publicKey:pubKey, privateKey:privKey.key, salt:privKey.salt, iv:privKey.iv})
-			})
-		})
-	})
+			});
+		});
+	});
 }
 
 function getRandomCryptoValues(length) {
-	window.crypto.getRandomValues(new Uint8Array(length))
+	return window.crypto.getRandomValues(new Uint8Array(length));
 }
 
 function generateKey(alg, scope) {

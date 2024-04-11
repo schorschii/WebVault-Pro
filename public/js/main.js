@@ -96,7 +96,7 @@ function login() {
 						promiseChain = exportPrivateKey(key, password)
 							.then((exportedPrivKey) => jsonRequest(
 								'POST', 'user/keys',
-								{'private_key':exportedPrivKey.privateKey, 'salt':exportedPrivKey.salt, 'iv':exportedPrivKey.iv}
+								{'private_key':exportedPrivKey.key, 'salt':exportedPrivKey.salt, 'iv':exportedPrivKey.iv}
 							));
 					}
 					return promiseChain.then(() => loadVault(key))
@@ -122,8 +122,7 @@ function login() {
 						{'public_key':keys.publicKey, 'private_key':keys.privateKey, 'salt':keys.salt, 'iv':keys.iv}
 					);
 				})
-				.then(() => loadVault(_keys.privateKey))
-				.then(() => loginToVaultAnimation());
+				.then(() => login());
 		}
 	}).then(() => {
 		txtUsername.value = '';
@@ -131,6 +130,8 @@ function login() {
 		txtOldPassword.value = '';
 		txtOldPassword.classList.add('invisible');
 		divLoginInfoBox.classList.add('invisible');
+
+		clearInterval(sessionCheckTimer);
 		sessionCheckTimer = setInterval(checkSession, 5000);
 	}).catch((error) => {
 		console.error(error);

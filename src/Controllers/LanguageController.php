@@ -3,53 +3,50 @@ namespace XVault\Controllers;
 
 class LanguageController {
 
+	const BASE_LANG = 'en';
+
 	const LANG_DIR = __DIR__.'/../Lang';
 
-	private $container = null;
-
-	public function __construct($container) {
-		$this->container = $container;
-	}
-
-
-	private $languageMap = [
+	const LANG_MAP = [
 		'en' => 'English',
 		'de' => 'Deutsch'
 	];
 
-	public function getLanguages($preselectLanguage = true) {
-		if($preselectLanguage) $preselectLanguageName = $this->getCurrentLanguage();
-		$languages = [];
-		foreach(scandir(self::LANG_DIR) as $file) {
-			if(substr($file, 0, 1) == '.') continue;
-			$isCurrentLanguage = ($preselectLanguage && basename($file, '.php') == $preselectLanguageName);
-			$langTitle = basename($file, '.php');
-			if(isset($this->languageMap[$langTitle])) $langTitle = $this->languageMap[$langTitle];
-			$languages[] = [ 'title' => $langTitle, 'filename' => basename($file, '.php'), 'selected' => $isCurrentLanguage ];
+	private $langCode;
+	private $translations;
+
+	function __construct() {
+		$this->langCode = $this->getCurrentLangCode();
+		$this->translations = require(self::LANG_DIR.'/'.self::BASE_LANG.'.php');
+		if($this->langCode && array_key_exists($this->langCode, self::LANG_MAP)) {
+			$preferenceTranslations = require(self::LANG_DIR.'/'.$this->langCode.'.php');
+			$this->translations = array_merge($this->translations, $preferenceTranslations);
 		}
-		return $languages;
 	}
 
-	private function existsLanguage($language, $validLanguages) {
-		foreach($validLanguages as $validLanguage) {
-			if($validLanguage['filename'] == $language)
-				return true;
-		}
-		return false;
+	public function translate($string) {
+		// return translation if exists
+		if(isset($this->translations[$string]))
+			return $this->translations[$string];
+		else
+			return $string;
 	}
 
-	public function getCurrentLanguage() {
-		$validLanguages = $this->getLanguages(false);
+	public function getTranslations() {
+		return $this->translations;
+	}
+
+	private function getCurrentLangCode() {
 		$browserLanguage = substr($_SERVER['HTTP_ACCEPT_LANGUAGE'], 0, 2);
-		if(isset($_SESSION['lang']) && $this->existsLanguage($_SESSION['lang'], $validLanguages)) {
+		if(isset($_SESSION['lang']) && array_key_exists($_SESSION['lang'], self::LANG_MAP)) {
 			// user preference
 			return $_SESSION['lang'];
-		} elseif($this->existsLanguage($browserLanguage, $validLanguages)) {
+		} elseif(array_key_exists($browserLanguage, self::LANG_MAP)) {
 			// browser language
 			return $browserLanguage;
 		} else {
-			// take default language from config file
-			return $this->container->get('settings')['defaultLanguage'];
+			// default language
+			return self::BASE_LANG;
 		}
 	}
 

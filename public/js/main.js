@@ -104,7 +104,7 @@ function login() {
 					return promiseChain.then(() => loadVault(key))
 					.then(() => loginToVaultAnimation());
 				}).catch((error) => {
-					infobox(divLoginInfoBox, 'yellow', 'Ihr privater Schlüssel konnte nicht entschlüsselt werden. Wenn Sie Ihr Passwort geändert haben, geben Sie bitte zusätzlich Ihr altes Passwort an. Der Schlüssel wird dann mit Ihrem aktuellen Kennwort neu verschlüsselt.');
+					infobox(divLoginInfoBox, 'yellow', strings.private_key_decryption_error);
 					divLoginInfoBox.classList.remove('invisible');
 					txtOldPassword.classList.remove('invisible');
 					throw new PrivateKeyDecryptionError('Unable to decrypt private key: '+error); // trigger the outer error handler
@@ -142,7 +142,7 @@ function login() {
 		btnLogin.classList.remove('loading');
 		btnLogin.disabled = false;
 		if(!(error instanceof PrivateKeyDecryptionError)) {
-			infobox(divLoginInfoBox, 'red', 'Anmeldung fehlgeschlagen');
+			infobox(divLoginInfoBox, 'red', strings.login_failed);
 			divLoginInfoBox.classList.remove('invisible');
 		}
 	});
@@ -211,7 +211,7 @@ function populateVaultWindowEntries() {
 	ulEntriesTree.innerHTML = '';
 	if(!Object.keys(sessionVaultContent['passwords']).length
 	&& !Object.keys(sessionVaultContent['groups']).length) {
-		ulEntriesTree.innerHTML = 'Hier könnte Ihr Passwort stehen!';
+		ulEntriesTree.innerHTML = strings.empty_vault_placeholder;
 		return;
 	}
 	addGroupsHtmlOfParent(null);
@@ -640,7 +640,7 @@ function showGroupDetails(id=null) {
 		sltGroup.value = group['group'];
 		txtTitle.value = group['title'];
 		clone.querySelectorAll('.btnDelete')[0].addEventListener('click', function(e){
-			if(confirm('Sind Sie sicher?')) { // todo: i18n
+			if(confirm(strings.are_you_sure)) {
 				jsonRequest(
 					'DELETE', 'vault/group/'+encodeURIComponent(id), null
 				).then((response) => {
@@ -835,7 +835,7 @@ function showPasswordDetails(id=null) {
 		txtUrl.value = password['url'];
 		txtDescription.value = password['description'];
 		clone.querySelectorAll('.btnDelete')[0].addEventListener('click', function(e){
-			if(confirm('Sind Sie sicher?')) { // todo: i18n
+			if(confirm(strings.are_you_sure)) {
 				jsonRequest(
 					'DELETE', 'vault/password/'+encodeURIComponent(id), null
 				).then((response) => {

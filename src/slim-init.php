@@ -1,6 +1,6 @@
 <?php
 
-const XVAULT_VERSION = '1.0.0-RC1';
+const APP_VERSION = '1.0.0-RC1';
 
 
 // init session
@@ -31,9 +31,8 @@ $containerBuilder->addDefinitions([
 		$view = \Slim\Views\Twig::create(__DIR__.'/Views', [
 			'cache' => $settings['templateCache']
 		]);
-		$langCtrl = new XVault\Controllers\LanguageController($container);
-		$lang = $langCtrl->getCurrentLanguage();
-		$view->addExtension(new XVault\Twig_Extensions\TranslateFilterExtension($lang));
+		$langCtrl = new XVault\Controllers\LanguageController();
+		$view->addExtension(new XVault\Twig_Extensions\TranslateFilterExtension($langCtrl));
 		$view->addExtension(new XVault\Twig_Extensions\ShortFilterExtension($settings['shortenText']));
 		return $view;
 	},

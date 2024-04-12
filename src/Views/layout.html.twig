@@ -28,7 +28,7 @@
 
 {% if httpwarn == true %}
 <div id='httpwarn' onclick='this.style.display="none";' style='cursor:pointer;'>
-	{{ "You are accessing this site via HTTP. This is insecure and furthermore, the crypto API of the browsers only work with HTTPS."|trans }}
+	{{ "httpwarn"|trans }}
 </div>
 {% endif %}
 

@@ -1,0 +1,5 @@
+var strings = {
+	{% for key, value in strings %}
+	"{{ key }}": "{{ value }}",
+	{% endfor %}
+};

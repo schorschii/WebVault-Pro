@@ -25,18 +25,22 @@ class VaultController {
 	/*** HTML Page Rendering ***/
 	public function mainPage(Request $request, Response $response, $args) {
 		return $this->container->get('view')->render($response, 'main.html.twig', [
-			'version' => 'v'.XVAULT_VERSION,
+			'version' => 'v'.APP_VERSION,
 			'customcss' => $this->container->get('settings')['customStylesheet'] ?? '',
 			'subtitle' => $this->container->get('settings')['subtitle'] ?? '',
 			'httpwarn' => (!isset($_SERVER['HTTPS'])),
-			'languages' => $this->langctrl->getLanguages(),
 		]);
 	}
 	public function aboutPage(Request $request, Response $response, $args) {
 		return $this->container->get('view')->render($response, 'about.html.twig', [
-			'version' => 'v'.XVAULT_VERSION,
+			'version' => 'v'.APP_VERSION,
 			'customcss' => $this->container->get('settings')['customStylesheet'] ?? '',
-			'languages' => $this->langctrl->getLanguages()
+		]);
+	}
+	public function jsStrings(Request $request, Response $response, $args) {
+		$langCtrl = new LanguageController();
+		return $this->container->get('view')->render($response, 'strings.js.twig', [
+			'strings' => $langCtrl->getTranslations(),
 		]);
 	}
 

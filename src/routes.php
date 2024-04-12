@@ -11,8 +11,8 @@ $app->get('/', XVault\Controllers\VaultController::class.':mainPage')
 	->setName('main');
 $app->get('/about', XVault\Controllers\VaultController::class.':aboutPage')
 	->setName('about');
-$app->get('/license', XVault\Controllers\VaultController::class.':licensePage')
-	->setName('licensetext');
+$app->get('/js/strings.js', XVault\Controllers\VaultController::class.':jsStrings')
+	->setName('strings');
 
 // JSON API requests
 $app->post('/user/login', XVault\Controllers\UserController::class.':login')

@@ -4,6 +4,7 @@
 	<script type="text/javascript" src="js/main.js?v={{ version }}"></script>
 	<script type="text/javascript" src="js/crypto.js?v={{ version }}"></script>
 	<script type="text/javascript" src="js/window.js?v={{ version }}"></script>
+	<script type="text/javascript" src="js/strings.js?v={{ version }}"></script>
 {% endblock %}
 
 {% block content %}
@@ -18,34 +19,34 @@
 		<div id="divLoginInfoBox" class="infobox invisible"></div>
 		<div class="form">
 			<div class="inputwithimg">
-				<input type="text" id="txtUsername" name="username" placeholder="{{ "Username"|trans }}" autofocus="true" value="">
+				<input type="text" id="txtUsername" name="username" placeholder="{{ "username"|trans }}" autofocus="true" value="">
 			</div>
 			<div class="inputwithimg">
-				<input type="password" id="txtPassword" name="password" placeholder="{{ "Password"|trans }}" value="">
+				<input type="password" id="txtPassword" name="password" placeholder="{{ "password"|trans }}" value="">
 			</div>
 			<div class="inputwithimg">
-				<input type="password" id="txtOldPassword" class="invisible" name="password" placeholder="{{ "Old Password"|trans }}" value="">
+				<input type="password" id="txtOldPassword" class="invisible" name="password" placeholder="{{ "old_password"|trans }}" value="">
 			</div>
 			<button id="btnLogin" class="primary">
-				<span>{{ "Log In"|trans }}</span>
+				<span>{{ "log_in"|trans }}</span>
 				<img class="loader" src="img/loader.svg">
 			</button>
 		</div>
 	</div>
 	<div id="footer">
-		<a href="about">{{ "About"|trans }}</a>
+		<a href="about">{{ "about"|trans }}</a>
 	</div>
 </div>
 
 <div id="divVaultContainer" class="box opaquebox fullscreen invisible">
 	<div id="divVaultTitlebar" class="titlebar">
-		<input id="txtSearch" type="text" placeholder="{{ "Search..."|trans }}">
+		<input id="txtSearch" type="text" placeholder="{{ "search..."|trans }}">
 		<span></span>
-		<button id="btnNewPassword" title="{{ "New Entry"|trans }}"><img src="img/add.svg"></button>
-		<button id="btnNewGroup" title="{{ "New Group"|trans }}"><img src="img/folder_new.svg"></button>
-		<button id="btnUserGroups" title="{{ "User Group Management"|trans }}"><img src="img/group.svg"></button>
-		<button id="btnReload" title="{{ "Reload"|trans }}"><img id="imgReload" src="img/reload.svg"></button>
-		<button id="btnLogout" title="{{ "Log Out"|trans }}"><img src="img/logout.svg"></button>
+		<button id="btnNewPassword" title="{{ "new_entry"|trans }}"><img src="img/add.svg"></button>
+		<button id="btnNewGroup" title="{{ "new_group"|trans }}"><img src="img/folder_new.svg"></button>
+		<button id="btnUserGroups" title="{{ "user_group_management"|trans }}"><img src="img/group.svg"></button>
+		<button id="btnReload" title="{{ "reload"|trans }}"><img id="imgReload" src="img/reload.svg"></button>
+		<button id="btnLogout" title="{{ "log_out"|trans }}"><img src="img/logout.svg"></button>
 	</div>
 	<div id="divVault" class="box">
 		<div id="entries">
@@ -57,23 +58,23 @@
 
 <div id="divGroupTemplateContainer" class="childWindow box opaquebox fullscreen invisible">
 	<div class="titlebar">
-		<button class="btnContents" title="{{ "Contents"|trans }}"><img src="img/list.svg"></button>
-		<button class="btnShare" title="{{ "Share"|trans }}"><img src="img/group.svg"></button>
+		<button class="btnContents" title="{{ "contents"|trans }}"><img src="img/list.svg"></button>
+		<button class="btnShare" title="{{ "share"|trans }}"><img src="img/group.svg"></button>
 		<span></span>
-		<button class="btnDelete" title="{{ "Delete"|trans }}"><img src="img/trash.svg"></button>
-		<button class="btnSave" title="{{ "Save"|trans }}"><img src="img/tick.svg"></button>
-		<button class="btnClose" title="{{ "Close"|trans }}"><img src="img/close.svg"></button>
+		<button class="btnDelete" title="{{ "delete"|trans }}"><img src="img/trash.svg"></button>
+		<button class="btnSave" title="{{ "save"|trans }}"><img src="img/tick.svg"></button>
+		<button class="btnClose" title="{{ "close"|trans }}"><img src="img/close.svg"></button>
 	</div>
 	<div class="contents box">
 		<table class="inputtable">
 			<tr>
-				<th>{{ "Title"|trans }}</th>
+				<th>{{ "title"|trans }}</th>
 				<td>
 					<input type="text" name="txtTitle" value="">
 				</td>
 			</tr>
 			<tr>
-				<th>{{ "Parent Group"|trans }}</th>
+				<th>{{ "parent_group"|trans }}</th>
 				<td>
 					<select name="sltGroup">
 						<option value="-">-</option>
@@ -85,7 +86,7 @@
 	<div class="share box invisible">
 		<table class="inputtable shares">
 			<tr>
-				<th>{{ "Add User"|trans }}</th>
+				<th>{{ "add_user"|trans }}</th>
 				<td>
 					<select name="sltShareUser">
 					</select>
@@ -95,7 +96,7 @@
 				</td>
 			</tr>
 			<tr>
-				<th>{{ "Add Group"|trans }}</th>
+				<th>{{ "add_group"|trans }}</th>
 				<td>
 					<select name="sltShareUserGroup">
 					</select>
@@ -113,18 +114,18 @@
 
 <div id="divPasswordTemplateContainer" class="childWindow box opaquebox fullscreen invisible">
 	<div class="titlebar">
-		<button class="btnContents" title="{{ "Contents"|trans }}"><img src="img/list.svg"></button>
-		<button class="btnShare" title="{{ "Share"|trans }}"><img src="img/group.svg"></button>
+		<button class="btnContents" title="{{ "contents"|trans }}"><img src="img/list.svg"></button>
+		<button class="btnShare" title="{{ "share"|trans }}"><img src="img/group.svg"></button>
 		<span></span>
-		<button class="btnDelete" title="{{ "Delete"|trans }}"><img src="img/trash.svg"></button>
-		<button class="btnSave" title="{{ "Save"|trans }}"><img src="img/tick.svg"></button>
-		<button class="btnClose" title="{{ "Close"|trans }}"><img src="img/close.svg"></button>
+		<button class="btnDelete" title="{{ "delete"|trans }}"><img src="img/trash.svg"></button>
+		<button class="btnSave" title="{{ "save"|trans }}"><img src="img/tick.svg"></button>
+		<button class="btnClose" title="{{ "close"|trans }}"><img src="img/close.svg"></button>
 	</div>
 	<div class="contents box">
 		<input type="hidden" name="txtRevision">
 		<table class="inputtable">
 			<tr>
-				<th>{{ "Group"|trans }}</th>
+				<th>{{ "group"|trans }}</th>
 				<td>
 					<select name="sltGroup">
 						<option value="-">-</option>
@@ -132,39 +133,39 @@
 				</td>
 			</tr>
 			<tr>
-				<th>{{ "Title"|trans }}</th>
+				<th>{{ "title"|trans }}</th>
 				<td>
 					<input type="text" name="txtTitle" autocomplete="new-password">
 				</td>
 			</tr>
 			<tr>
-				<th>{{ "Username"|trans }}</th>
+				<th>{{ "username"|trans }}</th>
 				<td>
 					<div class="with1button">
 						<input type="text" name="txtUsername" autocomplete="new-password">
-						<button class="btnCopyUsername" title="{{ "Copy to clipboard"|trans }}"><img src="img/clipboard.svg"></button>
+						<button class="btnCopyUsername" title="{{ "copy_to_clipboard"|trans }}"><img src="img/clipboard.svg"></button>
 					</div>
 				</td>
 			</tr>
 			<tr>
-				<th>{{ "Password"|trans }}</th>
+				<th>{{ "password"|trans }}</th>
 				<td>
 					<div class="with3button">
 						<input type="password" name="txtPassword" autocomplete="new-password">
-						<button class="btnShowHidePassword" title="{{ "Show or hide password"|trans }}"><img src="img/eye.svg"></button>
-						<button class="btnGeneratePassword" title="{{ "Generate password"|trans }}"><img src="img/generator.svg"></button>
-						<button class="btnCopyPassword" title="{{ "Copy to clipboard"|trans }}"><img src="img/clipboard.svg"></button>
+						<button class="btnShowHidePassword" title="{{ "show_hide_password"|trans }}"><img src="img/eye.svg"></button>
+						<button class="btnGeneratePassword" title="{{ "generate_password"|trans }}"><img src="img/generator.svg"></button>
+						<button class="btnCopyPassword" title="{{ "copy_to_clipboard"|trans }}"><img src="img/clipboard.svg"></button>
 					</div>
 				</td>
 			</tr>
 			<tr>
-				<th>{{ "URL"|trans }}</th>
+				<th>{{ "url"|trans }}</th>
 				<td>
 					<input type="text" name="txtUrl" autocomplete="new-password">
 				</td>
 			</tr>
 			<tr>
-				<th>{{ "Description"|trans }}</th>
+				<th>{{ "description"|trans }}</th>
 				<td>
 					<textarea name="txtDescription"></textarea>
 				</td>
@@ -174,7 +175,7 @@
 	<div class="share box invisible">
 		<table class="inputtable shares">
 			<tr>
-				<th>{{ "Add User"|trans }}</th>
+				<th>{{ "add_user"|trans }}</th>
 				<td>
 					<select name="sltShareUser">
 					</select>
@@ -184,7 +185,7 @@
 				</td>
 			</tr>
 			<tr>
-				<th>{{ "Add Group"|trans }}</th>
+				<th>{{ "add_group"|trans }}</th>
 				<td>
 					<select name="sltShareUserGroup">
 					</select>
@@ -202,12 +203,12 @@
 
 <div id="divUserGroupsContainer" class="childWindow box opaquebox fullscreen invisible">
 	<div class="titlebar">
-		<button class="btnClose" title="{{ "Close"|trans }}"><img src="img/close.svg"></button>
+		<button class="btnClose" title="{{ "close"|trans }}"><img src="img/close.svg"></button>
 	</div>
 	<div class="usergroups box">
 		<table class="inputtable groupmembers">
 			<tr>
-				<th>{{ "Add Group"|trans }}</th>
+				<th>{{ "add_group"|trans }}</th>
 				<td>
 					<input type="text" name="txtUserGroupTitle">
 				</td>
@@ -219,7 +220,7 @@
 				<td colspan="3"><hr/></td>
 			</tr>
 			<tr>
-				<th>{{ "Edit Group"|trans }}</th>
+				<th>{{ "edit_group"|trans }}</th>
 				<td>
 					<select name="sltUserGroup">
 					</select>
@@ -229,7 +230,7 @@
 				</td>
 			</tr>
 			<tr>
-				<th>{{ "Add User"|trans }}</th>
+				<th>{{ "add_user"|trans }}</th>
 				<td>
 					<select name="sltGroupUser">
 					</select>

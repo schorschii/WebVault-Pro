@@ -46,6 +46,8 @@ return [
 	'group_must_be_empty' => 'Group must be empty to delete it',
 	'empty_vault_placeholder' => 'Your password could be here!',
 	'no_user_groups_placeholder' => 'Your are not member of any group.',
+	'title_cannot_be_empty' => 'Title cannot be empty',
+	'record_changed_by_another_user' => 'Record was changed by another user. Please reload your vault and try again.',
 	'private_key_decryption_error' => 'Your private key could not be decrypted. If you changed your password recently, please enter your old password additionally. Your private key will then be reencrypted with your new password.',
 	'httpwarn' => 'You are accessing this site via HTTP. This is insecure and furthermore, the crypto API of the browsers only work with HTTPS.',
 ];

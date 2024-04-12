@@ -659,7 +659,7 @@ function showGroupDetails(id=null) {
 	let sltShareUserGroup = clone.querySelectorAll('[name=sltShareUserGroup]')[0];
 	let tblShares = clone.querySelectorAll('.shares')[0];
 	// populate select boxes
-	populateGroupSelectBox(sltGroup);
+	populateGroupSelectBox(sltGroup, null, id);
 	for(let userId in sessionEnvironment['users']) {
 		let option = document.createElement('OPTION');
 		option.value = userId;
@@ -1046,14 +1046,15 @@ function getAllSubentriesOfGroup(groupId) {
 	}
 	return {'passwords':subPasswords, 'groups':subGroups};
 }
-function populateGroupSelectBox(sltGroup, groupId, depth=0) {
+function populateGroupSelectBox(sltGroup, groupId=null, hideGroupId=null, depth=0) {
 	for(let key in sessionVaultContent['groups']) {
 		if(sessionVaultContent['groups'][key]['group'] == groupId) {
 			let option = document.createElement('OPTION');
 			option.value = key;
 			option.innerText = ('-'.repeat(depth) + ' ' + sessionVaultContent['groups'][key]['title']).trim();
+			if(key == hideGroupId) option.disabled = true;
 			sltGroup.appendChild(option);
-			populateGroupSelectBox(sltGroup, key, depth+1);
+			populateGroupSelectBox(sltGroup, key, hideGroupId, depth+1);
 		}
 	}
 }

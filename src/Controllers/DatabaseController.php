@@ -422,6 +422,15 @@ class DatabaseController {
 		return $this->stmt->execute([':password_group_id' => $password_group_id]);
 	}
 
+	public function selectPasswordGroup($id) {
+		$this->stmt = $this->dbh->prepare(
+			'SELECT * FROM password_group WHERE id = :id'
+		);
+		$this->stmt->execute([':id' => $id]);
+		foreach($this->stmt->fetchAll(PDO::FETCH_CLASS) as $row) {
+			return $row;
+		}
+	}
 	public function insertPasswordGroup($parent_password_group_id, $title) {
 		$this->stmt = $this->dbh->prepare(
 			'INSERT INTO password_group (parent_password_group_id, title)

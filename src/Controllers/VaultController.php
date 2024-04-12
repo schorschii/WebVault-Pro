@@ -9,13 +9,14 @@ use Slim\Psr7\Response as Response;
 class VaultController {
 
 	private $container;
-	private $langctrl;
+	private $langCtrl;
 
 	private $db;
 
 	public function __construct($container) {
 		$this->container = $container;
-		$this->langctrl = new LanguageController($container);
+
+		$this->langCtrl = new LanguageController();
 
 		$dbsettings = $this->container->get('settings')['db'];
 		$this->db = new DatabaseController($dbsettings);
@@ -38,9 +39,8 @@ class VaultController {
 		]);
 	}
 	public function jsStrings(Request $request, Response $response, $args) {
-		$langCtrl = new LanguageController();
 		return $this->container->get('view')->render($response, 'strings.js.twig', [
-			'strings' => $langCtrl->getTranslations(),
+			'strings' => $this->langCtrl->getTranslations(),
 		]);
 	}
 
@@ -142,7 +142,7 @@ class VaultController {
 			}
 			$revision = $this->db->selectMaxPasswordRevision($password_id)->revision;
 			if(!isset($json['revision']) || $json['revision'] != $revision) {
-				throw new Exception('Record was changed by another user. Please reload your vault and try again.');
+				throw new Exception($this->langCtrl->translate('record_changed_by_another_user'));
 			}
 			$revision += 1;
 			// check group permission
@@ -239,13 +239,19 @@ class VaultController {
 
 			// input checks
 			if(empty($json['title']) || empty(trim($json['title']))) {
-				throw new Exception('Title cannot be empty');
+				throw new Exception($this->langCtrl->translate('title_cannot_be_empty'));
 			}
 			if(empty($json['share_users'])) {
 				throw new Exception('Not shared to any user');
 			}
 			if(!in_array($_SESSION['user_id'], $json['share_users'])) {
 				throw new Exception('Not shared to yourself');
+			}
+			if(!array_key_exists('parent_password_group_id', $json)) {
+				throw new Exception($this->langCtrl->translate('choose_another_parent_group'));
+			}
+			if(!empty($json['parent_password_group_id']) && !in_array($_SESSION['user_id'], $this->db->selectAllUserByPasswordGroupShare($json['parent_password_group_id']))) {
+				throw new Exception('Permission denied');
 			}
 
 			// insert data
@@ -282,7 +288,7 @@ class VaultController {
 
 			// input checks
 			if(empty($json['title']) || empty(trim($json['title']))) {
-				throw new Exception('Title cannot be empty');
+				throw new Exception($this->langCtrl->translate('title_cannot_be_empty'));
 			}
 			if(empty($json['share_users'])) {
 				throw new Exception('Not shared to any user');
@@ -293,11 +299,18 @@ class VaultController {
 			}
 			if(!array_key_exists('parent_password_group_id', $json)
 			|| $json['parent_password_group_id'] == $id) {
-				throw new Exception('Cannot assign self as parent group');
+				throw new Exception($this->langCtrl->translate('choose_another_parent_group'));
 			}
 
 			// permission check
-			if(!in_array($_SESSION['user_id'], $this->db->selectAllUserByPasswordGroupShare($id))) {
+			$group = $this->db->selectPasswordGroup($id);
+			if(empty($group)) throw new Exception('Not found');
+			if(!in_array($_SESSION['user_id'], $this->db->selectAllUserByPasswordGroupShare($id))
+			|| (
+				!empty($json['parent_password_group_id'])
+				&& !in_array($_SESSION['user_id'], $this->db->selectAllUserByPasswordGroupShare($json['parent_password_group_id']))
+				&& $json['parent_password_group_id'] != $group->parent_password_group_id
+			)) {
 				throw new Exception('Permission denied');
 			}
 

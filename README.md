@@ -24,13 +24,24 @@ Linux based server (Debian recommended) with Apache 2, PHP 7.4+ and MySQL/MariaD
 This app is mainly intended for usage with LDAP directories. Local user accounts are implemented too but only used for development or testing purposes.
 
 ### Server Installation
-0. Install dependencies: `apache2 libapache2-mod-php php php-ldap`
-1. Set the applications `public` directory as your webservers root directory (if necessary, create a virtual host for this application on your webserver).
+0. Install necessary Linux packages: `apt install apache2 libapache2-mod-php php php-ldap composer`
+1. Configure Apache:
+   - Set the application's `public` directory as the webserver root directory (if necessary, create a virtual host for this application on your webserver).
+   - Ensure that `AllowOverride All` is set for your application directory in your Apache configuration.
+   - Set up HTTPS for your Apache. This is necessary since web browsers expose the crypto API only in secure contexts. Redirect all HTTP requests to HTTPS. Use at least a RSA 4096 bit key pair (certificate) or elliptic curve crypto.
 2. Run `composer install` inside the application root directory to install the dependencies.
-3. Create an empty database on your MySQL server and import the schema from the `sql/SCHEMA.sql` file. Then, create `config/settings.php` from `config/settings.php.example` and enter your MySQL connection credentials, LDAP connection and various other parameters. Read the comments in the example file for more information.
-4. Ensure that `AllowOverride All` is set for your application directory in your Apache configuration.
+3. Create an empty database on your MySQL server and import the schema from the `sql/SCHEMA.sql` file.
+   ```
+   root@server:/# mysql
+   mysql> CREATE DATABASE pwsafe DEFAULT CHARACTER SET utf8mb4;
+   mysql> CREATE USER 'pwsafe'@'localhost' IDENTIFIED BY 'choose_your_own_password';
+   mysql> GRANT ALL PRIVILEGES ON pwsafe.* TO 'pwsafe'@'localhost';
+   mysql> FLUSH PRIVILEGES;
+   mysql> EXIT;
+   root@server:/# mysql -D pwsafe < sql/SCHEMA.sql
+   ```
+4. Create `config/settings.php` from `config/settings.php.example` and enter your MySQL connection credentials, LDAP connection parameters and adjust other settings if you like. Read the comments in the [example file](config/settings.php.example) for more information.
 5. Thats it. Open a webbrowser, navigate to your installation and log in with a LDAP account.
-6. Set up HTTPS on you webserver. This is necessary since web browsers expose the crypto API only in secure contexts. Redirect all HTTP requests to HTTPS. Use at least a RSA 4096 bit key pair (certificate) or elliptic curve crypto.
 
 ### Hardening Recommendations
 - Transfer the ownership of the application files to root and deny write access for all other users. The web server user (www-data) should only be able to read the application files.
@@ -38,7 +49,7 @@ This app is mainly intended for usage with LDAP directories. Local user accounts
 - Do not run other applications on the same server.
 - Ensure that the MySQL server only listens for requests from localhost and not from other computers inside your network. Do not use tools like phpMyAdmin on your production server.
 - Install `fail2ban` to limit brute force attacks.
-- Keep your server always up to date by enabling `unattended-upgrades`.
+- Keep your server always up to date by installing/enabling `unattended-upgrades`.
 - Limit access to the IP addresses/ranges that really need it, e.g. via Apache or firewall rules.
 
 ### Client Requirements

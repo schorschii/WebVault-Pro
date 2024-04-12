@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
 	txtSearch.addEventListener('input', () => search(txtSearch.value));
 	btnNewPassword.addEventListener('click', () => showPasswordDetails());
 	btnNewGroup.addEventListener('click', () => showGroupDetails());
-	btnUserGroups.addEventListener('click', () => showUserGroupManagement());
+	btnUserGroups.addEventListener('click', () => showUserGroupsManagement());
 	btnReload.addEventListener('click', () => {
 		imgReload.classList.add('rotating');
 		divVault.classList.add('loading');
@@ -488,14 +488,32 @@ function showHideGroupHeader() {
 	}
 }
 
-function showUserGroupManagement() {
-	divUserGroupsContainer.style.top = (parseInt(divVaultContainer.style.top)+35) + 'px';
-	divUserGroupsContainer.style.left = (parseInt(divVaultContainer.style.left)+35) + 'px';
+function populateUserGroups() {
+	let tblGroups = divUserGroupsContainer.querySelectorAll('.groups')[0];
+	tblGroups.innerHTML = '';
+	for(let groupId in sessionEnvironment['groups']) {
+		addUserGroupRow(tblGroups, groupId, function(){
+			showUserGroupManagement(groupId);
+		});
+	}
+	if(!Object.keys(sessionEnvironment['groups']).length) {
+		let tr = document.createElement('TR');
+		tblGroups.appendChild(tr);
+		let td = document.createElement('TD');
+		td.innerText = strings.no_user_groups_placeholder;
+		tr.appendChild(td);
+	}
+}
+function showUserGroupManagement(id=null) {
+	// create details window on current main window position
+	const clone = divUserGroupTemplateContainer.cloneNode(true);
+	clone.removeAttribute('id');
+	clone.style.top = (parseInt(divVaultContainer.style.top)+35) + 'px';
+	clone.style.left = (parseInt(divVaultContainer.style.left)+35) + 'px';
 	// identify inputs
-	let txtUserGroupTitle = divUserGroupsContainer.querySelectorAll('[name=txtUserGroupTitle]')[0];
-	let sltUserGroup = divUserGroupsContainer.querySelectorAll('[name=sltUserGroup]')[0];
-	let sltGroupUser = divUserGroupsContainer.querySelectorAll('[name=sltGroupUser]')[0];
-	let tblGroupMembers = divUserGroupsContainer.querySelectorAll('.groupmembers')[0];
+	let txtTitle = clone.querySelectorAll('[name=txtTitle]')[0];
+	let sltGroupUser = clone.querySelectorAll('[name=sltGroupUser]')[0];
+	let tblMembers = clone.querySelectorAll('.members')[0];
 	// populate select boxes
 	sltGroupUser.innerHTML = '';
 	for(let userId in sessionEnvironment['users']) {
@@ -505,104 +523,129 @@ function showUserGroupManagement() {
 		if(!sessionEnvironment['users'][userId]['public_key']) option.disabled = true;
 		sltGroupUser.appendChild(option);
 	}
-	let populateGroupOptions = function() {
-		sltUserGroup.innerHTML = '<option disabled selected></option>';
-		for(let id in sessionEnvironment['groups']) {
-			let option = document.createElement('OPTION');
-			option.value = id;
-			option.innerText = sessionEnvironment['groups'][id]['title'];
-			sltUserGroup.appendChild(option);
-		}
-	};
-	populateGroupOptions();
 	// add actions
-	activateMouseDragForParent(divUserGroupsContainer.querySelectorAll('.titlebar')[0]);
-	let onRemoveUserAction = function() {
-		let userIds = [];
-		let userEntries = divUserGroupsContainer.querySelectorAll('.groupmembers tr');
+	activateMouseDragForParent(clone.querySelectorAll('.titlebar')[0]);
+	let closeAnimation = windowCloseAction(clone);
+	clone.querySelectorAll('.btnAddGroupUser')[0].addEventListener('click', function(){
+		addShareUserRow(tblMembers, sltGroupUser.value);
+	});
+	clone.querySelectorAll('.btnSave')[0].addEventListener('click', function(){
+		// get all member ids
+		let newGroupMemberIds = [];
+		let userEntries = clone.querySelectorAll('.members tr');
 		for(let i=0; i<userEntries.length; i++) {
 			if(userEntries[i].getAttribute('userid')) {
-				userIds.push(userEntries[i].getAttribute('userid'));
+				newGroupMemberIds.push(userEntries[i].getAttribute('userid'));
 			}
 		}
-		let userIdToRemove = this.parentNode.parentNode.getAttribute('userid');
-		userIds = userIds.filter(e => e != userIdToRemove);
-		jsonRequest(
-			'POST', 'user/group/'+encodeURIComponent(sltUserGroup.value),
-			{'title':sltUserGroup.options[sltUserGroup.selectedIndex].text, 'members':userIds}
-		).then((response) => {
-			let userEntries = divUserGroupsContainer.querySelectorAll('.groupmembers tr');
-			for(let i=0; i<userEntries.length; i++) {
-				if(userIdToRemove && userEntries[i].getAttribute('userid') == userIdToRemove) {
-					userEntries[i].remove();
+		// re-encrypt all passwords which are shared with the edited group
+		let promiseChain = [];
+		var encryptedPasswords = {};
+		if(id) {
+			for(let passwordId in sessionVaultContent['passwords']) {
+				if(sessionVaultContent['passwords'][passwordId]['share_groups'].includes(parseInt(id))) {
+					let targetPublicKeys = {};
+					sessionVaultContent['passwords'][passwordId]['share_users'].forEach((userId) => {
+						targetPublicKeys[userId] = sessionEnvironment['users'][userId]['public_key'];
+					});
+					sessionVaultContent['passwords'][passwordId]['share_groups'].forEach((groupId) => {
+						let newMembers = (id==groupId) ? newGroupMemberIds : sessionEnvironment['groups'][groupId]['members'];
+						newMembers.forEach((groupUserId) => {
+							targetPublicKeys[groupUserId] = sessionEnvironment['users'][groupUserId]['public_key'];
+						});
+					});
+					let secret = {
+						'title': sessionVaultContent['passwords'][passwordId].title,
+						'username': sessionVaultContent['passwords'][passwordId].username,
+						'password': sessionVaultContent['passwords'][passwordId].password,
+						'url': sessionVaultContent['passwords'][passwordId].url,
+						'description': sessionVaultContent['passwords'][passwordId].description,
+					};
+					for(let userId in targetPublicKeys) {
+						promiseChain.push(
+							importPublicKey(targetPublicKeys[userId], userId, passwordId)
+							.then((result) => {
+								let iv = getRandomCryptoValues(16);
+								if(!(result.passwordId in encryptedPasswords)) {
+									encryptedPasswords[result.passwordId] = {
+										'revision': sessionVaultContent['passwords'][passwordId].revision,
+										'share_users': sessionVaultContent['passwords'][passwordId].share_users,
+										'share_groups': sessionVaultContent['passwords'][passwordId].share_groups
+									};
+								}
+								encryptedPasswords[result.passwordId][result.userId] = {
+									'iv': arrayBufferToBase64String(iv),
+									'secret': null, // filled in next step
+								};
+								return encryptData(iv, result.key, JSON.stringify(secret), result.userId, result.passwordId);
+							})
+							.then((result) => {
+								encryptedPasswords[result.passwordId][result.userId]['secret'] = arrayBufferToBase64String(result.encrypted);
+								return Promise.resolve();
+							})
+						);
+					}
 				}
 			}
+		}
+		// send request
+		Promise.all(promiseChain)
+		.then(() => jsonRequest(
+			'POST', (id==null ? 'user/group' : 'user/group/'+encodeURIComponent(id)),
+			{'title':txtTitle.value, 'members':newGroupMemberIds, 'passwords':encryptedPasswords}
+		)).then((response) => {
+			sessionEnvironment['groups'][response.id] = {'title':txtTitle.value, 'members':newGroupMemberIds};
+			populateUserGroups();
+			closeAnimation();
 		}).catch((error) => {
 			console.warn(error);
 			alert(error);
 		});
-	};
-	sltUserGroup.onchange = function() {
+	});
+	clone.querySelectorAll('.btnDelete')[0].addEventListener('click', function(){
+		if(confirm(strings.are_you_sure)) {
+			jsonRequest(
+				'DELETE', 'user/group/'+encodeURIComponent(id), null
+			).then((response) => {
+				delete sessionEnvironment['groups'][id];
+				populateUserGroups();
+				closeAnimation();
+			}).catch((error) => {
+				console.warn(error);
+				alert(error);
+			});
+		}
+	});
+	clone.querySelectorAll('.btnClose')[0].addEventListener('click', closeAnimation);
+	if(id == null) {
+		clone.querySelectorAll('.btnDelete')[0].remove();
+		// add self by default since it is necessary
+		addShareUserRow(tblMembers, sessionEnvironment['userId']);
+	} else {
 		// load members
-		let userEntries = divUserGroupsContainer.querySelectorAll('.groupmembers tr');
-		for(let i=0; i<userEntries.length; i++) {
-			if(userEntries[i].getAttribute('userid')) {
-				userEntries[i].remove();
-			}
-		}
-		sessionEnvironment['groups'][sltUserGroup.value]['members'].forEach((userId) => {
-			addShareUserRow(tblGroupMembers, userId, onRemoveUserAction);
+		sessionEnvironment['groups'][id]['members'].forEach((userId) => {
+			addShareUserRow(tblMembers, userId);
 		});
-	};
-	divUserGroupsContainer.querySelectorAll('.btnAddGroupUser')[0].onclick = function(){
-		let userIds = [sltGroupUser.value];
-		let userEntries = divUserGroupsContainer.querySelectorAll('.groupmembers tr');
-		for(let i=0; i<userEntries.length; i++) {
-			if(userEntries[i].getAttribute('userid')) {
-				userIds.push(userEntries[i].getAttribute('userid'));
-			}
-		}
-		jsonRequest(
-			'POST', 'user/group/'+encodeURIComponent(sltUserGroup.value),
-			{'title':sltUserGroup.options[sltUserGroup.selectedIndex].text, 'members':userIds}
-		).then((response) => {
-			addShareUserRow(tblGroupMembers, sltGroupUser.value, onRemoveUserAction);
-		}).catch((error) => {
-			console.warn(error);
-			alert(error);
-		});
-	};
-	divUserGroupsContainer.querySelectorAll('.btnAddUserGroup')[0].onclick = function(){
-		jsonRequest(
-			'POST', 'user/group',
-			{'title':txtUserGroupTitle.value}
-		).then((response) => {
-			sessionEnvironment['groups'][response.id] = {
-				'title':txtUserGroupTitle.value, 'members':[sessionEnvironment['userId']]
-			};
-			txtUserGroupTitle.value = '';
-			populateGroupOptions();
-		}).catch((error) => {
-			console.warn(error);
-			alert(error);
-		});
-	};
-	divUserGroupsContainer.querySelectorAll('.btnDeleteUserGroup')[0].onclick = function(){
-		jsonRequest(
-			'DELETE', 'user/group/'+encodeURIComponent(sltUserGroup.value), null
-		).then((response) => {
-			delete sessionEnvironment['groups'][sltUserGroup.value];
-			populateGroupOptions();
-		}).catch((error) => {
-			console.warn(error);
-			alert(error);
-		});
-	};
-	divUserGroupsContainer.querySelectorAll('.btnClose')[0].addEventListener('click', windowCloseAction(divUserGroupsContainer,false));
+		txtTitle.value = sessionEnvironment['groups'][id]['title'];
+	}
+	// show with animation
+	document.body.appendChild(clone);
+	windowOpenAnimation(clone);
+	txtTitle.focus();
+}
+function showUserGroupsManagement() {
+	divUserGroupsContainer.style.top = (parseInt(divVaultContainer.style.top)+35) + 'px';
+	divUserGroupsContainer.style.left = (parseInt(divVaultContainer.style.left)+35) + 'px';
+	// populate select boxes
+	populateUserGroups();
+	// add actions
+	activateMouseDragForParent(divUserGroupsContainer.querySelectorAll('.titlebar')[0]);
+	divUserGroupsContainer.querySelectorAll('.btnAdd')[0].onclick = function(){showUserGroupManagement()};
+	divUserGroupsContainer.querySelectorAll('.btnClose')[0].onclick = windowCloseAction(divUserGroupsContainer,false);
 	// show with animation
 	windowOpenAnimation(divUserGroupsContainer);
-	txtUserGroupTitle.focus();
 }
+
 function showGroupDetails(id=null) {
 	// create details window on current main window position
 	const clone = divGroupTemplateContainer.cloneNode(true);
@@ -1015,7 +1058,25 @@ function populateGroupSelectBox(sltGroup, groupId, depth=0) {
 	}
 }
 
-function addShareUserRow(shareTable, userId, removeAction=null) {
+function addUserGroupRow(groupTable, userGroupId, editAction) {
+	let group = sessionEnvironment['groups'][userGroupId];
+	let tr = document.createElement('TR');
+	tr.setAttribute('usergroupid', userGroupId);
+	let td1 = document.createElement('TD');
+	td1.setAttribute('colspan', '2');
+	td1.innerText = group['title'];
+	tr.appendChild(td1);
+	let td2 = document.createElement('TD');
+	let btn = document.createElement('BUTTON');
+	btn.addEventListener('click', editAction);
+	let img = document.createElement('IMG');
+	img.src = 'img/edit.svg';
+	btn.appendChild(img);
+	td2.appendChild(btn);
+	tr.appendChild(td2);
+	groupTable.appendChild(tr);
+}
+function addShareUserRow(shareTable, userId) {
 	let user = sessionEnvironment['users'][userId];
 	let tr = document.createElement('TR');
 	tr.setAttribute('userid', userId);
@@ -1025,13 +1086,9 @@ function addShareUserRow(shareTable, userId, removeAction=null) {
 	tr.appendChild(td1);
 	let td2 = document.createElement('TD');
 	let btn = document.createElement('BUTTON');
-	if(removeAction) {
-		btn.addEventListener('click', removeAction);
-	} else {
-		btn.addEventListener('click', function(e){
-			this.parentNode.parentNode.remove();
-		});
-	}
+	btn.addEventListener('click', function(e){
+		this.parentNode.parentNode.remove();
+	});
 	let img = document.createElement('IMG');
 	img.src = 'img/minus.svg';
 	btn.appendChild(img);

@@ -105,16 +105,6 @@ class VaultController {
 					throw new Exception('You are not member of this group');
 				}
 			}
-			// check if given data matches shares
-			$givenDataUserIds = array_keys($json['password_data']);
-			$absoluteShareUserIds = $json['share_users'];
-			foreach($json['share_groups'] as $group_id) {
-				$absoluteShareUserIds = array_merge($absoluteShareUserIds, $this->db->selectAllUserIdByUserGroup($group_id));
-			}
-			$absoluteShareUserIds = array_unique($absoluteShareUserIds);
-			if(asort($givenDataUserIds) !== asort($absoluteShareUserIds)) {
-				throw new Exception('Encrypted secrets do not match shares. Try to reload your vault for updated group memberships.');
-			}
 
 			// insert data
 			$revision = 1;
@@ -161,16 +151,6 @@ class VaultController {
 					throw new Exception('You are not member of this group');
 				}
 			}
-			// check if given data matches shares
-			$givenDataUserIds = array_keys($json['password_data']);
-			$absoluteShareUserIds = $json['share_users'];
-			foreach($json['share_groups'] as $group_id) {
-				$absoluteShareUserIds = array_merge($absoluteShareUserIds, $this->db->selectAllUserIdByUserGroup($group_id));
-			}
-			$absoluteShareUserIds = array_unique($absoluteShareUserIds);
-			if(asort($givenDataUserIds) !== asort($absoluteShareUserIds)) {
-				throw new Exception('Encrypted secrets do not match shares. Try to reload your vault for updated group memberships.');
-			}
 			// permission check
 			if(!in_array($_SESSION['user_id'], $this->db->selectAllUserByPasswordShare($password_id))) {
 				throw new Exception('Permission denied');
@@ -196,8 +176,19 @@ class VaultController {
 		}
 	}
 
-	private function updatePasswordData($password_id, $revision, Array $password_data, Array $share_users, Array $share_groups) {
-		// todo: check if password is shared with all user_ids and only with shared
+	public function updatePasswordData($password_id, $revision, Array $password_data, Array $share_users, Array $share_groups) {
+		// check if given data matches shares
+		$givenDataUserIds = array_keys($password_data);
+		$absoluteShareUserIds = $share_users;
+		foreach($share_groups as $group_id) {
+			$absoluteShareUserIds = array_merge($absoluteShareUserIds, $this->db->selectAllUserIdByUserGroup($group_id));
+		}
+		$absoluteShareUserIds = array_unique($absoluteShareUserIds);
+		if(asort($givenDataUserIds) !== asort($absoluteShareUserIds)) {
+			throw new Exception('Encrypted secrets do not match shares. Try to reload your vault for updated group memberships.');
+		}
+
+		// update data
 		$this->db->deletePasswordDataByPassword($password_id);
 		foreach($password_data as $user_id => $data) {
 			$this->db->insertPasswordData(

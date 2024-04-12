@@ -45,6 +45,7 @@ return [
 	'choose_another_parent_group' => 'Bitte wählen Sie eine andere übergeordnete Gruppe',
 	'group_must_be_empty' => 'Die Gruppe muss leer sein, um sie löschen zu können.',
 	'empty_vault_placeholder' => 'Hier könnte Ihr Passwort stehen!',
+	'no_user_groups_placeholder' => 'Sie sind in keiner Gruppe Mitglied.',
 	'private_key_decryption_error' => 'Ihr privater Schlüssel konnte nicht entschlüsselt werden. Wenn Sie Ihr Passwort geändert haben, geben Sie bitte zusätzlich Ihr altes Passwort an. Der Schlüssel wird dann mit Ihrem aktuellen Kennwort neu verschlüsselt.',
 	'httpwarn' => 'Sie greifen auf diese Seite via HTTP zu, dies ist sehr unsicher. Außerdem funktioniert die Crypto-API der Browser nur via HTTPS.',
 ];

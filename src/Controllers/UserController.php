@@ -111,11 +111,19 @@ class UserController {
 			if(empty($json['title'])) {
 				throw new Exception('Title cannot be empty');
 			}
+			if(empty($json['members']) || !is_array($json['members'])) {
+				throw new Exception('Members cannot be empty');
+			}
+			if(!in_array($_SESSION['user_id'], $json['members'])) {
+				throw new Exception('Self not in members');
+			}
 
 			// update data
 			$this->db->beginTransaction();
 			$id = $this->db->insertUserGroup($json['title']);
-			$this->db->insertUserGroupMember($_SESSION['user_id'], $id);
+			foreach($json['members'] as $user_id) {
+				$this->db->insertUserGroupMember($user_id, $id);
+			}
 			$this->db->commitTransaction();
 
 			// send response
@@ -155,6 +163,21 @@ class UserController {
 			$this->db->deleteUserGroupMemberByUserGroup($id);
 			foreach($json['members'] as $user_id) {
 				$this->db->insertUserGroupMember($user_id, $id);
+			}
+			if(!empty($json['passwords']) && is_array($json['passwords'])) {
+				foreach($json['passwords'] as $password_id => $passwordUserData) {
+					$revision = $this->db->selectMaxPasswordRevision($password_id)->revision;
+					if(!isset($passwordUserData['revision']) || $passwordUserData['revision'] != $revision) {
+						throw new Exception('Record was changed by another user. Please reload your vault and try again.');
+					}
+					$shareUsers = $passwordUserData['share_users'];
+					$shareGroups = $passwordUserData['share_groups'];
+					unset($passwordUserData['revision']);
+					unset($passwordUserData['share_users']);
+					unset($passwordUserData['share_groups']);
+					$vc = new VaultController($this->container);
+					$vc->updatePasswordData($password_id, $revision, $passwordUserData, $shareUsers, $shareGroups);
+				}
 			}
 			$this->db->commitTransaction();
 

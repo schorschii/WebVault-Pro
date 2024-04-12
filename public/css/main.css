@@ -53,13 +53,6 @@
 	src: url('../font/SairaSemiCondensed-Thin.ttf');
 }
 
-#preloadedImages {
-	width: 0px;
-	height: 0px;
-	display: inline;
-	overflow: hidden;
-}
-
 html {
 	font-family: 'Open Sans', sans-serif;
 	font-size: 16px;
@@ -90,6 +83,18 @@ h1, h2, h3, h4, h5, h6 {
 }
 h1 {
 	font-size: 50px;
+}
+
+#preloadedImages {
+	width: 0px;
+	height: 0px;
+	display: inline;
+	overflow: hidden;
+}
+#forkMe {
+	display: block;
+	position: absolute;
+	top: 0; right: 0;
 }
 
 a {
@@ -270,6 +275,9 @@ input[disabled], select[disabled], button[disabled], textarea[disabled] {
 }
 input[type=submit]:not(.nobold) {
 	font-weight: bold;
+}
+.inputtable.actionbtn tr td:last-child {
+	width: 1%;
 }
 .inputtable {
 	width: 100%;

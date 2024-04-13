@@ -255,6 +255,7 @@ button[disabled], .button.disabled {
 }
 #divAbout ul {
 	text-align: left;
+	padding-inline-start: 18px;
 }
 
 input, select, button, textarea {

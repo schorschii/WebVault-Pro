@@ -1092,6 +1092,7 @@ function addShareUserRow(shareTable, userId) {
 	tr.appendChild(td1);
 	let td2 = document.createElement('TD');
 	let btn = document.createElement('BUTTON');
+	btn.title = strings.remove;
 	btn.addEventListener('click', function(e){
 		this.parentNode.parentNode.remove();
 	});
@@ -1112,6 +1113,7 @@ function addShareGroupRow(shareTable, groupId) {
 	tr.appendChild(td1);
 	let td2 = document.createElement('TD');
 	let btn = document.createElement('BUTTON');
+	btn.title = strings.remove;
 	btn.addEventListener('click', function(e){
 		this.parentNode.parentNode.remove();
 	});

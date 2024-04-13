@@ -25,6 +25,8 @@ return [
 	'description' => 'Beschreibung',
 	'add_user' => 'Benutzer hinzufügen',
 	'add_group' => 'Gruppe hinzufügen',
+	'users' => 'Benutzer',
+	'groups' => 'Gruppe(n)',
 	'save' => 'Speichern',
 	'delete' => 'Löschen',
 	'generate_password' => 'Passwort generieren',

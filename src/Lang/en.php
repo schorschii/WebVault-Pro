@@ -25,6 +25,8 @@ return [
 	'description' => 'Description',
 	'add_user' => 'Add user',
 	'add_group' => 'Add group',
+	'users' => 'User(s)',
+	'groups' => 'Group(s)',
 	'save' => 'Save',
 	'delete' => 'Delete',
 	'generate_password' => 'generate password',

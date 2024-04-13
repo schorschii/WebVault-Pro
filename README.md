@@ -1,3 +1,5 @@
+<img align="right" style="width:180px" src="public/img/logo.png">
+
 # XVault
 XVault is a self-hosted/on-prem web based password safe with multi-language and multi-user support focused on enterprise usage. Passwords are stored RSA encrypted in a MySQL database and decryption only happens in the user's browser, providing true end-to-end encryption.
 

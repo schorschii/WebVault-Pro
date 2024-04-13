@@ -41,7 +41,7 @@ class VaultController {
 	public function jsStrings(Request $request, Response $response, $args) {
 		return $this->container->get('view')->render($response, 'strings.js.twig', [
 			'strings' => $this->langCtrl->getTranslations(),
-		]);
+		])->withHeader('Content-Type', 'text/javascript');
 	}
 
 

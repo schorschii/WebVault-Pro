@@ -50,4 +50,5 @@ return [
 	'record_changed_by_another_user' => 'Der Eintrag wurde in der Zwischenzeit durch einen anderen Benutzer bearbeitet. Bitte aktualisieren Sie Ihren Safe und versuchen Sie es erneut.',
 	'private_key_decryption_error' => 'Ihr privater Schlüssel konnte nicht entschlüsselt werden. Wenn Sie Ihr Passwort geändert haben, geben Sie bitte zusätzlich Ihr altes Passwort an. Der Schlüssel wird dann mit Ihrem aktuellen Kennwort neu verschlüsselt.',
 	'httpwarn' => 'Sie greifen auf diese Seite via HTTP zu, dies ist sehr unsicher. Außerdem funktioniert die Crypto-API der Browser nur via HTTPS.',
+	'crypto_api_unavailable' => 'Ihr Browser bietet keine Crypto-API an.',
 ];

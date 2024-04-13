@@ -50,4 +50,5 @@ return [
 	'record_changed_by_another_user' => 'Record was changed by another user. Please reload your vault and try again.',
 	'private_key_decryption_error' => 'Your private key could not be decrypted. If you changed your password recently, please enter your old password additionally. Your private key will then be reencrypted with your new password.',
 	'httpwarn' => 'You are accessing this site via HTTP. This is insecure and furthermore, the crypto API of the browsers only work with HTTPS.',
+	'crypto_api_unavailable' => 'Your browser does not offer crypto API support.',
 ];

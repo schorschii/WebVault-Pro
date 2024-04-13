@@ -66,6 +66,11 @@ function jsonRequest(method, url, data) {
 }
 
 function login() {
+	if(!crypto.subtle) {
+		alert(strings.crypto_api_unavailable);
+		return;
+	}
+
 	let username = txtUsername.value;
 	let password = txtPassword.value;
 	let oldPassword = password;

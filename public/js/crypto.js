@@ -49,9 +49,10 @@ function arrayBufferToText(arrayBuffer) {
 	return str;
 }
 
-function convertBinaryToPem(binaryData, label) {
+function convertBinaryToPem(binaryData, label=null) {
 	var base64Cert = arrayBufferToBase64String(binaryData);
-	var pemCert = '-----BEGIN ' + label + '-----'+"\r\n";
+	var pemCert = '';
+	if(label) pemCert += '-----BEGIN ' + label + '-----'+"\r\n";
 	var nextIndex = 0;
 	while(nextIndex < base64Cert.length) {
 		if(nextIndex + 64 <= base64Cert.length) {
@@ -61,7 +62,7 @@ function convertBinaryToPem(binaryData, label) {
 		}
 		nextIndex += 64;
 	}
-	pemCert += '-----END ' + label + '-----'+"\r\n";
+	if(label) pemCert += '-----END ' + label + '-----'+"\r\n";
 	return pemCert;
 }
 function convertPemToBinary(pem) {
@@ -86,11 +87,11 @@ function convertPemToBinary(pem) {
 function importPublicKey(pemKey, userId=null, passwordId=null) {
 	return new Promise(function(resolve) {
 		crypto.subtle.importKey(
-			'spki', convertPemToBinary(pemKey), encryptAlgorithm, true, ['encrypt']
+			'spki', convertPemToBinary(pemKey), encryptAlgorithm, false, ['encrypt']
 		).then(function(key) {
 			resolve({'key':key, 'userId':userId, 'passwordId':passwordId});
 		});
-	})
+	});
 }
 function importPrivateKey(pemKey, passphrase=null, saltb64=null, ivb64=null) {
 	return new Promise(function(resolve, reject) {
@@ -107,14 +108,14 @@ function importPrivateKey(pemKey, passphrase=null, saltb64=null, ivb64=null) {
 					{ name: 'PBKDF2', salt: base64StringToArrayBuffer(saltb64), iterations: 100000, hash: 'SHA-256' },
 					keyMaterial,
 					{ name: 'AES-GCM', length: 256 },
-					true,
+					false,
 					['wrapKey', 'unwrapKey'],
 				);
 			}).then((unwrappingKey) => {
 				return window.crypto.subtle.unwrapKey(
 					'pkcs8', convertPemToBinary(pemKey), unwrappingKey,
 					{ name: 'AES-GCM', iv: base64StringToArrayBuffer(ivb64) },
-					encryptAlgorithm, true, ['decrypt'],
+					encryptAlgorithm, false, ['decrypt'],
 				);
 			}).then((key) => {
 				resolve(key);
@@ -123,14 +124,14 @@ function importPrivateKey(pemKey, passphrase=null, saltb64=null, ivb64=null) {
 			});
 		} else {
 			crypto.subtle.importKey(
-				'pkcs8', convertPemToBinary(pemKey), encryptAlgorithm, true, ['decrypt']
+				'pkcs8', convertPemToBinary(pemKey), encryptAlgorithm, false, ['decrypt']
 			).then(function(key) {
 				resolve(key)
 			}).catch((error) => {
 				reject(error);
 			});
 		}
-	})
+	});
 }
 
 function exportPublicKey(keys) {
@@ -138,9 +139,9 @@ function exportPublicKey(keys) {
 		window.crypto.subtle.exportKey(
 			'spki', keys
 		).then(function(spki) {
-			resolve(convertBinaryToPem(spki, 'RSA PUBLIC KEY'));
-		})
-	})
+			resolve(convertBinaryToPem(spki));
+		});
+	});
 }
 function exportPrivateKey(keys, passphrase=null) {
 	return new Promise(function(resolve, reject) {
@@ -160,7 +161,7 @@ function exportPrivateKey(keys, passphrase=null) {
 					{ name: 'PBKDF2', salt: salt, iterations: 100000, hash: 'SHA-256' },
 					keyMaterial,
 					{ name: 'AES-GCM', length: 256 },
-					true,
+					false,
 					['wrapKey', 'unwrapKey'],
 				)
 			}).then((wrappingKey) => {
@@ -170,7 +171,7 @@ function exportPrivateKey(keys, passphrase=null) {
 					'pkcs8', keys, wrappingKey, {name: 'AES-GCM', iv}
 				)
 			}).then(function(pkcs8) {
-				resolve({key:convertBinaryToPem(pkcs8, 'ENCRYPTED PRIVATE KEY'), salt:saltb64, iv:ivb64})
+				resolve({key:convertBinaryToPem(pkcs8), salt:saltb64, iv:ivb64})
 			}).catch((error) => {
 				reject(error);
 			});
@@ -178,7 +179,7 @@ function exportPrivateKey(keys, passphrase=null) {
 			window.crypto.subtle.exportKey(
 				'pkcs8', keys
 			).then(function(pkcs8) {
-				resolve(convertBinaryToPem(pkcs8, 'RSA PRIVATE KEY'))
+				resolve(convertBinaryToPem(pkcs8))
 			}).catch((error) => {
 				reject(error);
 			});
@@ -189,7 +190,7 @@ function exportPemKeys(keys, passphrase=null) {
 	return new Promise(function(resolve) {
 		exportPublicKey(keys.publicKey).then(function(pubKey) {
 			exportPrivateKey(keys.privateKey, passphrase).then(function(privKey) {
-				resolve({publicKey:pubKey, privateKey:privKey.key, salt:privKey.salt, iv:privKey.iv})
+				resolve({publicKey:pubKey, privateKey:privKey.key, salt:privKey.salt, iv:privKey.iv});
 			});
 		});
 	});
@@ -206,7 +207,7 @@ function generateKey(alg, scope) {
 		).then(function (pair) {
 			resolve(pair);
 		});
-	})
+	});
 }
 
 function signData(key, data) {

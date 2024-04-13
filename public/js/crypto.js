@@ -97,14 +97,14 @@ function importPrivateKey(pemKey, passphrase=null, saltb64=null, ivb64=null) {
 	return new Promise(function(resolve, reject) {
 		if(passphrase) {
 			const enc = new TextEncoder();
-			window.crypto.subtle.importKey(
+			crypto.subtle.importKey(
 				'raw',
 				enc.encode(passphrase),
 				{ name: 'PBKDF2' },
 				false,
 				['deriveBits', 'deriveKey'],
 			).then((keyMaterial) => {
-				return window.crypto.subtle.deriveKey(
+				return crypto.subtle.deriveKey(
 					{ name: 'PBKDF2', salt: base64StringToArrayBuffer(saltb64), iterations: 100000, hash: 'SHA-256' },
 					keyMaterial,
 					{ name: 'AES-GCM', length: 256 },
@@ -112,7 +112,7 @@ function importPrivateKey(pemKey, passphrase=null, saltb64=null, ivb64=null) {
 					['wrapKey', 'unwrapKey'],
 				);
 			}).then((unwrappingKey) => {
-				return window.crypto.subtle.unwrapKey(
+				return crypto.subtle.unwrapKey(
 					'pkcs8', convertPemToBinary(pemKey), unwrappingKey,
 					{ name: 'AES-GCM', iv: base64StringToArrayBuffer(ivb64) },
 					encryptAlgorithm, false, ['decrypt'],
@@ -136,7 +136,7 @@ function importPrivateKey(pemKey, passphrase=null, saltb64=null, ivb64=null) {
 
 function exportPublicKey(keys) {
 	return new Promise(function(resolve) {
-		window.crypto.subtle.exportKey(
+		crypto.subtle.exportKey(
 			'spki', keys
 		).then(function(spki) {
 			resolve(convertBinaryToPem(spki));
@@ -148,7 +148,7 @@ function exportPrivateKey(keys, passphrase=null) {
 		if(passphrase) {
 			var saltb64, ivb64;
 			const enc = new TextEncoder();
-			window.crypto.subtle.importKey(
+			crypto.subtle.importKey(
 				'raw',
 				enc.encode(passphrase),
 				{ name: 'PBKDF2' },
@@ -157,7 +157,7 @@ function exportPrivateKey(keys, passphrase=null) {
 			).then((keyMaterial) => {
 				let salt = getRandomCryptoValues(16);
 				saltb64 = arrayBufferToBase64String(salt);
-				return window.crypto.subtle.deriveKey(
+				return crypto.subtle.deriveKey(
 					{ name: 'PBKDF2', salt: salt, iterations: 100000, hash: 'SHA-256' },
 					keyMaterial,
 					{ name: 'AES-GCM', length: 256 },
@@ -167,7 +167,7 @@ function exportPrivateKey(keys, passphrase=null) {
 			}).then((wrappingKey) => {
 				let iv = getRandomCryptoValues(12);
 				ivb64 = arrayBufferToBase64String(iv);
-				return window.crypto.subtle.wrapKey(
+				return crypto.subtle.wrapKey(
 					'pkcs8', keys, wrappingKey, {name: 'AES-GCM', iv}
 				)
 			}).then(function(pkcs8) {
@@ -176,7 +176,7 @@ function exportPrivateKey(keys, passphrase=null) {
 				reject(error);
 			});
 		} else {
-			window.crypto.subtle.exportKey(
+			crypto.subtle.exportKey(
 				'pkcs8', keys
 			).then(function(pkcs8) {
 				resolve(convertBinaryToPem(pkcs8))
@@ -197,7 +197,7 @@ function exportPemKeys(keys, passphrase=null) {
 }
 
 function getRandomCryptoValues(length) {
-	return window.crypto.getRandomValues(new Uint8Array(length));
+	return crypto.getRandomValues(new Uint8Array(length));
 }
 
 function generateKey(alg, scope) {
@@ -211,7 +211,7 @@ function generateKey(alg, scope) {
 }
 
 function signData(key, data) {
-	return window.crypto.subtle.sign(signAlgorithm, key, textToArrayBuffer(data));
+	return crypto.subtle.sign(signAlgorithm, key, textToArrayBuffer(data));
 }
 function testVerifySig(pub, sig, data) {
 	return crypto.subtle.verify(signAlgorithm, pub, sig, data);

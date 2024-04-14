@@ -112,6 +112,10 @@ button img, .button img {
 	display: block;
 	pointer-events: none;
 }
+button img.inline, .button img.inline {
+	display: inline-block;
+	vertical-align: text-bottom;
+}
 button img.loader, .button img.loader {
 	visibility: hidden;
 	position: absolute;

@@ -404,9 +404,21 @@ function restoreGroupState() {
 	}
 }
 
-function generateRandomPassword(length=12) {
-	var charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-	var generated = '';
+const STORAGE_KEY_SETTINGS = 'settings';
+function getSetting(name, def=null) {
+	let settings = JSON.parse(localStorage.getItem(STORAGE_KEY_SETTINGS));
+	if(!settings) return def;
+	return settings[name] || def;
+}
+function setSetting(name, value) {
+	let settings = JSON.parse(localStorage.getItem(STORAGE_KEY_SETTINGS));
+	if(!settings) settings = {};
+	settings[name] = value;
+	localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(settings));
+}
+
+function generateRandomPassword(length=13, charset='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789') {
+	let generated = '';
 	for(var i = 0, n = charset.length; i < length; ++i) {
 		generated += charset.charAt(Math.floor(Math.random() * n));
 	}
@@ -950,8 +962,7 @@ function showPasswordDetails(id=null) {
 		copyInputValueToClipboard(txtPassword);
 	});
 	clone.querySelectorAll('.btnGeneratePassword')[0].addEventListener('click', function(e){
-		txtPassword.value = generateRandomPassword();
-		txtPassword.type = 'text';
+		showPasswordGenerator(txtPassword);
 	});
 	clone.querySelectorAll('.btnShowHidePassword')[0].addEventListener('click', function(e){
 		togglePasswordInput(txtPassword);
@@ -1049,6 +1060,40 @@ function showPasswordDetails(id=null) {
 	document.body.appendChild(clone);
 	windowOpenAnimation(clone);
 	txtTitle.focus();
+}
+function showPasswordGenerator(input) {
+	// create details window on current main window position
+	const clone = divPasswordGeneratorTemplateContainer.cloneNode(true);
+	clone.removeAttribute('id');
+	clone.style.top = (parseInt(divVaultContainer.style.top)+35) + 'px';
+	clone.style.left = (parseInt(divVaultContainer.style.left)+35) + 'px';
+	// identify inputs
+	let txtCharCount = clone.querySelectorAll('[name=txtCharCount]')[0];
+	let txtCharset = clone.querySelectorAll('[name=txtCharset]')[0];
+	let txtGeneratedPassword = clone.querySelectorAll('[name=txtGeneratedPassword]')[0];
+	let btnGeneratePassword = clone.querySelectorAll('.btnGeneratePassword')[0];
+	// set defaults
+	txtCharCount.value = getSetting('generatorCharCount', '13');
+	txtCharset.value = getSetting('generatorCharset', 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789');
+	// add actions
+	activateMouseDragForParent(clone.querySelectorAll('.titlebar')[0]);
+	let closeAnimation = windowCloseAction(clone);
+	clone.querySelectorAll('.btnGeneratePassword')[0].addEventListener('click', function(e){
+		txtGeneratedPassword.value = generateRandomPassword(parseInt(txtCharCount.value), txtCharset.value);
+	});
+	clone.querySelectorAll('.btnGeneratePassword')[0].click();
+	clone.querySelectorAll('.btnApply')[0].addEventListener('click', function(e){
+		input.value = txtGeneratedPassword.value;
+		input.type = 'text';
+		closeAnimation();
+		setSetting('generatorCharCount', txtCharCount.value);
+		setSetting('generatorCharset', txtCharset.value);
+	});
+	clone.querySelectorAll('.btnClose')[0].addEventListener('click', closeAnimation);
+	// show with animation
+	document.body.appendChild(clone);
+	windowOpenAnimation(clone);
+	btnGeneratePassword.focus();
 }
 
 function isOwnUserIdIncluded(userIds, groupIds) {

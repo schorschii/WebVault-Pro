@@ -243,4 +243,39 @@
 		</table>
 	</div>
 </div>
+
+<div id="divPasswordGeneratorTemplateContainer" class="childWindow box opaquebox fullscreen invisible">
+	<div class="titlebar">
+		<button class="btnApply" title="{{ "apply"|trans }}"><img src="img/tick.svg"></button>
+		<button class="btnClose" title="{{ "close"|trans }}"><img src="img/close.svg"></button>
+	</div>
+	<div class="usergroups box">
+		<table class="inputtable members">
+			<tr>
+				<th>{{ "char_count"|trans }}</th>
+				<td>
+					<input type="number" name="txtCharCount" min="1" max="99">
+				</td>
+			</tr>
+			<tr>
+				<th>{{ "charset"|trans }}</th>
+				<td>
+					<input type="text" name="txtCharset">
+				</td>
+			</tr>
+			<tr>
+				<th></th>
+				<td>
+					<button class="btnGeneratePassword"><img class="inline" src="img/generator.svg">&nbsp;{{ "generate_password"|trans }}</button>
+				</td>
+			</hr>
+			<tr>
+				<th>{{ "generated_password"|trans }}</th>
+				<td>
+					<input type="text" name="txtGeneratedPassword" readonly="true">
+				</td>
+			</tr>
+		</table>
+	</div>
+</div>
 {% endblock %}

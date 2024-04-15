@@ -1200,7 +1200,8 @@ function addShareGroupRow(shareTable, groupId) {
 	shareTable.appendChild(tr);
 }
 
-function truncate(str, n=25){
+function truncate(str, n=null){
+	if(!n) n = getSetting('truncateChars', 60);
 	return (str.length > n) ? str.slice(0, n-1) + '…' : str;
 }
 function onlyUnique(value, index, array) {

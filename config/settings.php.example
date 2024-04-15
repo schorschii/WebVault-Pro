@@ -61,7 +61,6 @@ $settings['ldapSync'] = [
    - 'sessionTimeout': session timeout in seconds
    - 'displayErrorDetails': whether to display PHP errors to the user
    - 'defaultLanguage': default language to use (2 char lang code)
-   - 'shortenText': char amount for shortening texts
    - 'customStylesheet': optional path to a custom stylesheet to include with your corporate design
    - 'subtitle': optional web app title (branding)
 ***/
@@ -71,6 +70,5 @@ $settings['sessionTimeout']         = 60/*s*/ * 15/*m*/;
 $settings['displayErrorDetails']    = true;
 $settings['addContentLengthHeader'] = false;
 $settings['defaultLanguage']        = 'en';
-$settings['shortenText']            = 21;
 $settings['customStylesheet']       = '';
 $settings['subtitle']               = '';

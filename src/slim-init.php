@@ -1,6 +1,6 @@
 <?php
 
-const APP_VERSION = '1.0.0-RC2';
+const APP_VERSION = '1.0.0-RC3';
 
 
 // init session
@@ -33,7 +33,6 @@ $containerBuilder->addDefinitions([
 		]);
 		$langCtrl = new XVault\Controllers\LanguageController();
 		$view->addExtension(new XVault\Twig_Extensions\TranslateFilterExtension($langCtrl));
-		$view->addExtension(new XVault\Twig_Extensions\ShortFilterExtension(21));
 		return $view;
 	},
 	XVault\Controllers\RedirectController::class => function ($containerInterface) {

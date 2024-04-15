@@ -241,15 +241,22 @@ class VaultController {
 			if(empty($json['title']) || empty(trim($json['title']))) {
 				throw new Exception($this->langCtrl->translate('title_cannot_be_empty'));
 			}
-			if(empty($json['share_users'])) {
+			if(!isset($json['share_users']) || !isset($json['share_groups'])
+			|| !is_array($json['share_users']) || !is_array($json['share_groups'])) {
 				throw new Exception('Not shared to any user');
-			}
-			if(!in_array($_SESSION['user_id'], $json['share_users'])) {
-				throw new Exception('Not shared to yourself');
 			}
 			if(!array_key_exists('parent_password_group_id', $json)) {
 				throw new Exception($this->langCtrl->translate('choose_another_parent_group'));
 			}
+			$absoluteShareUserIds = $json['share_users'];
+			foreach($json['share_groups'] as $group_id) {
+				$absoluteShareUserIds = array_merge($absoluteShareUserIds, $this->db->selectAllUserIdByUserGroup($group_id));
+			}
+			if(!in_array($_SESSION['user_id'], $absoluteShareUserIds)) {
+				throw new Exception('Not shared to yourself');
+			}
+
+			// permission check
 			if(!empty($json['parent_password_group_id']) && !in_array($_SESSION['user_id'], $this->db->selectAllUserByPasswordGroupShare($json['parent_password_group_id']))) {
 				throw new Exception('Permission denied');
 			}
@@ -290,16 +297,20 @@ class VaultController {
 			if(empty($json['title']) || empty(trim($json['title']))) {
 				throw new Exception($this->langCtrl->translate('title_cannot_be_empty'));
 			}
-			if(empty($json['share_users'])) {
+			if(!isset($json['share_users']) || !isset($json['share_groups'])
+			|| !is_array($json['share_users']) || !is_array($json['share_groups'])) {
 				throw new Exception('Not shared to any user');
-			}
-			if(!in_array($_SESSION['user_id'], $json['share_users'])) {
-				var_dump($json['share_users']);
-				throw new Exception('Not shared to yourself');
 			}
 			if(!array_key_exists('parent_password_group_id', $json)
 			|| $json['parent_password_group_id'] == $id) {
 				throw new Exception($this->langCtrl->translate('choose_another_parent_group'));
+			}
+			$absoluteShareUserIds = $json['share_users'];
+			foreach($json['share_groups'] as $group_id) {
+				$absoluteShareUserIds = array_merge($absoluteShareUserIds, $this->db->selectAllUserIdByUserGroup($group_id));
+			}
+			if(!in_array($_SESSION['user_id'], $absoluteShareUserIds)) {
+				throw new Exception('Not shared to yourself');
 			}
 
 			// permission check

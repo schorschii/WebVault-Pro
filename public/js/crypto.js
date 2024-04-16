@@ -207,19 +207,67 @@ function testVerifySig(pub, sig, data) {
 	return crypto.subtle.verify(signAlgorithm, pub, sig, data);
 }
 
-function encryptData(vector, key, data, userId=null, passwordId=null) {
-	return crypto.subtle.encrypt(
-		{ name: 'RSA-OAEP', iv: vector },
-		key,
-		textToArrayBuffer(data)
-	).then((encrypted) => {
-		return Promise.resolve({'encrypted':encrypted, 'userId':userId, 'passwordId':passwordId});
-	})
+// RSA can not directly encrypt data larger than the used key.
+// We need to use a symmetric cipher, encrypt the large data with it using a secure mode (GCM).
+// Then, encrypt the symmetric key with the RSA public key.
+function encryptData(rsaPubKey, data, userId=null, passwordId=null) {
+	let _rsaIv = getRandomCryptoValues(16);
+	let _aesIv = getRandomCryptoValues(12);
+	let _aesKey;
+	let _aesEncrypted;
+	return window.crypto.subtle.generateKey(
+		{ name: 'AES-GCM', length: 256 },
+		true,
+		['encrypt', 'decrypt'],
+	).then((aesKey) => {
+		_aesKey = aesKey;
+		return crypto.subtle.encrypt(
+			{ name: 'AES-GCM', iv: _aesIv },
+			aesKey,
+			textToArrayBuffer(data)
+		)
+	}).then((aesEncrypted) => {
+		_aesEncrypted = aesEncrypted;
+		return crypto.subtle.exportKey('raw', _aesKey);
+	}).then((exportedAesKey) => crypto.subtle.encrypt(
+		{ name: 'RSA-OAEP', iv: _rsaIv },
+		rsaPubKey,
+		exportedAesKey
+	)).then((rsaEncrypted) => {
+		return Promise.resolve({
+			'encrypted':  arrayBufferToBase64String(_aesEncrypted), 'encryptedAesKey':  arrayBufferToBase64String(rsaEncrypted),
+			'rsaIv':  arrayBufferToBase64String(_rsaIv), 'aesIv':  arrayBufferToBase64String(_aesIv),
+			'userId': userId, 'passwordId': passwordId
+		});
+	});
 }
-function decryptData(vector, key, data) {
+function decryptData(rsaPrivKey, encryptedAesKey, aesIv, rsaIv, data) {
 	return crypto.subtle.decrypt(
-		{ name: 'RSA-OAEP', iv: vector },
-		key,
-		data
-	)
+		{ name: 'RSA-OAEP', iv: base64StringToArrayBuffer(rsaIv) },
+		rsaPrivKey,
+		base64StringToArrayBuffer(encryptedAesKey)
+	).then((aesKeyBytes) => crypto.subtle.importKey(
+		'raw', aesKeyBytes, 'AES-GCM', true, scopesEncryptDecrypt
+	)).then((aesKey) => crypto.subtle.decrypt(
+		{ name: 'AES-GCM', iv: base64StringToArrayBuffer(aesIv) },
+		aesKey,
+		base64StringToArrayBuffer(data)
+	)).then((decrypted) => {
+		return Promise.resolve(arrayBufferToText(decrypted));
+	});
+}
+
+function testEncryptDecrypt() {
+	let text = 'Lorem ipsum dolor sit amet';
+	let keyPair;
+	generateKey(encryptAlgorithm, scopesEncryptDecrypt)
+	.then((pair) => {
+		keyPair = pair;
+		return encryptData(pair.publicKey, text);
+	})
+	.then((result) => {
+		console.log(result);
+		return decryptData(result.rsaIv, result.aesIv, keyPair.privateKey, result.encryptedAesKey, result.encrypted)
+	})
+	.then((decrypted) => console.log(decrypted));
 }

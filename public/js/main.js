@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
 	btnNewPassword.addEventListener('click', () => showPasswordDetails());
 	btnNewGroup.addEventListener('click', () => showGroupDetails());
 	btnUserGroups.addEventListener('click', () => showUserGroupsManagement());
+	btnImport.addEventListener('click', () => showImport());
 	btnReload.addEventListener('click', () => {
 		imgReload.classList.add('rotating');
 		divVault.classList.add('loading');
@@ -192,9 +193,9 @@ function loadVault(privKey=null, pubKey=null) {
 		let promiseChain = Promise.resolve();
 		response.passwords.forEach((password) => {
 			promiseChain = promiseChain.then(() =>
-				decryptData(base64StringToArrayBuffer(password.iv), sessionKeys['private'], base64StringToArrayBuffer(password.secret))
+				decryptData(sessionKeys['private'], password.aes_key, password.aes_iv, password.rsa_iv, password.secret)
 				.then((decrypted) => {
-					let decryptedData = JSON.parse(arrayBufferToText(decrypted));
+					let decryptedData = JSON.parse(decrypted);
 					sessionVaultContent['passwords'][password.id] = {
 						'revision':password.revision,
 						'group':password.password_group_id, 'title':decryptedData.title,
@@ -589,8 +590,8 @@ function showUserGroupManagement(id=null) {
 					for(let userId in targetPublicKeys) {
 						promiseChain.push(
 							importPublicKey(targetPublicKeys[userId], userId, passwordId)
+							.then((result) => encryptData(iv, result.key, JSON.stringify(secret), result.userId, result.passwordId))
 							.then((result) => {
-								let iv = getRandomCryptoValues(16);
 								if(!(result.passwordId in encryptedPasswords)) {
 									encryptedPasswords[result.passwordId] = {
 										'revision': sessionVaultContent['passwords'][passwordId].revision,
@@ -599,14 +600,9 @@ function showUserGroupManagement(id=null) {
 									};
 								}
 								encryptedPasswords[result.passwordId][result.userId] = {
-									'iv': arrayBufferToBase64String(iv),
-									'secret': null, // filled in next step
+									'aes_iv': result.aesIv, 'rsa_iv': result.rsaIv,
+									'aes_key': result.encryptedAesKey, 'secret': result.encrypted,
 								};
-								return encryptData(iv, result.key, JSON.stringify(secret), result.userId, result.passwordId);
-							})
-							.then((result) => {
-								encryptedPasswords[result.passwordId][result.userId]['secret'] = arrayBufferToBase64String(result.encrypted);
-								return Promise.resolve();
 							})
 						);
 					}
@@ -669,6 +665,114 @@ function showUserGroupsManagement() {
 	divUserGroupsContainer.querySelectorAll('.btnClose')[0].onclick = windowCloseAction(divUserGroupsContainer,false);
 	// show with animation
 	windowOpenAnimation(divUserGroupsContainer);
+}
+function showImport() {
+	divImportContainer.style.top = (parseInt(divVaultContainer.style.top)+35) + 'px';
+	divImportContainer.style.left = (parseInt(divVaultContainer.style.left)+35) + 'px';
+	// add actions
+	let closeAction = windowCloseAction(divImportContainer,false);
+	activateMouseDragForParent(divImportContainer.querySelectorAll('.titlebar')[0]);
+	divImportContainer.querySelectorAll('.btnImport')[0].onclick = function(){
+		importCsvFile(divImportContainer.querySelectorAll('[name=fleInputFile]')[0].files[0])
+		.then((rows) => {
+			rows = rows.slice(1); // cut header row
+			importEntries(rows)
+			.then(() => {
+				divImportContainer.querySelectorAll('.btnImport')[0].classList.remove('loading');
+				divImportContainer.querySelectorAll('.btnImport')[0].disabled = false;
+				populateVaultWindowEntries();
+				closeAction();
+			})
+			.catch((error) => {
+				console.warn(error);
+				alert(error);
+			});
+		});
+		this.classList.add('loading');
+		this.disabled = true;
+	};
+	divImportContainer.querySelectorAll('.btnClose')[0].onclick = closeAction;
+	// show with animation
+	windowOpenAnimation(divImportContainer);
+}
+function getGroupId(name, parent) {
+	for(let groupId in sessionVaultContent['groups']) {
+		if(sessionVaultContent['groups'][groupId]['title'] == name
+		&& sessionVaultContent['groups'][groupId]['group'] == parent) {
+			return groupId;
+		}
+	}
+}
+async function importEntries(rows) {
+	return new Promise(async function(resolve, reject){
+		for(let i=0; i<rows.length; i++) {
+			let row = rows[i];
+			if(row.length < 6) continue;
+			let path = row[0].split('/');
+			let groupId = null;
+			// get existing group or create a new one
+			if(path.length > 1 || path[0] != '') {
+				for(let n=0; n<path.length; n++) {
+					let existingGroupId = getGroupId(path[n], groupId);
+					if(existingGroupId) {
+						groupId = existingGroupId;
+					} else {
+						await jsonRequest('POST', 'vault/group',
+						{
+							'parent_password_group_id': groupId, 'title': path[n],
+							'share_users': [sessionEnvironment['userId']], 'share_groups': [],
+						})
+						.then((response) => {
+							// append to session vault
+							sessionVaultContent['groups'][response.id] = {
+								'group':groupId, 'title':path[n],
+								'share_users':[sessionEnvironment['userId']], 'share_groups':[]
+							};
+							groupId = response.id;
+						});
+					}
+				}
+			}
+			// create the password entry
+			let secret = {
+				'title': row[1],
+				'username': row[2],
+				'password': row[3],
+				'url': row[4],
+				'description': row[5],
+			};
+			let encrypted = {};
+			let userId = sessionEnvironment['userId'];
+			let targetPublicKeys = {};
+			targetPublicKeys[userId] = sessionEnvironment['users'][userId]['public_key'];
+			await importPublicKey(targetPublicKeys[userId], userId)
+			.then((result) => encryptData(result.key, JSON.stringify(secret), result.userId))
+			.then((result) => {
+				encrypted[result.userId] = {
+					'aes_iv': result.aesIv, 'rsa_iv': result.rsaIv,
+					'aes_key': result.encryptedAesKey, 'secret': result.encrypted,
+				};
+			})
+			.then(() => jsonRequest(
+				'POST', 'vault/password',
+				{
+					'password_group_id': groupId, 'password_data': encrypted,
+					'share_users': [sessionEnvironment['userId']], 'share_groups': []
+				}
+			))
+			.then((response) => {
+				// append to session vault
+				sessionVaultContent['passwords'][response.id] = {
+					'revision':response.revision,
+					'group':groupId, 'title':secret.title,
+					'username':secret.username, 'password':secret.password,
+					'url':secret.url, 'description':secret.description,
+					'share_users':[sessionEnvironment['userId']], 'share_groups':[]
+				};
+			}).catch((error) => console.warn(error))
+		}
+		resolve();
+	});
 }
 
 function showGroupDetails(id=null) {
@@ -805,22 +909,17 @@ function showGroupDetails(id=null) {
 				for(let userId in targetPublicKeys) {
 					promiseChain.push(
 						importPublicKey(targetPublicKeys[userId], userId, passwordId)
+						.then((result) => encryptData(result.key, JSON.stringify(secret), result.userId, result.passwordId))
 						.then((result) => {
-							let iv = getRandomCryptoValues(16);
 							if(!(result.passwordId in encryptedPasswords)) {
 								encryptedPasswords[result.passwordId] = {
 									'revision': entriesToUpdate.passwords[passwordId].revision,
 								};
 							}
 							encryptedPasswords[result.passwordId][result.userId] = {
-								'iv': arrayBufferToBase64String(iv),
-								'secret': null, // filled in next step
+								'aes_iv': result.aesIv, 'rsa_iv': result.rsaIv,
+								'aes_key': result.encryptedAesKey, 'secret': result.encrypted,
 							};
-							return encryptData(iv, result.key, JSON.stringify(secret), result.userId, result.passwordId);
-						})
-						.then((result) => {
-							encryptedPasswords[result.passwordId][result.userId]['secret'] = arrayBufferToBase64String(result.encrypted);
-							return Promise.resolve();
 						})
 					);
 				}
@@ -1016,17 +1115,12 @@ function showPasswordDetails(id=null) {
 		for(let userId in targetPublicKeys) {
 			promiseChain.push(
 				importPublicKey(targetPublicKeys[userId], userId)
+				.then((result) => encryptData(result.key, JSON.stringify(secret), result.userId))
 				.then((result) => {
-					let iv = getRandomCryptoValues(16);
 					encrypted[result.userId] = {
-						'iv': arrayBufferToBase64String(iv),
-						'secret': null, // filled in next step
+						'aes_iv': result.aesIv, 'rsa_iv': result.rsaIv,
+						'aes_key': result.encryptedAesKey, 'secret': result.encrypted,
 					};
-					return encryptData(iv, result.key, JSON.stringify(secret), result.userId);
-				})
-				.then((result) => {
-					encrypted[result.userId]['secret'] = arrayBufferToBase64String(result.encrypted);
-					return Promise.resolve();
 				})
 			);
 		}
@@ -1206,4 +1300,68 @@ function truncate(str, n=null){
 }
 function onlyUnique(value, index, array) {
 	return array.indexOf(value) === index;
+}
+
+function importCsvFile(file) {
+	if(!file) return;
+	return new Promise(function(resolve, reject) {
+		var reader = new FileReader();
+		reader.readAsText(file, 'UTF-8');
+		reader.onload = function(evt) {
+			resolve(parseCsvToArray(evt.target.result));
+		}
+		reader.onerror = function(evt) {
+			alert('Error reading CSV import file');
+			reject();
+		}
+	});
+}
+function parseCsvToArray(strData, strDelimiter=',') {
+	var objPattern = new RegExp(
+		(
+			"(\\" + strDelimiter + "|\\r?\\n|\\r|^)" + // delimiters
+			"(?:\"([^\"]*(?:\"\"[^\"]*)*)\"|" + // quoted fields
+			"([^\"\\" + strDelimiter + "\\r\\n]*))" // standard fields
+		),
+		"gi"
+	);
+	var arrData = [[]];
+	var arrMatches = null;
+	while(arrMatches = objPattern.exec( strData )) {
+		var strMatchedDelimiter = arrMatches[ 1 ];
+
+		// Check to see if the given delimiter has a length
+		// (is not the start of string) and if it matches
+		// field delimiter. If id does not, then we know
+		// that this delimiter is a row delimiter.
+		if(
+			strMatchedDelimiter.length &&
+			strMatchedDelimiter !== strDelimiter
+		) {
+			// Since we have reached a new row of data,
+			// add an empty row to our data array.
+			arrData.push( [] );
+		}
+
+		// Now that we have our delimiter out of the way,
+		// let's check to see which kind of value we
+		// captured (quoted or unquoted).
+		var strMatchedValue;
+		if(arrMatches[ 2 ]) {
+			// We found a quoted value. When we capture
+			// this value, unescape any double quotes.
+			strMatchedValue = arrMatches[ 2 ].replace(
+				new RegExp( "\"\"", "g" ),
+				"\""
+			);
+		} else {
+			// We found a non-quoted value.
+			strMatchedValue = arrMatches[ 3 ] ?? '';
+		}
+
+		// Now that we have our value string, let's add
+		// it to the data array.
+		arrData[ arrData.length - 1 ].push( strMatchedValue );
+	}
+	return arrData;
 }

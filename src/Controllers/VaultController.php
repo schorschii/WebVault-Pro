@@ -57,7 +57,9 @@ class VaultController {
 					'password_group_id' => $password->password_group_id,
 					'revision' => $password->revision,
 					'secret' => $password->secret,
-					'iv' => $password->iv,
+					'aes_key' => $password->aes_key,
+					'aes_iv' => $password->aes_iv,
+					'rsa_iv' => $password->rsa_iv,
 					'share_users' => $this->db->selectAllSharedUserIdByPassword($password->id),
 					'share_groups' => $this->db->selectAllSharedUserGroupIdByPassword($password->id),
 				];
@@ -194,7 +196,7 @@ class VaultController {
 			$this->db->insertPasswordData(
 				$password_id, $user_id,
 				$revision,
-				$data['secret'], $data['iv']
+				$data['secret'], $data['aes_key'], $data['aes_iv'], $data['rsa_iv']
 			);
 		}
 		$this->db->deletePasswordUserShareByPassword($password_id);

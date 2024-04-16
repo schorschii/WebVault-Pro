@@ -190,7 +190,7 @@ class DatabaseController {
 
 	public function selectAllPasswordByUser($user_id) {
 		$this->stmt = $this->dbh->prepare(
-			'SELECT p.id, p.password_group_id, pd.revision, pd.secret, pd.iv
+			'SELECT p.id, p.password_group_id, pd.revision, pd.secret, pd.aes_key, pd.aes_iv, pd.rsa_iv
 			FROM password_data pd JOIN password p ON pd.password_id = p.id
 			WHERE pd.user_id = :user_id
 			AND p.id IN (
@@ -237,17 +237,19 @@ class DatabaseController {
 		$this->stmt->execute([':password_group_id' => $password_group_id]);
 		return $this->dbh->lastInsertId();
 	}
-	public function insertPasswordData($password_id, $user_id, $revision, $secret, $iv) {
+	public function insertPasswordData($password_id, $user_id, $revision, $secret, $aes_key, $aes_iv, $rsa_iv) {
 		$this->stmt = $this->dbh->prepare(
-			'INSERT INTO password_data (password_id, user_id, revision, secret, iv)
-			VALUES (:password_id, :user_id, :revision, :secret, :iv)'
+			'INSERT INTO password_data (password_id, user_id, revision, secret, aes_key, aes_iv, rsa_iv)
+			VALUES (:password_id, :user_id, :revision, :secret, :aes_key, :aes_iv, :rsa_iv)'
 		);
 		$this->stmt->execute([
 			':password_id' => $password_id,
 			':user_id' => $user_id,
 			':revision' => $revision,
 			':secret' => $secret,
-			':iv' => $iv,
+			':aes_key' => $aes_key,
+			':aes_iv' => $aes_iv,
+			':rsa_iv' => $rsa_iv,
 		]);
 		return $this->dbh->lastInsertId();
 	}

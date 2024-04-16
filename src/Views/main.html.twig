@@ -46,6 +46,7 @@
 		<button id="btnNewPassword" title="{{ "new_entry"|trans }}"><img src="img/add.svg"></button>
 		<button id="btnNewGroup" title="{{ "new_group"|trans }}"><img src="img/folder_new.svg"></button>
 		<button id="btnUserGroups" title="{{ "user_group_management"|trans }}"><img src="img/group.svg"></button>
+		<button id="btnImport" title="{{ "import"|trans }}"><img src="img/import.svg"></button>
 		<button id="btnReload" title="{{ "reload"|trans }}"><img id="imgReload" src="img/reload.svg"></button>
 		<button id="btnLogout" title="{{ "log_out"|trans }}"><img src="img/logout.svg"></button>
 	</div>
@@ -273,6 +274,39 @@
 				<th>{{ "generated_password"|trans }}</th>
 				<td>
 					<input type="text" name="txtGeneratedPassword" readonly="true">
+				</td>
+			</tr>
+		</table>
+	</div>
+</div>
+
+<div id="divImportContainer" class="childWindow box opaquebox fullscreen invisible">
+	<div class="titlebar">
+		<button class="btnClose" title="{{ "close"|trans }}"><img src="img/close.svg"></button>
+	</div>
+	<div class="box">
+		<table class="inputtable">
+			<tr>
+				<td colspan="2" class="description">
+					{{ "csv_import_notes"|trans }}
+				</td>
+			</tr>
+			<tr>
+				<td colspan="2" class="description">
+					Group, Title, Username, Password, URL, Notes, TOTP, Icon, Last Modified, Created
+				</td>
+			</tr>
+			<tr>
+				<th>{{ "file"|trans }}</th>
+				<td><input type="file" name="fleInputFile"></td>
+			</tr>
+			<tr>
+				<th></th>
+				<td>
+					<button class="btnImport">
+						<span><img class="inline" src="img/import.svg">&nbsp;{{ "import"|trans }}</span>
+						<img class="loader" src="img/loader.svg">
+					</button>
 				</td>
 			</tr>
 		</table>

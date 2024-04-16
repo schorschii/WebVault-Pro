@@ -57,4 +57,6 @@ return [
 	'private_key_decryption_error' => 'Ihr privater Schlüssel konnte nicht entschlüsselt werden. Wenn Sie Ihr Passwort geändert haben, geben Sie bitte zusätzlich Ihr altes Passwort an. Der Schlüssel wird dann mit Ihrem aktuellen Kennwort neu verschlüsselt.',
 	'httpwarn' => 'Sie greifen auf diese Seite via HTTP zu, dies ist sehr unsicher. Außerdem funktioniert die Crypto-API der Browser nur via HTTPS.',
 	'crypto_api_unavailable' => 'Ihr Browser bietet keine Crypto-API an.',
+	'csv_import_notes' => 'Für den Import werden CSV-Dateien mit der folgenden Spaltenreihenfolge unterstützt. Dies entspricht dem KeePassXC-Exportformat. Die erste Zeile wird als Spaltenkopf interpretiert und daher ignoriert.',
+	'file' => 'Datei',
 ];

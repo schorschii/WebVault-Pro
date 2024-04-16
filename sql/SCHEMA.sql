@@ -28,7 +28,9 @@ CREATE TABLE `password_data` (
   `user_id` int(11) NOT NULL,
   `revision` int(11) NOT NULL DEFAULT 0,
   `secret` text NOT NULL,
-  `iv` text NOT NULL,
+  `aes_key` text NOT NULL,
+  `aes_iv` tinytext NOT NULL,
+  `rsa_iv` tinytext NOT NULL,
   `created` datetime NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 

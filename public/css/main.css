@@ -287,6 +287,10 @@ input[type=submit]:not(.nobold) {
 .inputtable {
 	width: 100%;
 }
+.inputtable td.description {
+	max-width: 280px;
+	text-align: left;
+}
 .inputtable th:not(.file) {
 	text-align: left;
 	vertical-align: middle;

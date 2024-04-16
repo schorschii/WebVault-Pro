@@ -19,8 +19,8 @@ function activateMouseDragForParent(div) {
 	}, true);
 
 	document.addEventListener('mousemove', function(event) {
-		event.preventDefault();
 		if(isDown) {
+			event.preventDefault();
 			mousePosition = {
 				x : event.clientX,
 				y : event.clientY

@@ -31,6 +31,8 @@ class UserController {
 			$user = $this->db->selectUserByUsername($json['username']??'');
 			if(!$user || !$this->checkPassword($user, $json['password']??''))
 				throw new Exception('Invalid credentials');
+			if($user->locked)
+				throw new Exception('User is locked');
 
 			$_SESSION['user_id'] = $user->id;
 
@@ -60,7 +62,7 @@ class UserController {
 
 	public function session(Request $request, Response $response, $args) {
 		try {
-			self::checkLogin();
+			$this->vc->checkLogin();
 			$response->getBody()->write(json_encode([
 				'success' => true
 			]));
@@ -217,12 +219,6 @@ class UserController {
 	}
 
 	/*** Login Functions ***/
-	static function checkLogin() {
-		if(empty($_SESSION['user_id'])) {
-			throw new Exception('Not logged in');
-		}
-	}
-
 	private function checkPassword($user, $checkPassword) {
 		$result = false;
 		if($user->ldap) {

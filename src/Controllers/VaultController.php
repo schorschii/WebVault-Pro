@@ -46,7 +46,7 @@ class VaultController {
 	/*** JSON API Request Handling ***/
 	public function getEntries(Request $request, Response $response, $args) {
 		try {
-			UserController::checkLogin();
+			$this->checkLogin();
 
 			$passwords = [];
 			foreach($this->db->selectAllPasswordByUser($_SESSION['user_id']) as $password) {
@@ -89,7 +89,7 @@ class VaultController {
 
 	public function createPassword(Request $request, Response $response, $args) {
 		try {
-			UserController::checkLogin();
+			$this->checkLogin();
 			$json = JsonRpc::parseJsonRequest($request);
 
 			// input checks
@@ -120,7 +120,7 @@ class VaultController {
 
 	public function editPassword(Request $request, Response $response, $args) {
 		try {
-			UserController::checkLogin();
+			$this->checkLogin();
 			$password_id = $request->getAttribute('id');
 			$json = JsonRpc::parseJsonRequest($request);
 
@@ -217,7 +217,7 @@ class VaultController {
 
 	public function removePassword(Request $request, Response $response, $args) {
 		try {
-			UserController::checkLogin();
+			$this->checkLogin();
 			$id = $request->getAttribute('id');
 
 			// permission check
@@ -242,7 +242,7 @@ class VaultController {
 
 	public function createGroup(Request $request, Response $response, $args) {
 		try {
-			UserController::checkLogin();
+			$this->checkLogin();
 			$json = JsonRpc::parseJsonRequest($request);
 
 			// input checks
@@ -297,7 +297,7 @@ class VaultController {
 
 	public function editGroup(Request $request, Response $response, $args) {
 		try {
-			UserController::checkLogin();
+			$this->checkLogin();
 			$id = $request->getAttribute('id');
 			$json = JsonRpc::parseJsonRequest($request);
 
@@ -392,7 +392,7 @@ class VaultController {
 
 	public function removeGroup(Request $request, Response $response, $args) {
 		try {
-			UserController::checkLogin();
+			$this->checkLogin();
 			$id = $request->getAttribute('id');
 
 			// permission check
@@ -413,6 +413,16 @@ class VaultController {
 		} catch(Exception $e) {
 			$response->getBody()->write($e->getMessage());
 			return $response->withStatus(400);
+		}
+	}
+
+	public function checkLogin() {
+		if(empty($_SESSION['user_id'])) {
+			throw new Exception('Not logged in');
+		}
+		$user = $this->db->selectUser($_SESSION['user_id']);
+		if(empty($user) || $user->locked) {
+			throw new Exception('Invalid user');
 		}
 	}
 

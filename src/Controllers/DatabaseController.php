@@ -137,7 +137,8 @@ class DatabaseController {
 		$this->stmt = $this->dbh->prepare(
 			'DELETE FROM user WHERE id = :id'
 		);
-		return $this->stmt->execute([':id' => $id]);
+		$this->stmt->execute([':id' => $id]);
+		return $this->stmt->rowCount();
 	}
 
 	public function insertUserGroup($title) {

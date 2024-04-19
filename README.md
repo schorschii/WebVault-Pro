@@ -21,9 +21,7 @@ The web app is independent of the client platform and it is not necessary to ins
 
 ## Setup
 ### Server Requirements
-Linux based server (Debian recommended) with Apache 2, PHP 7.4+ and MySQL/MariaDB.
-
-This app is mainly intended for usage with LDAP directories. Local user accounts are implemented too but only used for development or testing purposes.
+Linux based server (Debian recommended) with Apache 2, PHP 7.4+ and MySQL/MariaDB. An LDAP server is recommended since this app is mainly intended for usage with LDAP authentication.
 
 ### Server Installation
 0. Install necessary Linux packages: `apt install apache2 libapache2-mod-php php php-ldap composer`
@@ -43,7 +41,14 @@ This app is mainly intended for usage with LDAP directories. Local user accounts
    root@server:/# mysql -D pwsafe < sql/SCHEMA.sql
    ```
 4. Create `config/settings.php` from `config/settings.php.example` and enter your MySQL connection credentials, LDAP connection parameters and adjust other settings if you like. Read the comments in the [example file](config/settings.php.example) for more information.
-5. Thats it. Open a webbrowser, navigate to your installation and log in with a LDAP account.
+5. Create users:
+   - LDAP sync: execute `php bin/ldapsync.php` and set up a cron job as described in the example config file.
+   - Local user accounts: `php bin/user.php create USERNAME DISPLAY_NAME PASSWORD`.
+     Note that local accounts are only intended for testing or emergency purposes (you can add the local account to a user group of your top-level password folder so that every password gets encrypted to the local user too - this allows you to access passwords even if your LDAP server isn't working anymore).
+6. Thats it. Open a webbrowser, navigate to your installation and log in with an LDAP or local account.
+
+### Backup
+Don't forget to backup your database regularly, e.g. by executing `mysqldump pwsafe > backup.sql` via crontab. Save the file on another, secure storage!
 
 ### Hardening Recommendations
 - Transfer the ownership of the application files to root and deny write access for all other users. The web server user (www-data) should only be able to read the application files.

@@ -1,6 +1,6 @@
 <?php
 
-const APP_VERSION = '1.0.0-RC4';
+const APP_VERSION = '1.0.0-RC5';
 
 
 // init session

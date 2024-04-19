@@ -83,7 +83,7 @@ function importPublicKey(pemKey, user_id=null) {
 		});
 	});
 }
-function importPrivateKey(pemKey, passphrase=null, saltb64=null, ivb64=null) {
+function importPrivateKey(pemKey, passphrase=null, saltb64=null, ivb64=null, exportable=false) {
 	return new Promise(function(resolve, reject) {
 		if(passphrase) {
 			const enc = new TextEncoder();
@@ -105,7 +105,7 @@ function importPrivateKey(pemKey, passphrase=null, saltb64=null, ivb64=null) {
 				return crypto.subtle.unwrapKey(
 					'pkcs8', convertPemToBinary(pemKey), unwrappingKey,
 					{ name: 'AES-GCM', iv: base64StringToArrayBuffer(ivb64) },
-					encryptAlgorithm, false, ['decrypt'],
+					encryptAlgorithm, exportable, ['decrypt'],
 				);
 			}).then((key) => {
 				resolve(key);
@@ -114,7 +114,7 @@ function importPrivateKey(pemKey, passphrase=null, saltb64=null, ivb64=null) {
 			});
 		} else {
 			crypto.subtle.importKey(
-				'pkcs8', convertPemToBinary(pemKey), encryptAlgorithm, false, ['decrypt']
+				'pkcs8', convertPemToBinary(pemKey), encryptAlgorithm, exportable, ['decrypt']
 			).then(function(key) {
 				resolve(key)
 			}).catch((error) => {

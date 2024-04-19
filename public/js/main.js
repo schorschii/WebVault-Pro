@@ -95,19 +95,26 @@ function login() {
 				sessionEnvironment['groups'][item.id] = {'title': item.title, 'members': item.members};
 			});
 			// try to decrypt private key with password
-			return importPrivateKey(response.private_key, oldPassword, response.salt, response.iv)
+			let isPasswordChange = (oldPassword !== password);
+			return importPrivateKey(response.private_key, oldPassword, response.salt, response.iv, isPasswordChange)
 				.then((key) => {
-					let promiseChain = Promise.resolve();
-					if(oldPassword !== password) {
+					let promiseChain = [];
+					if(isPasswordChange) {
 						// re-encrypt private key with new password
-						console.log('Re-encrypted private key with new password');
-						promiseChain = exportPrivateKey(key, password)
-							.then((exportedPrivKey) => jsonRequest(
-								'POST', 'user/keys',
-								{'private_key':exportedPrivKey.key, 'salt':exportedPrivKey.salt, 'iv':exportedPrivKey.iv}
-							));
+						console.log('Re-encrypt private key with new password');
+						promiseChain.push(
+							exportPrivateKey(key, password)
+							.then((exportedPrivKey) => {
+								console.log('Upload re-encrypted private key');
+								return jsonRequest(
+									'POST', 'user/keys',
+									{'private_key':exportedPrivKey.key, 'salt':exportedPrivKey.salt, 'iv':exportedPrivKey.iv}
+								)
+							})
+						);
 					}
-					return promiseChain.then(() => loadVault(key))
+					return Promise.all(promiseChain)
+					.then(() => loadVault(key))
 					.then(() => loginToVaultAnimation());
 				}).catch((error) => {
 					infobox(divLoginInfoBox, 'yellow', strings.private_key_decryption_error);

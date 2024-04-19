@@ -85,17 +85,27 @@ class UserController {
 	public function setUserKeys(Request $request, Response $response, $args) {
 		try {
 			$json = JsonRpc::parseJsonRequest($request);
-			$pub_key = $json['public_key'];
+
+			// input checks
+			if(empty($json['private_key']) || empty($json['salt']) || empty($json['iv'])) {
+				throw new Exception('Missing data');
+			}
 			$user = $this->db->selectUser($_SESSION['user_id']);
-			if($user->public_key) {
+			if($user->public_key && !empty($json['public_key'])) {
 				// once a keypair was generated, it is not allowed to change it
 				// since the server can't re-encrypt the secrets to a new key
 				// it is only allowed to update the own private key with a new passphrase
-				$pub_key = $user->public_key;
+				throw new Exception('You cannot change your public key');
+			} elseif(!$user->public_key && empty($json['public_key'])) {
+				throw new Exception('Missing data');
 			}
+
+			// update data
 			$this->db->updateUserKeys($_SESSION['user_id'],
-				$pub_key, $json['private_key'], $json['salt'], $json['iv']
+				$user->public_key ?? $json['public_key'], $json['private_key'], $json['salt'], $json['iv']
 			);
+
+			// return response
 			$response->getBody()->write(json_encode([
 				'success' => true
 			]));

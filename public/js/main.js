@@ -1239,6 +1239,7 @@ function addUserGroupRow(groupTable, userGroupId, editAction) {
 	groupTable.appendChild(tr);
 }
 function addShareUserRow(shareTable, userId) {
+	if(!(userId in sessionEnvironment['users'])) return;
 	let user = sessionEnvironment['users'][userId];
 	let tr = document.createElement('TR');
 	tr.setAttribute('userid', userId);
@@ -1260,6 +1261,7 @@ function addShareUserRow(shareTable, userId) {
 	shareTable.appendChild(tr);
 }
 function addShareGroupRow(shareTable, groupId) {
+	if(!(groupId in sessionEnvironment['groups'])) return;
 	let group = sessionEnvironment['groups'][groupId];
 	let tr = document.createElement('TR');
 	tr.setAttribute('groupid', groupId);

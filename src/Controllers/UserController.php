@@ -9,15 +9,15 @@ use Slim\Psr7\Response as Response;
 class UserController {
 
 	private $container;
-
 	private $db;
+	private $vc;
+
 	private $ldapSync;
 
-	public function __construct($container) {
+	public function __construct($container, $db, $vaultController) {
 		$this->container = $container;
-
-		$dbsettings = $this->container->get('settings')['db'];
-		$this->db = new DatabaseController($dbsettings);
+		$this->db = $db;
+		$this->vc = $vaultController;
 
 		$ldapsettings = $this->container->get('settings')['ldapSync'];
 		$this->ldapSync = new LdapSyncController($ldapsettings, $this->db);
@@ -166,17 +166,15 @@ class UserController {
 			}
 			if(!empty($json['passwords']) && is_array($json['passwords'])) {
 				foreach($json['passwords'] as $password_id => $passwordUserData) {
-					$revision = $this->db->selectMaxPasswordRevision($password_id)->revision;
-					if(!isset($passwordUserData['revision']) || $passwordUserData['revision'] != $revision) {
+					$lastRevision = $this->db->selectMaxPasswordRevision($password_id);
+					if(!isset($passwordUserData['revision']) || $passwordUserData['revision'] != $lastRevision->revision) {
 						throw new Exception('Record was changed by another user. Please reload your vault and try again.');
 					}
-					$shareUsers = $passwordUserData['share_users'];
-					$shareGroups = $passwordUserData['share_groups'];
-					unset($passwordUserData['revision']);
-					unset($passwordUserData['share_users']);
-					unset($passwordUserData['share_groups']);
-					$vc = new VaultController($this->container);
-					$vc->updatePasswordData($password_id, $revision, $passwordUserData, $shareUsers, $shareGroups);
+					if(empty($passwordUserData['password_user']) || !is_array($passwordUserData['password_user'])) {
+						throw new Exception('No password user data');
+					}
+					$this->db->updatePassword($password_id, $lastRevision->password_group_id, $passwordUserData['secret'], $passwordUserData['aes_iv'], $lastRevision->revision+1);
+					$this->vc->updatePasswordUser($password_id, $passwordUserData['password_user']);
 				}
 			}
 			$this->db->commitTransaction();
@@ -221,7 +219,6 @@ class UserController {
 	/*** Login Functions ***/
 	static function checkLogin() {
 		if(empty($_SESSION['user_id'])) {
-			// todo: specific exception, return 401
 			throw new Exception('Not logged in');
 		}
 	}

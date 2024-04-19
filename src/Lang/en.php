@@ -59,4 +59,5 @@ return [
 	'crypto_api_unavailable' => 'Your browser does not offer crypto API support.',
 	'csv_import_notes' => 'The import accepts CSV files with the following column order. This is the KeePassXC export format.',
 	'file' => 'File',
+	'inherit_permissions' => 'Inherit permissions',
 ];

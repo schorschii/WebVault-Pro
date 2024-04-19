@@ -587,25 +587,17 @@ function showUserGroupManagement(id=null) {
 						'url': sessionVaultContent['passwords'][passwordId].url,
 						'description': sessionVaultContent['passwords'][passwordId].description,
 					};
-					for(let userId in targetPublicKeys) {
-						promiseChain.push(
-							importPublicKey(targetPublicKeys[userId], userId, passwordId)
-							.then((result) => encryptData(iv, result.key, JSON.stringify(secret), result.userId, result.passwordId))
-							.then((result) => {
-								if(!(result.passwordId in encryptedPasswords)) {
-									encryptedPasswords[result.passwordId] = {
-										'revision': sessionVaultContent['passwords'][passwordId].revision,
-										'share_users': sessionVaultContent['passwords'][passwordId].share_users,
-										'share_groups': sessionVaultContent['passwords'][passwordId].share_groups
-									};
-								}
-								encryptedPasswords[result.passwordId][result.userId] = {
-									'aes_iv': result.aesIv, 'rsa_iv': result.rsaIv,
-									'aes_key': result.encryptedAesKey, 'secret': result.encrypted,
-								};
-							})
-						);
-					}
+					promiseChain.push(
+						encryptData(targetPublicKeys, JSON.stringify(secret), passwordId)
+						.then((result) => {
+							encryptedPasswords[result.password_id] = {
+								'secret': result.secret,
+								'aes_iv': result.aes_iv,
+								'password_user': result.password_user,
+								'revision': sessionVaultContent['passwords'][result.password_id].revision,
+							};
+						})
+					);
 				}
 			}
 		}
@@ -616,6 +608,9 @@ function showUserGroupManagement(id=null) {
 			{'title':txtTitle.value, 'members':newGroupMemberIds, 'passwords':encryptedPasswords}
 		)).then((response) => {
 			sessionEnvironment['groups'][response.id] = {'title':txtTitle.value, 'members':newGroupMemberIds};
+			for(let passwordId in encryptedPasswords) {
+				sessionVaultContent['passwords'][passwordId]['revision'] += 1;
+			}
 			populateUserGroups();
 			closeAnimation();
 		}).catch((error) => {
@@ -741,32 +736,27 @@ async function importEntries(rows) {
 				'url': row[4],
 				'description': row[5],
 			};
-			let encrypted = {};
 			let userId = sessionEnvironment['userId'];
 			let targetPublicKeys = {};
 			targetPublicKeys[userId] = sessionEnvironment['users'][userId]['public_key'];
-			await importPublicKey(targetPublicKeys[userId], userId)
-			.then((result) => encryptData(result.key, JSON.stringify(secret), result.userId))
-			.then((result) => {
-				encrypted[result.userId] = {
-					'aes_iv': result.aesIv, 'rsa_iv': result.rsaIv,
-					'aes_key': result.encryptedAesKey, 'secret': result.encrypted,
-				};
-			})
-			.then(() => jsonRequest(
+			await encryptData(targetPublicKeys, JSON.stringify(secret))
+			.then((result) => jsonRequest(
 				'POST', 'vault/password',
 				{
-					'password_group_id': groupId, 'password_data': encrypted,
+					'password_group_id': groupId,
+					'secret': result.secret,
+					'aes_iv': result.aes_iv,
+					'password_user': result.password_user,
 					'share_users': [sessionEnvironment['userId']], 'share_groups': []
 				}
 			))
 			.then((response) => {
 				// append to session vault
 				sessionVaultContent['passwords'][response.id] = {
-					'revision':response.revision,
-					'group':groupId, 'title':secret.title,
-					'username':secret.username, 'password':secret.password,
-					'url':secret.url, 'description':secret.description,
+					'revision': response.revision,
+					'group': groupId, 'title': secret.title,
+					'username': secret.username, 'password': secret.password,
+					'url': secret.url, 'description': secret.description,
 					'share_users':[sessionEnvironment['userId']], 'share_groups':[]
 				};
 			}).catch((error) => console.warn(error))
@@ -786,6 +776,7 @@ function showGroupDetails(id=null) {
 	let txtTitle = clone.querySelectorAll('[name=txtTitle]')[0];
 	let sltShareUser = clone.querySelectorAll('[name=sltShareUser]')[0];
 	let sltShareUserGroup = clone.querySelectorAll('[name=sltShareUserGroup]')[0];
+	let chkInheritPermissions = clone.querySelectorAll('[name=chkInheritPermissions]')[0];
 	let tblShares = clone.querySelectorAll('.shares')[0];
 	// populate select boxes
 	populateGroupSelectBox(sltGroup, null, id);
@@ -896,7 +887,7 @@ function showGroupDetails(id=null) {
 		let entriesToUpdate = {'passwords':{}, 'groups':{}};
 		var encryptedPasswords = {};
 		let promiseChain = [];
-		if(id) {
+		if(id && chkInheritPermissions.checked) {
 			entriesToUpdate = getAllSubentriesOfGroup(id);
 			for(let passwordId in entriesToUpdate.passwords) {
 				let secret = {
@@ -906,23 +897,17 @@ function showGroupDetails(id=null) {
 					'url': entriesToUpdate.passwords[passwordId].url,
 					'description': entriesToUpdate.passwords[passwordId].description,
 				};
-				for(let userId in targetPublicKeys) {
-					promiseChain.push(
-						importPublicKey(targetPublicKeys[userId], userId, passwordId)
-						.then((result) => encryptData(result.key, JSON.stringify(secret), result.userId, result.passwordId))
-						.then((result) => {
-							if(!(result.passwordId in encryptedPasswords)) {
-								encryptedPasswords[result.passwordId] = {
-									'revision': entriesToUpdate.passwords[passwordId].revision,
-								};
-							}
-							encryptedPasswords[result.passwordId][result.userId] = {
-								'aes_iv': result.aesIv, 'rsa_iv': result.rsaIv,
-								'aes_key': result.encryptedAesKey, 'secret': result.encrypted,
-							};
-						})
-					);
-				}
+				promiseChain.push(
+					encryptData(targetPublicKeys, JSON.stringify(secret), passwordId)
+					.then((result) => {
+						encryptedPasswords[result.password_id] = {
+							'secret': result.secret,
+							'aes_iv': result.aes_iv,
+							'password_user': result.password_user,
+							'revision': sessionVaultContent['passwords'][result.password_id].revision,
+						};
+					})
+				);
 			}
 		}
 		// send update request
@@ -934,7 +919,7 @@ function showGroupDetails(id=null) {
 			{
 				'parent_password_group_id': group, 'title': txtTitle.value,
 				'share_users': shareUsers, 'share_groups': shareGroups,
-				'passwords': encryptedPasswords
+				'passwords': encryptedPasswords, 'groups': entriesToUpdate.groups
 			}
 		)).then((response) => {
 			// append to session vault
@@ -942,8 +927,13 @@ function showGroupDetails(id=null) {
 				'group':group, 'title':txtTitle.value,
 				'share_users':shareUsers, 'share_groups':shareGroups
 			};
-			// update share info of updated passwords
+			// update share info of updated entries
+			for(let groupId in entriesToUpdate.groups) {
+				sessionVaultContent['groups'][groupId]['share_users'] = shareUsers;
+				sessionVaultContent['groups'][groupId]['share_groups'] = shareGroups;
+			}
 			for(let passwordId in entriesToUpdate.passwords) {
+				sessionVaultContent['passwords'][passwordId]['revision'] += 1;
 				sessionVaultContent['passwords'][passwordId]['share_users'] = shareUsers;
 				sessionVaultContent['passwords'][passwordId]['share_groups'] = shareGroups;
 			}
@@ -1086,10 +1076,10 @@ function showPasswordDetails(id=null) {
 			'description': txtDescription.value,
 		};
 
+		// collect selected users and groups and compile target keys
 		let shareUsers = [];
 		let shareGroups = [];
 		let targetPublicKeys = {};
-		// add all other users and compile target keys
 		tblShares.querySelectorAll('tr').forEach(function(item){
 			let userId = item.getAttribute('userid') ? parseInt(item.getAttribute('userid')) : null;
 			let groupId = item.getAttribute('groupid') ? parseInt(item.getAttribute('groupid')) : null;
@@ -1109,38 +1099,28 @@ function showPasswordDetails(id=null) {
 			shareUsers.push(myUserId);
 			targetPublicKeys[myUserId] = sessionEnvironment['users'][myUserId]['public_key'];
 		}
-		// encrypt to all target keys
-		let encrypted = {};
-		let promiseChain = [];
-		for(let userId in targetPublicKeys) {
-			promiseChain.push(
-				importPublicKey(targetPublicKeys[userId], userId)
-				.then((result) => encryptData(result.key, JSON.stringify(secret), result.userId))
-				.then((result) => {
-					encrypted[result.userId] = {
-						'aes_iv': result.aesIv, 'rsa_iv': result.rsaIv,
-						'aes_key': result.encryptedAesKey, 'secret': result.encrypted,
-					};
-				})
-			);
-		}
-		Promise.all(promiseChain)
-		.then(() => jsonRequest(
+
+		// encrypt to all target keys and send to server
+		encryptData(targetPublicKeys, JSON.stringify(secret))
+		.then((result) => jsonRequest(
 			'POST', (id==null ? 'vault/password' : 'vault/password/'+encodeURIComponent(id)),
 			{
-				'password_group_id': group, 'password_data': encrypted,
+				'password_group_id': group,
+				'secret': result.secret,
+				'aes_iv': result.aes_iv,
+				'revision': txtRevision.value,
+				'password_user': result.password_user,
 				'share_users': shareUsers, 'share_groups': shareGroups,
-				'revision': txtRevision.value
 			}
 		))
 		.then((response) => {
 			// append to session vault
 			sessionVaultContent['passwords'][response.id] = {
-				'revision':response.revision,
-				'group':group, 'title':secret.title,
-				'username':secret.username, 'password':secret.password,
-				'url':secret.url, 'description':secret.description,
-				'share_users':shareUsers, 'share_groups':shareGroups
+				'revision': response.revision,
+				'group': group, 'title': secret.title,
+				'username': secret.username, 'password': secret.password,
+				'url': secret.url, 'description': secret.description,
+				'share_users': shareUsers, 'share_groups': shareGroups
 			};
 			populateVaultWindowEntries();
 			closeAnimation(e);

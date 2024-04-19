@@ -35,10 +35,6 @@ $containerBuilder->addDefinitions([
 		$view->addExtension(new XVault\Twig_Extensions\TranslateFilterExtension($langCtrl));
 		return $view;
 	},
-	XVault\Controllers\RedirectController::class => function ($containerInterface) {
-		$settings = $containerInterface->get('settings');
-		return $settings;
-	},
 ]);
 
 \Slim\Factory\AppFactory::setContainer($containerBuilder->build());
@@ -48,9 +44,8 @@ $app->addRoutingMiddleware();
 
 
 $container = $app->getContainer();
-$container->set(XVault\Controllers\UserController::class, function($container) {
-	return new XVault\Controllers\UserController($container);
-});
-$container->set(XVault\Controllers\VaultController::class, function($container) {
-	return new XVault\Controllers\VaultController($container);
-});
+$db = new XVault\Controllers\DatabaseController($settings['db']);
+$vaultController = new XVault\Controllers\VaultController($container, $db);
+$userController = new XVault\Controllers\UserController($container, $db, $vaultController);
+$container->set(XVault\Controllers\VaultController::class, $vaultController);
+$container->set(XVault\Controllers\UserController::class, $userController);

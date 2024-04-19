@@ -9,17 +9,15 @@ use Slim\Psr7\Response as Response;
 class VaultController {
 
 	private $container;
-	private $langCtrl;
-
 	private $db;
 
-	public function __construct($container) {
+	private $langCtrl;
+
+	public function __construct($container, $db) {
 		$this->container = $container;
+		$this->db = $db;
 
 		$this->langCtrl = new LanguageController();
-
-		$dbsettings = $this->container->get('settings')['db'];
-		$this->db = new DatabaseController($dbsettings);
 	}
 
 
@@ -95,24 +93,15 @@ class VaultController {
 			$json = JsonRpc::parseJsonRequest($request);
 
 			// input checks
-			if(empty($json['password_data'])) {
-				throw new Exception('Not encrypted to any user');
-			}
-			if(!array_key_exists($_SESSION['user_id'], $json['password_data'])) {
-				throw new Exception('Not encrypted to yourself');
-			}
-			// check group permission
-			foreach($json['share_groups'] as $group_id) {
-				if(!in_array($_SESSION['user_id'], $this->db->selectAllUserIdByUserGroup($group_id))) {
-					throw new Exception('You are not member of this group');
-				}
+			if(empty($json['secret']) || empty($json['secret'])) {
+				throw new Exception('Invalid secret provided');
 			}
 
 			// insert data
 			$revision = 1;
 			$this->db->beginTransaction();
-			$password_id = $this->db->insertPassword($json['password_group_id']);
-			$this->updatePasswordData($password_id, $revision, $json['password_data'], $json['share_users'], $json['share_groups']);
+			$password_id = $this->db->insertPassword($json['password_group_id'], $json['secret'], $json['aes_iv'], $revision);
+			$this->updatePasswordUser($password_id, $json['password_user'], $json['share_users'], $json['share_groups'], true);
 			$this->db->commitTransaction();
 
 			// return response
@@ -136,32 +125,19 @@ class VaultController {
 			$json = JsonRpc::parseJsonRequest($request);
 
 			// input checks
-			if(empty($json['password_data'])) {
-				throw new Exception('Not encrypted to any user');
-			}
-			if(!array_key_exists($_SESSION['user_id'], $json['password_data'])) {
-				throw new Exception('Not encrypted to yourself');
+			if(empty($json['secret']) || empty($json['secret'])) {
+				throw new Exception('Invalid secret provided');
 			}
 			$revision = $this->db->selectMaxPasswordRevision($password_id)->revision;
 			if(!isset($json['revision']) || $json['revision'] != $revision) {
 				throw new Exception($this->langCtrl->translate('record_changed_by_another_user'));
 			}
 			$revision += 1;
-			// check group permission
-			foreach($json['share_groups'] as $group_id) {
-				if(!in_array($_SESSION['user_id'], $this->db->selectAllUserIdByUserGroup($group_id))) {
-					throw new Exception('You are not member of this group');
-				}
-			}
-			// permission check
-			if(!in_array($_SESSION['user_id'], $this->db->selectAllUserByPasswordShare($password_id))) {
-				throw new Exception('Permission denied');
-			}
 
 			// update data
 			$this->db->beginTransaction();
-			$this->db->updatePassword($password_id, $json['password_group_id']);
-			$this->updatePasswordData($password_id, $revision, $json['password_data'], $json['share_users'], $json['share_groups']);
+			$this->db->updatePassword($password_id, $json['password_group_id'], $json['secret'], $json['aes_iv'], $revision);
+			$this->updatePasswordUser($password_id, $json['password_user'], $json['share_users'], $json['share_groups']);
 			$this->db->commitTransaction();
 
 			// return response
@@ -178,9 +154,37 @@ class VaultController {
 		}
 	}
 
-	public function updatePasswordData($password_id, $revision, Array $password_data, Array $share_users, Array $share_groups) {
-		// check if given data matches shares
-		$givenDataUserIds = array_keys($password_data);
+	public function updatePasswordUser($password_id, Array $password_user, Array|null $share_users=null, Array|null $share_groups=null, Bool $isNewPassword=false) {
+		// input checks
+		if(empty($password_user)) {
+			throw new Exception('Not encrypted to any user');
+		}
+		if(!array_key_exists($_SESSION['user_id'], $password_user)) {
+			throw new Exception('Not encrypted to yourself');
+		}
+
+		// use existing share info if null
+		if($share_users == null) {
+			$share_users = $this->db->selectAllSharedUserIdByPassword($password_id);
+		}
+		if($share_groups == null) {
+			$share_groups = $this->db->selectAllSharedUserGroupIdByPassword($password_id);
+		}
+		if(!$isNewPassword) {
+			// permission check
+			if(!in_array($_SESSION['user_id'], $this->db->selectAllUserByPasswordShare($password_id))) {
+				throw new Exception('Permission denied');
+			}
+			// check group permission
+			foreach($share_groups as $group_id) {
+				if(!in_array($_SESSION['user_id'], $this->db->selectAllUserIdByUserGroup($group_id))) {
+					throw new Exception('You are not member of this group');
+				}
+			}
+		}
+
+		// check if given password_user data matches shares
+		$givenDataUserIds = array_keys($password_user);
 		$absoluteShareUserIds = $share_users;
 		foreach($share_groups as $group_id) {
 			$absoluteShareUserIds = array_merge($absoluteShareUserIds, $this->db->selectAllUserIdByUserGroup($group_id));
@@ -191,12 +195,14 @@ class VaultController {
 		}
 
 		// update data
-		$this->db->deletePasswordDataByPassword($password_id);
-		foreach($password_data as $user_id => $data) {
-			$this->db->insertPasswordData(
+		$this->db->deletePasswordUserByPassword($password_id);
+		foreach($password_user as $user_id => $data) {
+			if(empty($data['aes_key']) || empty($data['rsa_iv'])) {
+				throw new Exception('Invalid data');
+			}
+			$this->db->insertPasswordUser(
 				$password_id, $user_id,
-				$revision,
-				$data['secret'], $data['aes_key'], $data['aes_iv'], $data['rsa_iv']
+				$data['aes_key'], $data['rsa_iv']
 			);
 		}
 		$this->db->deletePasswordUserShareByPassword($password_id);
@@ -338,14 +344,35 @@ class VaultController {
 			foreach($json['share_groups'] as $group_id) {
 				$this->db->insertPasswordGroupUserGroupShare($id, $group_id);
 			}
+			// update subgroups and passwords
 			if(!empty($json['passwords']) && is_array($json['passwords'])) {
-				foreach($json['passwords'] as $password_id => $passwordUserData) {
-					$revision = $this->db->selectMaxPasswordRevision($password_id)->revision;
-					if(!isset($passwordUserData['revision']) || $passwordUserData['revision'] != $revision) {
+				foreach($json['passwords'] as $password_id => $passwordData) {
+					$lastRevision = $this->db->selectMaxPasswordRevision($password_id);
+					if(!isset($passwordData['revision']) || $passwordData['revision'] != $lastRevision->revision) {
 						throw new Exception('Record was changed by another user. Please reload your vault and try again.');
 					}
-					unset($passwordUserData['revision']);
-					$this->updatePasswordData($password_id, $revision, $passwordUserData, $json['share_users'], $json['share_groups']);
+					if(empty($passwordData['password_user']) || !is_array($passwordData['password_user'])) {
+						throw new Exception('No password user data');
+					}
+					$this->db->updatePassword($password_id, $lastRevision->password_group_id, $passwordData['secret'], $passwordData['aes_iv'], $lastRevision->revision+1);
+					$this->updatePasswordUser($password_id, $passwordData['password_user'], $json['share_users'], $json['share_groups']);
+				}
+			}
+			if(!empty($json['groups']) && is_array($json['groups'])) {
+				foreach($json['groups'] as $sub_group_id => $groupData) {
+					// permission check
+					if(!in_array($_SESSION['user_id'], $this->db->selectAllUserByPasswordGroupShare($sub_group_id))) {
+						throw new Exception('Permission to subgroup denied');
+					}
+					// update subgroup
+					$this->db->deletePasswordGroupUserShareByPasswordGroup($sub_group_id);
+					foreach($json['share_users'] as $user_id) {
+						$this->db->insertPasswordGroupUserShare($sub_group_id, $user_id);
+					}
+					$this->db->deletePasswordGroupUserGroupShareByPasswordGroup($sub_group_id);
+					foreach($json['share_groups'] as $group_id) {
+						$this->db->insertPasswordGroupUserGroupShare($sub_group_id, $group_id);
+					}
 				}
 			}
 			$this->db->commitTransaction();

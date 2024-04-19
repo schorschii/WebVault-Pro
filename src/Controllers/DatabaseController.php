@@ -190,9 +190,9 @@ class DatabaseController {
 
 	public function selectAllPasswordByUser($user_id) {
 		$this->stmt = $this->dbh->prepare(
-			'SELECT p.id, p.password_group_id, pd.revision, pd.secret, pd.aes_key, pd.aes_iv, pd.rsa_iv
-			FROM password_data pd JOIN password p ON pd.password_id = p.id
-			WHERE pd.user_id = :user_id
+			'SELECT p.id, p.password_group_id, p.revision, p.secret, p.aes_iv, pu.aes_key, pu.rsa_iv
+			FROM password_user pu JOIN password p ON pu.password_id = p.id
+			WHERE pu.user_id = :user_id
 			AND p.id IN (
 				SELECT spu.password_id FROM share_password_user spu
 				WHERE spu.user_id = :user_id
@@ -221,46 +221,52 @@ class DatabaseController {
 		$this->stmt->execute([':user_id' => $user_id]);
 		return $this->stmt->fetchAll(PDO::FETCH_CLASS);
 	}
-	public function selectMaxPasswordRevision($password_id) {
+	public function selectMaxPasswordRevision($id) {
 		$this->stmt = $this->dbh->prepare(
-			'SELECT MAX(revision) AS revision FROM password_data WHERE password_id = :password_id'
+			'SELECT MAX(revision) AS revision, password_group_id FROM password WHERE id = :id'
 		);
-		$this->stmt->execute([':password_id' => $password_id]);
+		$this->stmt->execute([':id' => $id]);
 		foreach($this->stmt->fetchAll(PDO::FETCH_CLASS) as $row) {
 			return $row;
 		}
 	}
-	public function insertPassword($password_group_id) {
+	public function insertPassword($password_group_id, $secret, $aes_iv, $revision) {
 		$this->stmt = $this->dbh->prepare(
-			'INSERT INTO password (password_group_id) VALUES (:password_group_id)'
+			'INSERT INTO password (password_group_id, secret, aes_iv, revision)
+			VALUES (:password_group_id, :secret, :aes_iv, :revision)'
 		);
-		$this->stmt->execute([':password_group_id' => $password_group_id]);
+		$this->stmt->execute([
+			':password_group_id' => $password_group_id,
+			':secret' => $secret,
+			':aes_iv' => $aes_iv,
+			':revision' => $revision,
+		]);
 		return $this->dbh->lastInsertId();
 	}
-	public function insertPasswordData($password_id, $user_id, $revision, $secret, $aes_key, $aes_iv, $rsa_iv) {
+	public function insertPasswordUser($password_id, $user_id, $aes_key, $rsa_iv) {
 		$this->stmt = $this->dbh->prepare(
-			'INSERT INTO password_data (password_id, user_id, revision, secret, aes_key, aes_iv, rsa_iv)
-			VALUES (:password_id, :user_id, :revision, :secret, :aes_key, :aes_iv, :rsa_iv)'
+			'INSERT INTO password_user (password_id, user_id, aes_key, rsa_iv)
+			VALUES (:password_id, :user_id, :aes_key, :rsa_iv)'
 		);
 		$this->stmt->execute([
 			':password_id' => $password_id,
 			':user_id' => $user_id,
-			':revision' => $revision,
-			':secret' => $secret,
 			':aes_key' => $aes_key,
-			':aes_iv' => $aes_iv,
 			':rsa_iv' => $rsa_iv,
 		]);
 		return $this->dbh->lastInsertId();
 	}
-	public function updatePassword($id, $password_group_id) {
+	public function updatePassword($id, $password_group_id, $secret, $aes_iv, $revision) {
 		$this->stmt = $this->dbh->prepare(
-			'UPDATE password SET password_group_id = :password_group_id
+			'UPDATE password SET password_group_id = :password_group_id, secret = :secret, aes_iv = :aes_iv, revision = :revision
 			WHERE id = :id'
 		);
 		$this->stmt->execute([
 			':id' => $id,
 			':password_group_id' => $password_group_id,
+			':secret' => $secret,
+			':aes_iv' => $aes_iv,
+			':revision' => $revision,
 		]);
 		return $this->dbh->lastInsertId();
 	}
@@ -270,9 +276,9 @@ class DatabaseController {
 		);
 		return $this->stmt->execute([':id' => $id]);
 	}
-	public function deletePasswordDataByPassword($password_id) {
+	public function deletePasswordUserByPassword($password_id) {
 		$this->stmt = $this->dbh->prepare(
-			'DELETE FROM password_data WHERE password_id = :password_id'
+			'DELETE FROM password_user WHERE password_id = :password_id'
 		);
 		return $this->stmt->execute([':password_id' => $password_id]);
 	}

@@ -14,22 +14,22 @@ SET time_zone = "+00:00";
 
 CREATE TABLE `password` (
   `id` int(11) NOT NULL,
-  `password_group_id` int(11) DEFAULT NULL
+  `password_group_id` int(11) DEFAULT NULL,
+  `secret` text NOT NULL,
+  `aes_iv` tinytext NOT NULL,
+  `revision` int(11) NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
 --
--- Tabellenstruktur für Tabelle `password_data`
+-- Tabellenstruktur für Tabelle `password_user`
 --
 
-CREATE TABLE `password_data` (
+CREATE TABLE `password_user` (
   `password_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
-  `revision` int(11) NOT NULL DEFAULT 0,
-  `secret` text NOT NULL,
   `aes_key` text NOT NULL,
-  `aes_iv` tinytext NOT NULL,
   `rsa_iv` tinytext NOT NULL,
   `created` datetime NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -152,10 +152,10 @@ ALTER TABLE `password`
   ADD KEY `fk_password_group` (`password_group_id`);
 
 --
--- Indizes für die Tabelle `password_data`
+-- Indizes für die Tabelle `password_user`
 --
-ALTER TABLE `password_data`
-  ADD PRIMARY KEY (`password_id`,`user_id`,`revision`),
+ALTER TABLE `password_user`
+  ADD PRIMARY KEY (`password_id`,`user_id`),
   ADD KEY `password_id` (`password_id`),
   ADD KEY `user_id` (`user_id`);
 
@@ -253,9 +253,9 @@ ALTER TABLE `password`
   ADD CONSTRAINT `fk_password_group` FOREIGN KEY (`password_group_id`) REFERENCES `password_group` (`id`);
 
 --
--- Constraints der Tabelle `password_data`
+-- Constraints der Tabelle `password_user`
 --
-ALTER TABLE `password_data`
+ALTER TABLE `password_user`
   ADD CONSTRAINT `fk_password` FOREIGN KEY (`password_id`) REFERENCES `password` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 

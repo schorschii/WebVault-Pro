@@ -74,12 +74,12 @@ function convertPemToBinary(pem) {
 	return base64StringToArrayBuffer(encoded);
 }
 
-function importPublicKey(pemKey, userId=null, passwordId=null) {
+function importPublicKey(pemKey, user_id=null) {
 	return new Promise(function(resolve) {
 		crypto.subtle.importKey(
 			'spki', convertPemToBinary(pemKey), encryptAlgorithm, false, ['encrypt']
 		).then(function(key) {
-			resolve({'key':key, 'userId':userId, 'passwordId':passwordId});
+			resolve({'key':key, 'user_id':user_id});
 		});
 	});
 }
@@ -210,11 +210,13 @@ function testVerifySig(pub, sig, data) {
 // RSA can not directly encrypt data larger than the used key.
 // We need to use a symmetric cipher, encrypt the large data with it using a secure mode (GCM).
 // Then, encrypt the symmetric key with the RSA public key.
-function encryptData(rsaPubKey, data, userId=null, passwordId=null) {
-	let _rsaIv = getRandomCryptoValues(16);
+function encryptData(userPubKeys, data, password_id=null) {
 	let _aesIv = getRandomCryptoValues(12);
-	let _aesKey;
-	let _aesEncrypted;
+	let _aesKey = null;
+	let _aesEncrypted = null;
+	let _userEncryptedKeys = {};
+
+	// generate an AES key and encrypt our data with it
 	return window.crypto.subtle.generateKey(
 		{ name: 'AES-GCM', length: 256 },
 		true,
@@ -229,21 +231,43 @@ function encryptData(rsaPubKey, data, userId=null, passwordId=null) {
 	}).then((aesEncrypted) => {
 		_aesEncrypted = aesEncrypted;
 		return crypto.subtle.exportKey('raw', _aesKey);
-	}).then((exportedAesKey) => crypto.subtle.encrypt(
-		{ name: 'RSA-OAEP', iv: _rsaIv },
-		rsaPubKey,
-		exportedAesKey
-	)).then((rsaEncrypted) => {
-		return Promise.resolve({
-			'encrypted':  arrayBufferToBase64String(_aesEncrypted), 'encryptedAesKey':  arrayBufferToBase64String(rsaEncrypted),
-			'rsaIv':  arrayBufferToBase64String(_rsaIv), 'aesIv':  arrayBufferToBase64String(_aesIv),
-			'userId': userId, 'passwordId': passwordId
-		});
+	}).then((exportedAesKey) => {
+		// encrypt the AES key with every user's RSA pubkey
+		let promiseChain = [];
+		for(let userId in userPubKeys) {
+			promiseChain.push(
+				importPublicKey(userPubKeys[userId], userId)
+				.then((imported) => _rsaEncrypt(imported.key, exportedAesKey, imported.user_id))
+				.then((result) => {
+					_userEncryptedKeys[result.user_id] = {
+						'aes_key': arrayBufferToBase64String(result.encrypted),
+						'rsa_iv': arrayBufferToBase64String(result.rsa_iv),
+					};
+				})
+			);
+		}
+		return Promise.all(promiseChain)
+		.then(() => Promise.resolve({
+			'secret': arrayBufferToBase64String(_aesEncrypted),
+			'aes_iv': arrayBufferToBase64String(_aesIv),
+			'password_user': _userEncryptedKeys,
+			'password_id': password_id
+		}))
 	});
 }
-function decryptData(rsaPrivKey, encryptedAesKey, aesIv, rsaIv, data) {
+function _rsaEncrypt(pubKey, data, user_id) {
+	let rsa_iv = getRandomCryptoValues(16);
+	return crypto.subtle.encrypt(
+		{ name: 'RSA-OAEP', iv: rsa_iv },
+		pubKey,
+		data
+	).then((encrypted) => Promise.resolve({
+		'encrypted': encrypted, 'rsa_iv': rsa_iv, 'user_id': user_id
+	}));
+}
+function decryptData(rsaPrivKey, encryptedAesKey, aesIv, rsa_iv, data) {
 	return crypto.subtle.decrypt(
-		{ name: 'RSA-OAEP', iv: base64StringToArrayBuffer(rsaIv) },
+		{ name: 'RSA-OAEP', iv: base64StringToArrayBuffer(rsa_iv) },
 		rsaPrivKey,
 		base64StringToArrayBuffer(encryptedAesKey)
 	).then((aesKeyBytes) => crypto.subtle.importKey(
@@ -255,19 +279,4 @@ function decryptData(rsaPrivKey, encryptedAesKey, aesIv, rsaIv, data) {
 	)).then((decrypted) => {
 		return Promise.resolve(arrayBufferToText(decrypted));
 	});
-}
-
-function testEncryptDecrypt() {
-	let text = 'Lorem ipsum dolor sit amet';
-	let keyPair;
-	generateKey(encryptAlgorithm, scopesEncryptDecrypt)
-	.then((pair) => {
-		keyPair = pair;
-		return encryptData(pair.publicKey, text);
-	})
-	.then((result) => {
-		console.log(result);
-		return decryptData(result.rsaIv, result.aesIv, keyPair.privateKey, result.encryptedAesKey, result.encrypted)
-	})
-	.then((decrypted) => console.log(decrypted));
 }

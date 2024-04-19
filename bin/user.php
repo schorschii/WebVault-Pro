@@ -9,7 +9,7 @@ $db = new XVault\Controllers\DatabaseController($settings['db']);
 switch($argv[1] ?? '') {
 	case 'list':
 		foreach($db->selectAllUser() as $user) {
-			echo $user->id.'  '.$user->username.'  '.$user->display_name."\n";
+			echo $user->id."\t".$user->username."\t".$user->display_name."\n";
 		}
 		break;
 

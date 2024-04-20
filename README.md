@@ -1,12 +1,12 @@
 <img align="right" style="width:180px" src="public/img/logo.png">
 
 # XVault
-XVault is a self-hosted/on-prem web based password safe with multi-language and multi-user support focused on enterprise usage. Passwords are stored RSA encrypted in a MySQL database and decryption only happens in the user's browser, providing true end-to-end encryption.
+XVault is a self-hosted/on-prem web based password safe with multi-language and multi-user support focused on enterprise usage. Password entries are stored AES encrypted in a MySQL database, and the AES key is RSA encrypted for every permitted user. Decryption only happens in the user's browser, providing true end-to-end encryption.
 
 ## Concept and Advantages
-In contrast to conventional password safes, secrets are not encrypted with one static password, but individual with a per-user generated public/private key pair. This is done having enterprise usage in mind: employees should only have access to passwords they need as defined by group memberships, and not to the entire password safe. With this, there is no need to share a common master password which needs to be changed after one employee leaves the company.
+In contrast to conventional password safes, keys to the stored secrets are not encrypted with one static password, but with an individual per-user generated public/private key pair. This is done having enterprise usage in mind: employees should only have access to passwords they need as defined by group memberships, and not to the entire password safe. With this, there is no need to share a common master password which needs to be changed after one employee leaves the company.
 
-LDAP authentication allows seamless integration into your companies environment. Access to the passwords can immediately be denied by disabling the LDAP user account. A flexible share function allows you to share passwords or entire password groups with specific co-workers or groups of users (you can use XVault as private password store if you don't share entries).
+LDAP authentication allows seamless integration into your companies environment. Access to the passwords can immediately be denied by disabling the LDAP user account. Beside using XVault as private/personal password store, a flexible share function allows you to share passwords or entire password groups with specific co-workers or groups of users.
 
 There is no database file which needs to be shared with all employees. Nobody except the administrator has access to the *encrypted* passwords. Attackers can't copy the user keys or encrypted passwords to run efficient brute force attacks against them.
 

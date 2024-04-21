@@ -456,10 +456,16 @@ function search(q) {
 			entries[i].style.display = '';
 		}
 		// restore group header visibility
-		showGroupHeader();
+		let items = ulEntriesTree.getElementsByClassName('group');
+		for(var i = 0; i < items.length; i++) {
+			items[i].style.display = '';
+			items[i].querySelectorAll(':scope > .groupheader')[0].style.opacity = 1;
+		}
+		divNoSearchResults.classList.add('invisible');
 		return;
 	}
 	// do the search
+	var matches = 0;
 	var filter = q.toUpperCase();
 	for(var i = 0; i < entries.length; i++) {
 		let match = false;
@@ -476,6 +482,7 @@ function search(q) {
 		}
 		// show or hide password
 		if(match) {
+			matches ++;
 			entries[i].classList.add('searchresult');
 			if(entries[i].classList.contains('password'))
 				entries[i].style.display = '';
@@ -492,31 +499,24 @@ function search(q) {
 				entries[i].style.display = 'none';
 		}
 	}
-	// hide group header if there are no results in this group
-	showHideGroupHeader();
-}
-
-function showGroupHeader() {
-	// show all group headers
-	let items = ulEntriesTree.getElementsByClassName('groupheader');
-	for(var i = 0; i < items.length; i++) {
-		items[i].style.opacity = 1;
+	if(matches) {
+		divNoSearchResults.classList.add('invisible');
+	} else {
+		divNoSearchResults.classList.remove('invisible');
 	}
-}
-function showHideGroupHeader() {
 	// hide group header if there are no results in this group
-	let items = ulEntriesTree.getElementsByClassName('groupheader');
-	for(var i = 0; i < items.length; i++) {
-		var hidegroup = true;
-		var subItems = items[i].getElementsByClassName('password');
-		for(var j = 0; j < subItems.length; j++) {
-			if(subItems[j].classList.contains('searchresult'))
-				hidegroup = false;
-		}
-		if(hidegroup) {
-			items[i].style.opacity = 0.25;
+	let groups = ulEntriesTree.getElementsByClassName('group');
+	for(var i = 0; i < groups.length; i++) {
+		groups[i].style.display = '';
+		let groupHeader = groups[i].querySelectorAll(':scope > .groupheader')[0];
+		if(groups[i].classList.contains('searchresult')) {
+			if(groupHeader) groupHeader.style.opacity = 1;
 		} else {
-			items[i].style.opacity = 1;
+			if(groupHeader) groupHeader.style.opacity = 0.25;
+			var subResults = groups[i].querySelectorAll('.searchresult');
+			if(!subResults.length) {
+				groups[i].style.display = 'none';
+			}
 		}
 	}
 }

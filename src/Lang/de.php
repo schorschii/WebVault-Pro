@@ -60,4 +60,5 @@ return [
 	'csv_import_notes' => 'Für den Import werden CSV-Dateien mit der folgenden Spaltenreihenfolge unterstützt. Dies entspricht dem KeePassXC-Exportformat. Die erste Zeile wird als Spaltenkopf interpretiert und daher ignoriert.',
 	'file' => 'Datei',
 	'inherit_permissions' => 'Berechtigungen vererben',
+	'no_search_results' => 'Keine Suchergebnisse',
 ];

@@ -60,4 +60,5 @@ return [
 	'csv_import_notes' => 'The import accepts CSV files with the following column order. This is the KeePassXC export format.',
 	'file' => 'File',
 	'inherit_permissions' => 'Inherit permissions',
+	'no_search_results' => 'No search results',
 ];

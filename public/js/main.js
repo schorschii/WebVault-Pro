@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
 	txtUsername.addEventListener('keyup', loginAction);
 	txtPassword.addEventListener('keyup', loginAction);
 	txtOldPassword.addEventListener('keyup', loginAction);
-	activateMouseDragForParent(divVaultTitlebar);
+	activateWindowMouseDrag(divVaultContainer, divVaultTitlebar);
 });
 
 
@@ -538,11 +538,8 @@ function populateUserGroups() {
 	}
 }
 function showUserGroupManagement(id=null) {
-	// create details window on current main window position
 	const clone = divUserGroupTemplateContainer.cloneNode(true);
 	clone.removeAttribute('id');
-	clone.style.top = (parseInt(divVaultContainer.style.top)+35) + 'px';
-	clone.style.left = (parseInt(divVaultContainer.style.left)+35) + 'px';
 	// identify inputs
 	let txtTitle = clone.querySelectorAll('[name=txtTitle]')[0];
 	let sltGroupUser = clone.querySelectorAll('[name=sltGroupUser]')[0];
@@ -557,7 +554,7 @@ function showUserGroupManagement(id=null) {
 		sltGroupUser.appendChild(option);
 	}
 	// add actions
-	activateMouseDragForParent(clone.querySelectorAll('.titlebar')[0]);
+	activateWindowMouseDrag(clone, clone.querySelectorAll('.titlebar')[0], divUserGroupsContainer);
 	let closeAnimation = windowCloseAction(clone);
 	clone.querySelectorAll('.btnAddGroupUser')[0].addEventListener('click', function(){
 		addShareUserRow(tblMembers, sltGroupUser.value);
@@ -657,23 +654,19 @@ function showUserGroupManagement(id=null) {
 	txtTitle.focus();
 }
 function showUserGroupsManagement() {
-	divUserGroupsContainer.style.top = (parseInt(divVaultContainer.style.top)+35) + 'px';
-	divUserGroupsContainer.style.left = (parseInt(divVaultContainer.style.left)+35) + 'px';
 	// populate select boxes
 	populateUserGroups();
 	// add actions
-	activateMouseDragForParent(divUserGroupsContainer.querySelectorAll('.titlebar')[0]);
+	activateWindowMouseDrag(divUserGroupsContainer, divUserGroupsContainer.querySelectorAll('.titlebar')[0], divVaultContainer);
 	divUserGroupsContainer.querySelectorAll('.btnAdd')[0].onclick = function(){showUserGroupManagement()};
 	divUserGroupsContainer.querySelectorAll('.btnClose')[0].onclick = windowCloseAction(divUserGroupsContainer,false);
 	// show with animation
 	windowOpenAnimation(divUserGroupsContainer);
 }
 function showImport() {
-	divImportContainer.style.top = (parseInt(divVaultContainer.style.top)+35) + 'px';
-	divImportContainer.style.left = (parseInt(divVaultContainer.style.left)+35) + 'px';
 	// add actions
 	let closeAction = windowCloseAction(divImportContainer,false);
-	activateMouseDragForParent(divImportContainer.querySelectorAll('.titlebar')[0]);
+	activateWindowMouseDrag(divImportContainer, divImportContainer.querySelectorAll('.titlebar')[0], divVaultContainer);
 	divImportContainer.querySelectorAll('.btnImport')[0].onclick = function(){
 		importCsvFile(divImportContainer.querySelectorAll('[name=fleInputFile]')[0].files[0])
 		.then((rows) => {
@@ -773,11 +766,8 @@ async function importEntries(rows) {
 }
 
 function showGroupDetails(id=null) {
-	// create details window on current main window position
 	const clone = divGroupTemplateContainer.cloneNode(true);
 	clone.removeAttribute('id');
-	clone.style.top = (parseInt(divVaultContainer.style.top)+35) + 'px';
-	clone.style.left = (parseInt(divVaultContainer.style.left)+35) + 'px';
 	// identify inputs
 	let sltGroup = clone.querySelectorAll('[name=sltGroup]')[0];
 	let txtTitle = clone.querySelectorAll('[name=txtTitle]')[0];
@@ -801,7 +791,7 @@ function showGroupDetails(id=null) {
 		sltShareUserGroup.appendChild(option);
 	}
 	// add actions
-	activateMouseDragForParent(clone.querySelectorAll('.titlebar')[0]);
+	activateWindowMouseDrag(clone, clone.querySelectorAll('.titlebar')[0], divVaultContainer);
 	let closeAnimation = windowCloseAction(clone);
 	if(id == null) {
 		clone.querySelectorAll('.btnDelete')[0].remove();
@@ -958,11 +948,8 @@ function showGroupDetails(id=null) {
 	txtTitle.focus();
 }
 function showPasswordDetails(id=null) {
-	// create details window on current main window position
 	const clone = divPasswordTemplateContainer.cloneNode(true);
 	clone.removeAttribute('id');
-	clone.style.top = (parseInt(divVaultContainer.style.top)+35) + 'px';
-	clone.style.left = (parseInt(divVaultContainer.style.left)+35) + 'px';
 	// identify inputs
 	let txtRevision = clone.querySelectorAll('[name=txtRevision]')[0];
 	let sltGroup = clone.querySelectorAll('[name=sltGroup]')[0];
@@ -990,7 +977,7 @@ function showPasswordDetails(id=null) {
 		sltShareUserGroup.appendChild(option);
 	}
 	// add actions
-	activateMouseDragForParent(clone.querySelectorAll('.titlebar')[0]);
+	activateWindowMouseDrag(clone, clone.querySelectorAll('.titlebar')[0], divVaultContainer);
 	let closeAnimation = windowCloseAction(clone);
 	if(id == null) {
 		clone.querySelectorAll('.btnDelete')[0].remove();
@@ -1058,7 +1045,7 @@ function showPasswordDetails(id=null) {
 		copyInputValueToClipboard(txtPassword);
 	});
 	clone.querySelectorAll('.btnGeneratePassword')[0].addEventListener('click', function(e){
-		showPasswordGenerator(txtPassword);
+		showPasswordGenerator(txtPassword, clone);
 	});
 	clone.querySelectorAll('.btnShowHidePassword')[0].addEventListener('click', function(e){
 		togglePasswordInput(txtPassword);
@@ -1142,12 +1129,9 @@ function showPasswordDetails(id=null) {
 	windowOpenAnimation(clone);
 	txtTitle.focus();
 }
-function showPasswordGenerator(input) {
-	// create details window on current main window position
+function showPasswordGenerator(input, divParentWindow) {
 	const clone = divPasswordGeneratorTemplateContainer.cloneNode(true);
 	clone.removeAttribute('id');
-	clone.style.top = (parseInt(divVaultContainer.style.top)+35) + 'px';
-	clone.style.left = (parseInt(divVaultContainer.style.left)+35) + 'px';
 	// identify inputs
 	let txtCharCount = clone.querySelectorAll('[name=txtCharCount]')[0];
 	let txtCharset = clone.querySelectorAll('[name=txtCharset]')[0];
@@ -1157,7 +1141,7 @@ function showPasswordGenerator(input) {
 	txtCharCount.value = getSetting('generatorCharCount', '13');
 	txtCharset.value = getSetting('generatorCharset', 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789');
 	// add actions
-	activateMouseDragForParent(clone.querySelectorAll('.titlebar')[0]);
+	activateWindowMouseDrag(clone, clone.querySelectorAll('.titlebar')[0], divParentWindow);
 	let closeAnimation = windowCloseAction(clone);
 	clone.querySelectorAll('.btnGeneratePassword')[0].addEventListener('click', function(e){
 		txtGeneratedPassword.value = generateRandomPassword(parseInt(txtCharCount.value), txtCharset.value);

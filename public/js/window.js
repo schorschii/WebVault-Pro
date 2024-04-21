@@ -1,17 +1,24 @@
-function activateMouseDragForParent(div) {
+function activateWindowMouseDrag(divWindow, divTitleBar, divParentWindow=null) {
 	var mousePosition;
 	var offsetx = 0;
 	var offsety = 0;
 	var isDown = false;
 
-	div.addEventListener('mousedown', function(e) {
+	if(divParentWindow) {
+		let offset = 35;
+		if(window.innerWidth < 500) offset = 0;
+		divWindow.style.top = (parseInt(divParentWindow.style.top)+offset) + 'px';
+		divWindow.style.left = (parseInt(divParentWindow.style.left)+offset) + 'px';
+	}
+
+	divTitleBar.addEventListener('mousedown', function(e) {
 		isDown = true;
-		let left = parseInt(div.parentElement.style.left.replace('px', ''));
-		let right = parseInt(div.parentElement.style.top.replace('px', ''));
+		let left = parseInt(divWindow.style.left.replace('px', ''));
+		let right = parseInt(divWindow.style.top.replace('px', ''));
 		if(isNaN(left)) left = 0;
 		if(isNaN(right)) right = 0;
-		offsetx = div.offsetLeft - e.clientX + left;
-		offsety = div.offsetTop - e.clientY + right;
+		offsetx = divTitleBar.offsetLeft - e.clientX + left;
+		offsety = divTitleBar.offsetTop - e.clientY + right;
 	}, true);
 
 	document.addEventListener('mouseup', function() {
@@ -25,8 +32,8 @@ function activateMouseDragForParent(div) {
 				x : event.clientX,
 				y : event.clientY
 			};
-			div.parentElement.style.left = (mousePosition.x + offsetx) + 'px';
-			div.parentElement.style.top  = (mousePosition.y + offsety) + 'px';
+			divWindow.style.left = (mousePosition.x + offsetx) + 'px';
+			divWindow.style.top  = (mousePosition.y + offsety) + 'px';
 		}
 	}, true);
 }

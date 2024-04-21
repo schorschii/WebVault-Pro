@@ -61,4 +61,5 @@ return [
 	'file' => 'File',
 	'inherit_permissions' => 'Inherit permissions',
 	'no_search_results' => 'No search results',
+	'cannot_delete_group_contains_items' => 'The group cannot be deleted because it still contains sub items.',
 ];

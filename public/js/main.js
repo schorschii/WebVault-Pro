@@ -800,6 +800,11 @@ function showGroupDetails(id=null) {
 		sltGroup.value = group['group'];
 		txtTitle.value = group['title'];
 		clone.querySelectorAll('.btnDelete')[0].addEventListener('click', function(e){
+			let subItems = getAllSubentriesOfGroup(id);
+			if(Object.keys(subItems['passwords']).length || Object.keys(subItems['groups']).length) {
+				alert(strings.cannot_delete_group_contains_items);
+				return;
+			}
 			if(confirm(strings.are_you_sure)) {
 				jsonRequest(
 					'DELETE', 'vault/group/'+encodeURIComponent(id), null

@@ -61,4 +61,5 @@ return [
 	'file' => 'Datei',
 	'inherit_permissions' => 'Berechtigungen vererben',
 	'no_search_results' => 'Keine Suchergebnisse',
+	'cannot_delete_group_contains_items' => 'Die Gruppe kann nicht gelöscht werden, da sie noch untergeordnete Elemente besitzt.',
 ];

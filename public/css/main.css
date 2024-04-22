@@ -429,6 +429,28 @@ input.invisible, textarea.invisible, select.invisible {
 	margin-inline-end: 4px;
 }
 
+#ulEntriesTree.searchresults li.password,
+#ulEntriesTree.searchresults li.group {
+	display: none;
+}
+#ulEntriesTree.searchresults li.password.searchresult,
+#ulEntriesTree.searchresults li.group.searchresult,
+#ulEntriesTree.searchresults li.group:has(.searchresult) {
+	display: block;
+}
+#ulEntriesTree.searchresults li.group.searchresult li.password,
+#ulEntriesTree.searchresults li.group.searchresult li.group {
+	display: block !important;
+}
+#ulEntriesTree.searchresults li.password .passwordheader,
+#ulEntriesTree.searchresults li.group .groupheader {
+	opacity: 0.25;
+}
+#ulEntriesTree.searchresults li.password.searchresult .passwordheader,
+#ulEntriesTree.searchresults li.group.searchresult .groupheader {
+	opacity: 1;
+}
+
 #httpwarn {
 	text-align: center;
 	position: fixed;

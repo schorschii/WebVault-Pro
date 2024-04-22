@@ -269,6 +269,7 @@ function addPasswordHtml(parentUl, id, passwordItem) {
 	li.addEventListener('click', openDetailsAction);
 	parentUl.appendChild(li);
 	let divCont = document.createElement('DIV');
+	divCont.classList.add('passwordheader');
 	li.appendChild(divCont);
 	let a = document.createElement('A');
 	a.href = '#';
@@ -451,20 +452,13 @@ function search(q) {
 	var entries = divVault.querySelectorAll('.password, .group');
 	// empty query means display all entries (default state)
 	if(q == '') {
-		// show all entries again
-		for(var i = 0; i < entries.length; i++) {
-			entries[i].style.display = '';
-		}
-		// restore group header visibility
-		let items = ulEntriesTree.getElementsByClassName('group');
-		for(var i = 0; i < items.length; i++) {
-			items[i].style.display = '';
-			items[i].querySelectorAll(':scope > .groupheader')[0].style.opacity = 1;
-		}
+		// restore password/group visibility
+		ulEntriesTree.classList.remove('searchresults');
 		divNoSearchResults.classList.add('invisible');
 		return;
 	}
 	// do the search
+	ulEntriesTree.classList.add('searchresults');
 	var matches = 0;
 	var filter = q.toUpperCase();
 	for(var i = 0; i < entries.length; i++) {
@@ -484,19 +478,8 @@ function search(q) {
 		if(match) {
 			matches ++;
 			entries[i].classList.add('searchresult');
-			if(entries[i].classList.contains('password'))
-				entries[i].style.display = '';
-			// open all parent folders
-			let parent = entries[i].parentNode;
-			while(parent.id != 'ulEntriesTree') {
-				if(parent.classList.contains('group'))
-					parent.classList.remove('closed');
-				parent = parent.parentNode;
-			}
 		} else {
 			entries[i].classList.remove('searchresult');
-			if(entries[i].classList.contains('password'))
-				entries[i].style.display = 'none';
 		}
 	}
 	if(matches) {
@@ -504,19 +487,18 @@ function search(q) {
 	} else {
 		divNoSearchResults.classList.remove('invisible');
 	}
-	// hide group header if there are no results in this group
+	// open/close parent folders
 	let groups = ulEntriesTree.getElementsByClassName('group');
 	for(var i = 0; i < groups.length; i++) {
-		groups[i].style.display = '';
-		let groupHeader = groups[i].querySelectorAll(':scope > .groupheader')[0];
-		if(groups[i].classList.contains('searchresult')) {
-			if(groupHeader) groupHeader.style.opacity = 1;
-		} else {
-			if(groupHeader) groupHeader.style.opacity = 0.25;
-			var subResults = groups[i].querySelectorAll('.searchresult');
-			if(!subResults.length) {
-				groups[i].style.display = 'none';
+		var subResults = groups[i].querySelectorAll('.searchresult');
+		if(subResults.length) {
+			let parent = groups[i];
+			while(parent.id != 'ulEntriesTree') {
+				parent.classList.remove('closed');
+				parent = parent.parentNode;
 			}
+		} else {
+			groups[i].classList.add('closed');
 		}
 	}
 }

@@ -71,11 +71,6 @@ Since the concept and database schema of XVault differs completely from v0.x ("W
 ### I'm not able to share passwords with some users, they are disabled in the select box
 The user account doesn't have a keypair yet. Users need to log in once before passwords can be shared with them.
 
-## Roadmap
-- shares with r/o permission
-- file storage support
-- custom entry icons
-
 ## Support
 You need support or specific adjustments for your environment? You can hire me to extend this project to your needs. Please [contact me](https://georg-sieber.de/?page=impressum) if you are interested.
 

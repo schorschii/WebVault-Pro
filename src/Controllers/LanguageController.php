@@ -1,5 +1,5 @@
 <?php
-namespace XVault\Controllers;
+namespace WebVault\Controllers;
 
 class LanguageController {
 

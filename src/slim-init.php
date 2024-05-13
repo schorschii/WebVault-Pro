@@ -31,8 +31,8 @@ $containerBuilder->addDefinitions([
 		$view = \Slim\Views\Twig::create(__DIR__.'/Views', [
 			'cache' => $settings['templateCache']
 		]);
-		$langCtrl = new XVault\Controllers\LanguageController();
-		$view->addExtension(new XVault\Twig_Extensions\TranslateFilterExtension($langCtrl));
+		$langCtrl = new WebVault\Controllers\LanguageController();
+		$view->addExtension(new WebVault\Twig_Extensions\TranslateFilterExtension($langCtrl));
 		return $view;
 	},
 ]);
@@ -44,8 +44,8 @@ $app->addRoutingMiddleware();
 
 
 $container = $app->getContainer();
-$db = new XVault\Controllers\DatabaseController($settings['db']);
-$vaultController = new XVault\Controllers\VaultController($container, $db);
-$userController = new XVault\Controllers\UserController($container, $db, $vaultController);
-$container->set(XVault\Controllers\VaultController::class, $vaultController);
-$container->set(XVault\Controllers\UserController::class, $userController);
+$db = new WebVault\Controllers\DatabaseController($settings['db']);
+$vaultController = new WebVault\Controllers\VaultController($container, $db);
+$userController = new WebVault\Controllers\UserController($container, $db, $vaultController);
+$container->set(WebVault\Controllers\VaultController::class, $vaultController);
+$container->set(WebVault\Controllers\UserController::class, $userController);

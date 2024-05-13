@@ -1,5 +1,5 @@
 <?php
-namespace XVault\Controllers;
+namespace WebVault\Controllers;
 
 use \Exception as Exception;
 use Slim\Psr7\Request as Request;

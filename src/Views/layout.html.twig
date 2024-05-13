@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>{{ subtitle|default("XVault") }}{% if pagetitle %} - {{ pagetitle|trans }}{% endif %}</title>
+	<title>{{ subtitle|default("WebVault Pro") }}{% if pagetitle %} - {{ pagetitle|trans }}{% endif %}</title>
 	<meta charset="utf-8"/>
 
 	{% block head %}{% endblock %}
@@ -16,13 +16,13 @@
 	<link rel="apple-touch-startup-image" href="img/logo.png"><!-- splash screen -->
 
 	<meta name="apple-mobile-web-app-status-bar-style" content="black">
-	<meta name="apple-mobile-web-app-title" content="XVault"><!-- home shortcut title apple -->
+	<meta name="apple-mobile-web-app-title" content="{{ subtitle|default("WebVault Pro") }}"><!-- home shortcut title apple -->
 	<meta name="apple-mobile-web-app-capable" content="yes"><!-- display web app as fullscreen apple -->
 	<meta name="mobile-web-app-capable" content="yes"><!-- display web app as fullscreen android -->
 </head>
 <body>
 
-<a id="forkMe" target="_blank" href="https://github.com/schorschii/xvault"><img src="img/forkme.png"></a>
+<a id="forkMe" target="_blank" href="https://github.com/schorschii/webvault-pro"><img src="img/forkme.png"></a>
 
 
 {% block content %}{% endblock %}

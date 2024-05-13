@@ -1,5 +1,5 @@
 <?php
-namespace XVault\Controllers;
+namespace WebVault\Controllers;
 
 use \PDO as PDO;
 use \Exception as Exception;

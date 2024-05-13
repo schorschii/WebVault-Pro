@@ -36,7 +36,7 @@ $settings['db'] = [
 
    Finally, set up a cron job executing `php bin/ldapsync.php` every hour as webserver user (`www-data`).
    ```
-   0 *  * * *  www-data  cd /srv/www/xvault && php bin/ldapsync.php
+   0 *  * * *  www-data  cd /srv/www/webvault && php bin/ldapsync.php
    ```
 ***/
 $settings['ldapSync'] = [

@@ -4,7 +4,7 @@
 require_once 'vendor/autoload.php';
 require_once 'config/settings.php';
 
-$db = new XVault\Controllers\DatabaseController($settings['db']);
+$db = new WebVault\Controllers\DatabaseController($settings['db']);
 
 switch($argv[1] ?? '') {
 	case 'list':

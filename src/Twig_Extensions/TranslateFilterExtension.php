@@ -1,5 +1,5 @@
 <?php
-namespace XVault\Twig_Extensions;
+namespace WebVault\Twig_Extensions;
 
 class TranslateFilterExtension extends \Twig\Extension\AbstractExtension {
 	private $langCtrl;

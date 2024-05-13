@@ -1,5 +1,5 @@
 {
-	"name": "schorschii/xvault",
+	"name": "schorschii/webvault-pro",
     "description": "End-to-end encrypted web based password safe with multi-language support.",
     "version": "1.0.0",
     "type": "application",
@@ -13,12 +13,12 @@
         }
     ],
     "support": {
-        "issues": "https://github.com/schorschii/xvault/issues",
-        "source": "https://github.com/schorschii/xvault"
+        "issues": "https://github.com/schorschii/webvault-pro/issues",
+        "source": "https://github.com/schorschii/webvault-pro"
     },
     "autoload": {
         "psr-4": {
-            "XVault\\":"src/"
+            "WebVault\\":"src/"
         }
     },
     "require": {

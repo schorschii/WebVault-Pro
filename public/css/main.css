@@ -281,24 +281,30 @@ input[disabled], select[disabled], button[disabled], textarea[disabled] {
 input[type=submit]:not(.nobold) {
 	font-weight: bold;
 }
-.inputtable.actionbtn tr td:last-child {
-	width: 1%;
-}
 .inputtable {
 	width: 100%;
 }
 .inputtable td.description {
-	max-width: 280px;
+	max-width: 450px;
 	text-align: left;
 }
-.inputtable th:not(.file) {
+.inputtable th {
 	text-align: left;
 	vertical-align: middle;
+	width: 1%;
+	white-space: nowrap;
+	padding-right: 5px;
+}
+.inputtable.actionbtn tr td:last-child {
+	width: 1%;
 }
 .inputtable input:not([type=checkbox]):not([type=radio]),
 .inputtable select, .inputtable button, .inputtable textarea {
 	width: 100%;
 	box-sizing: border-box;
+}
+.inputtable textarea {
+	resize: vertical;
 }
 .inputtable div.input {
 	white-space: nowrap;

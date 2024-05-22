@@ -11,6 +11,10 @@ function activateWindowMouseDrag(divWindow, divTitleBar, divParentWindow=null) {
 		divWindow.style.left = (parseInt(divParentWindow.style.left)+offset) + 'px';
 	}
 
+	divWindow.addEventListener('mousedown', function(e) {
+		bringToFront(divWindow);
+	}, true);
+
 	divTitleBar.addEventListener('mousedown', function(e) {
 		isDown = true;
 		let left = parseInt(divWindow.style.left.replace('px', ''));
@@ -38,6 +42,12 @@ function activateWindowMouseDrag(divWindow, divTitleBar, divParentWindow=null) {
 	}, true);
 }
 
+let windowZIndexCounter = 1;
+function bringToFront(divWindow) {
+	divWindow.style.zIndex = windowZIndexCounter;
+	windowZIndexCounter += 1;
+}
+
 let animationWindowOut = {
 	keyframes: [
 		{ transform: 'scale(1)', easing: 'ease' },
@@ -59,6 +69,7 @@ function windowOpenAnimation(window) {
 		animationWindowIn.keyframes,
 		animationWindowIn.options
 	);
+	bringToFront(window);
 }
 
 function windowCloseAction(div, remove=true) {

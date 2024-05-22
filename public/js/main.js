@@ -643,6 +643,7 @@ function showUserGroupsManagement() {
 	divUserGroupsContainer.querySelectorAll('.btnAdd')[0].onclick = function(){showUserGroupManagement()};
 	divUserGroupsContainer.querySelectorAll('.btnClose')[0].onclick = windowCloseAction(divUserGroupsContainer,false);
 	// show with animation
+	document.body.appendChild(divUserGroupsContainer);
 	windowOpenAnimation(divUserGroupsContainer);
 }
 function showImport() {
@@ -670,6 +671,7 @@ function showImport() {
 	};
 	divImportContainer.querySelectorAll('.btnClose')[0].onclick = closeAction;
 	// show with animation
+	document.body.appendChild(divImportContainer);
 	windowOpenAnimation(divImportContainer);
 }
 function getGroupId(name, parent) {

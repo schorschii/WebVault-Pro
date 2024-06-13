@@ -657,7 +657,7 @@ function showUserGroupsManagement() {
 }
 function showMore() {
 	divMore.classList.toggle('invisible');
-	divMore.style.left = btnMore.offsetLeft+'px';
+	// hide when sub-button clicked
 	divMore.onclick = function(e) {
 		divMore.classList.toggle('invisible');
 	};

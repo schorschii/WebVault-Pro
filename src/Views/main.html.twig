@@ -45,7 +45,13 @@
 		<span></span>
 		<button id="btnNewPassword" title="{{ "new_entry"|trans }}"><img src="img/add.svg"></button>
 		<button id="btnNewGroup" title="{{ "new_folder"|trans }}"><img src="img/folder_new.svg"></button>
-		<button id="btnMore" title="{{ "more"|trans }}"><img src="img/expand.svg"></button>
+		<div id="btnMoreContainer">
+			<a id="btnMore" class="button" title="{{ "more"|trans }}"><img src="img/expand.svg"></a>
+			<div id="divMore" class="box invisible">
+				<button id="btnUserGroups" title="{{ "user_group_management"|trans }}"><img src="img/group.svg"></button>
+				<button id="btnImport" title="{{ "import"|trans }}"><img src="img/import.svg"></button>
+			</div>
+		</div>
 		<button id="btnReload" title="{{ "reload"|trans }}"><img id="imgReload" src="img/reload.svg"></button>
 		<button id="btnLogout" title="{{ "log_out"|trans }}"><img src="img/logout.svg"></button>
 	</div>
@@ -54,10 +60,6 @@
 			<div id="divNoSearchResults" class="infobox blue invisible">{{ "no_search_results"|trans }}</div>
 			<ul id="ulEntriesTree">
 			</ul>
-		</div>
-		<div id="divMore" class="box invisible">
-			<button id="btnUserGroups" title="{{ "user_group_management"|trans }}"><img src="img/group.svg"></button>
-			<button id="btnImport" title="{{ "import"|trans }}"><img src="img/import.svg"></button>
 		</div>
 	</div>
 </div>

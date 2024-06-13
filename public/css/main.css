@@ -104,7 +104,7 @@ a {
 a:hover {
 	color: blue;
 }
-a:active {
+a:not(.button):active {
 	opacity: 0.5;
 }
 
@@ -135,10 +135,6 @@ button, .button {
 	background-color: rgb(223,223,223);
 	background: rgb(230,230,230);
 	border-radius: 2px;
-	border-bottom: 1px solid rgb(145,145,140);
-	border-left: 1px solid rgb(182,182,179);
-	border-top: 1px solid rgb(182,182,179);
-	border-right: 1px solid rgb(182,182,179);
 	padding: 9px 18px;
 	color: black;
 	cursor: pointer;
@@ -212,35 +208,49 @@ button[disabled], .button.disabled {
 	padding: 1px 1px 0px 1px;
 	cursor: move;
 }
-.titlebar button,
-.titlebar input {
+.titlebar .button,
+.titlebar > button,
+.titlebar > input {
+	display: block;
 	border-radius: 12px;
 	background-color: transparent;
 	box-sizing: border-box;
 }
-.titlebar input,
-.titlebar span {
+.titlebar > input,
+.titlebar > span {
 	flex-grow: 1;
 	flex-shrink: 1;
 }
-.titlebar span {
+.titlebar > span {
 	flex-basis: 4px;
 }
-.titlebar input {
+.titlebar > input {
 	margin-bottom: 2px;
 	margin-right: 25px;
 	min-width: 25px;
 	flex-basis: 1px;
 }
-#divVault {
+@-moz-document url-prefix() {
+	.titlebar .button img {
+		margin-top: 1px;
+	}
+}
+#divMoreContainer {
 	position: relative;
 }
 #divMore {
 	position: absolute;
-	top: 0px;
-	padding: 20px;
+	margin-left: -15px;
+	padding: 15px;
 	background-color: rgb(250,250,250);
 	box-shadow: 0px 0px 2px rgba(0,0,0,0.25);
+	z-index: 1;
+}
+#divMore button {
+	display: block;
+}
+#divMore button:not(:last-child) {
+	margin-bottom: 5px;
 }
 .scroll {
 	overflow-y: auto;
@@ -272,7 +282,7 @@ button[disabled], .button.disabled {
 	padding-inline-start: 18px;
 }
 
-input, select, button, textarea {
+input, select, button, .button, textarea {
 	font-family: inherit;
 	font-size: inherit;
 	border-radius: 24px;
@@ -280,11 +290,11 @@ input, select, button, textarea {
 	padding: 9px 18px;
 	background-color: rgb(240,240,240);
 }
-input:focus, select:focus, button:focus, textarea:focus,
-input:active, select:active, button:active, textarea:active {
+input:focus, select:focus, button:focus, .button:focus, textarea:focus,
+input:active, select:active, button:active, .button:active, textarea:active {
 	outline: 2px solid #007aff;
 }
-input[disabled], select[disabled], button[disabled], textarea[disabled] {
+input[disabled], select[disabled], button[disabled], .button[disabled], textarea[disabled] {
 	cursor: not-allowed;
 	outline: none;
 }
@@ -526,7 +536,7 @@ input.invisible, textarea.invisible, select.invisible {
 	.opaquebox {
 		background-color: rgba(25,25,25,0.75);
 	}
-	input, select, button, textarea {
+	input, select, button, .button, textarea {
 		background-color: rgb(50,50,50);
 		color: white;
 	}
@@ -551,10 +561,10 @@ input.invisible, textarea.invisible, select.invisible {
 	html {
 		font-size: 12px;
 	}
-	input, select, button, textarea {
+	input, select, button, .button, textarea {
 		padding: 6px 12px;
 	}
-	button img {
+	button img, .button img {
 		height: 18px;
 	}
 	#divVaultContainer {

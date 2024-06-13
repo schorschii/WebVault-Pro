@@ -288,7 +288,11 @@ function addPasswordHtml(parentUl, id, passwordItem) {
 	divCont.appendChild(divDesc);
 	if(passwordItem.url) {
 		let aUrl = document.createElement('A');
-		aUrl.href = passwordItem.url;
+		if(passwordItem.url.startsWith('http://')
+		|| passwordItem.url.startsWith('https://')
+		|| passwordItem.url.startsWith('ftp://')) {
+			aUrl.href = passwordItem.url;
+		}
 		aUrl.innerText = truncate(passwordItem.url);
 		aUrl.target = '_blank';
 		aUrl.addEventListener('click', (e) => e.stopPropagation());

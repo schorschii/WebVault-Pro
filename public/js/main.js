@@ -445,9 +445,16 @@ function togglePasswordInput(input) {
 function copyInputValueToClipboard(input) {
 	// select all text
 	input.select();
-	input.setSelectionRange(0, 99999); // For mobile devices
+	input.setSelectionRange(0, 99999); // for mobile devices
 	// copy the text inside the text field
 	navigator.clipboard.writeText(input.value);
+}
+function clearClipboardIfMatchesInput(input) {
+	navigator.clipboard.readText().then((text) => {
+		if(text == input.value) {
+			navigator.clipboard.writeText('');
+		}
+	}).catch((exception) => {});
 }
 
 function search(q) {

@@ -74,6 +74,11 @@ function windowOpenAnimation(window) {
 
 function windowCloseAction(div, remove=true) {
 	return function(e) {
+		let passwordElements = div.querySelectorAll('input[type=password]');
+		for(let i=0; i<passwordElements.length; i++) {
+			console.log(passwordElements[i]);
+			clearClipboardIfMatchesInput(passwordElements[i]);
+		}
 		let animation = div.animate(
 			animationWindowOut.keyframes,
 			animationWindowOut.options

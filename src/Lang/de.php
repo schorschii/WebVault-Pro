@@ -48,7 +48,7 @@ return [
 	'change_password' => 'Passwort ändern',
 	'contents' => 'Inhalte',
 	'share' => 'Teilen',
-	'are_you_sure' => 'Sind Sie sicher?',
+	'are_you_sure_delete' => 'Sind Sie sicher, dass Sie den Eintrag unwiderruflich löschen möchten?',
 	'entry_changed_by_another_user' => 'Der Eintrag wurde von einem anderen Benutzer geändert',
 	'choose_another_parent_folder' => 'Bitte wählen Sie einen anderen übergeordneten Ordner',
 	'group_must_be_empty' => 'Die Gruppe muss leer sein, um sie löschen zu können.',

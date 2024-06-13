@@ -326,6 +326,7 @@ function addGroupHtml(parentUl, id, groupItem) {
 	a.addEventListener('click', openDetailsAction);
 	divCont.appendChild(a);
 	let btnEdit = document.createElement('BUTTON');
+	btnEdit.title = strings.edit;
 	let imgEdit = document.createElement('IMG');
 	imgEdit.src = 'img/edit.svg';
 	btnEdit.appendChild(imgEdit);
@@ -605,7 +606,7 @@ function showUserGroupManagement(id=null) {
 		});
 	});
 	clone.querySelectorAll('.btnDelete')[0].addEventListener('click', function(){
-		if(confirm(strings.are_you_sure)) {
+		if(confirm(strings.are_you_sure_delete)) {
 			jsonRequest(
 				'DELETE', 'user/group/'+encodeURIComponent(id), null
 			).then((response) => {
@@ -789,7 +790,7 @@ function showGroupDetails(id=null) {
 				alert(strings.cannot_delete_group_contains_items);
 				return;
 			}
-			if(confirm(strings.are_you_sure)) {
+			if(confirm(strings.are_you_sure_delete)) {
 				jsonRequest(
 					'DELETE', 'vault/group/'+encodeURIComponent(id), null
 				).then((response) => {
@@ -980,7 +981,7 @@ function showPasswordDetails(id=null) {
 		txtUrl.value = password['url'];
 		txtDescription.value = password['description'];
 		clone.querySelectorAll('.btnDelete')[0].addEventListener('click', function(e){
-			if(confirm(strings.are_you_sure)) {
+			if(confirm(strings.are_you_sure_delete)) {
 				jsonRequest(
 					'DELETE', 'vault/password/'+encodeURIComponent(id), null
 				).then((response) => {
@@ -1203,6 +1204,7 @@ function addUserGroupRow(groupTable, userGroupId, editAction) {
 	tr.appendChild(td1);
 	let td2 = document.createElement('TD');
 	let btn = document.createElement('BUTTON');
+	btn.title = strings.edit;
 	btn.addEventListener('click', editAction);
 	let img = document.createElement('IMG');
 	img.src = 'img/edit.svg';

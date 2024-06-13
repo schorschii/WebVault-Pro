@@ -254,7 +254,7 @@ class VaultController {
 				throw new Exception('Not shared to any user');
 			}
 			if(!array_key_exists('parent_password_group_id', $json)) {
-				throw new Exception($this->langCtrl->translate('choose_another_parent_group'));
+				throw new Exception($this->langCtrl->translate('choose_another_parent_folder'));
 			}
 			$absoluteShareUserIds = $json['share_users'];
 			foreach($json['share_groups'] as $group_id) {
@@ -311,7 +311,7 @@ class VaultController {
 			}
 			if(!array_key_exists('parent_password_group_id', $json)
 			|| $json['parent_password_group_id'] == $id) {
-				throw new Exception($this->langCtrl->translate('choose_another_parent_group'));
+				throw new Exception($this->langCtrl->translate('choose_another_parent_folder'));
 			}
 			$absoluteShareUserIds = $json['share_users'];
 			foreach($json['share_groups'] as $group_id) {

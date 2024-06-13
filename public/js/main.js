@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
 	txtSearch.addEventListener('input', () => search(txtSearch.value));
 	btnNewPassword.addEventListener('click', () => showPasswordDetails());
 	btnNewGroup.addEventListener('click', () => showGroupDetails());
+	btnMore.addEventListener('click', () => showMore());
 	btnUserGroups.addEventListener('click', () => showUserGroupsManagement());
 	btnImport.addEventListener('click', () => showImport());
 	btnReload.addEventListener('click', () => {
@@ -646,6 +647,13 @@ function showUserGroupsManagement() {
 	// show with animation
 	document.body.appendChild(divUserGroupsContainer);
 	windowOpenAnimation(divUserGroupsContainer);
+}
+function showMore() {
+	divMore.classList.toggle('invisible');
+	divMore.style.left = btnMore.offsetLeft+'px';
+	divMore.onclick = function(e) {
+		divMore.classList.toggle('invisible');
+	};
 }
 function showImport() {
 	// add actions

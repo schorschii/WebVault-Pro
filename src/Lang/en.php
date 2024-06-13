@@ -48,6 +48,7 @@ return [
 	'change_password' => 'Change password',
 	'contents' => 'Contents',
 	'share' => 'Share',
+	'more' => 'More features',
 	'are_you_sure_delete' => 'Are you sure you want to permanently delete the entry?',
 	'entry_changed_by_another_user' => 'Entry was changed by another user',
 	'choose_another_parent_folder' => 'Please choose another parent folder',

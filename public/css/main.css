@@ -365,6 +365,38 @@ input.invisible, textarea.invisible, select.invisible {
 	border: none;
 }
 
+.passwordStrength {
+	height: 4px;
+	position: absolute;
+	left: 16px;
+	right: 16px;
+	bottom: 0px;
+}
+.passwordStrength > .bar {
+	height: 100%;
+	border-radius: 4px;
+}
+.passwordStrength > .bar.score0 {
+	width: 0%;
+	background-color: transparent;
+}
+.passwordStrength > .bar.score1 {
+	width: 30%;
+	background-color: #C43F31;
+}
+.passwordStrength > .bar.score2 {
+	width: 60%;
+	background-color: #E07F16;
+}
+.passwordStrength > .bar.score3 {
+	width: 80%;
+	background-color: #5EA10E;
+}
+.passwordStrength > .bar.score4 {
+	width: 100%;
+	background-color: #118F17;
+}
+
 .inlineblock {
 	display: inline-block;
 }

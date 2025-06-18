@@ -966,6 +966,7 @@ function showPasswordDetails(id=null) {
 	let txtUrl = clone.querySelectorAll('[name=txtUrl]')[0];
 	let txtUsername = clone.querySelectorAll('[name=txtUsername]')[0];
 	let txtPassword = clone.querySelectorAll('[name=txtPassword]')[0];
+	let divPasswordStrength = clone.querySelectorAll('.passwordStrength > .bar')[0];
 	let txtDescription = clone.querySelectorAll('[name=txtDescription]')[0];
 	let sltShareUser = clone.querySelectorAll('[name=sltShareUser]')[0];
 	let sltShareUserGroup = clone.querySelectorAll('[name=sltShareUserGroup]')[0];
@@ -988,6 +989,11 @@ function showPasswordDetails(id=null) {
 	// add actions
 	activateWindowMouseDrag(clone, clone.querySelectorAll('.titlebar')[0], divVaultContainer);
 	let closeAnimation = windowCloseAction(clone);
+	let updatePasswordStrength = function(e) {
+		divPasswordStrength.classList.remove('score0', 'score1', 'score2', 'score3', 'score4');
+		divPasswordStrength.classList.add('score'+zxcvbn(txtPassword.value).score);
+	};
+	txtPassword.addEventListener('input', updatePasswordStrength);
 	if(id == null) {
 		clone.querySelectorAll('.btnDelete')[0].remove();
 	} else {
@@ -997,6 +1003,7 @@ function showPasswordDetails(id=null) {
 		txtTitle.value = password['title'];
 		txtUsername.value = password['username'];
 		txtPassword.value = password['password'];
+		updatePasswordStrength();
 		txtUrl.value = password['url'];
 		txtDescription.value = password['description'];
 		clone.querySelectorAll('.btnDelete')[0].addEventListener('click', function(e){

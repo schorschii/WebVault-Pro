@@ -5,6 +5,7 @@
 	<script type="text/javascript" src="js/crypto.js?v={{ version }}"></script>
 	<script type="text/javascript" src="js/window.js?v={{ version }}"></script>
 	<script type="text/javascript" src="js/strings.js?v={{ version }}"></script>
+	<script type="text/javascript" src="js/zxcvbn.min.js?v={{ version }}"></script>
 {% endblock %}
 
 {% block content %}
@@ -171,6 +172,7 @@
 						<button class="btnShowHidePassword" title="{{ "show_hide_password"|trans }}"><img src="img/eye.svg"></button>
 						<button class="btnGeneratePassword" title="{{ "generate_password"|trans }}"><img src="img/generator.svg"></button>
 						<button class="btnCopyPassword" title="{{ "copy_to_clipboard"|trans }}"><img src="img/clipboard.svg"></button>
+						<div class="passwordStrength"><div class="bar" /></div>
 					</div>
 				</td>
 			</tr>

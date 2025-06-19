@@ -377,8 +377,8 @@ input.invisible, textarea.invisible, select.invisible {
 	border-radius: 4px;
 }
 .passwordStrength > .bar.score0 {
-	width: 0%;
-	background-color: transparent;
+	width: 10%;
+	background-color: #C43F31;
 }
 .passwordStrength > .bar.score1 {
 	width: 30%;

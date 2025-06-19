@@ -991,8 +991,13 @@ function showPasswordDetails(id=null) {
 	let closeAnimation = windowCloseAction(clone);
 	let updatePasswordStrength = function(e) {
 		divPasswordStrength.classList.remove('score0', 'score1', 'score2', 'score3', 'score4');
-		divPasswordStrength.classList.add('score'+zxcvbn(txtPassword.value).score);
+		if(txtPassword.value != '')
+			divPasswordStrength.classList.add(
+				'score'+zxcvbn(txtPassword.value, [txtTitle.value, txtUsername.value]).score
+			);
 	};
+	txtTitle.addEventListener('input', updatePasswordStrength);
+	txtUsername.addEventListener('input', updatePasswordStrength);
 	txtPassword.addEventListener('input', updatePasswordStrength);
 	if(id == null) {
 		clone.querySelectorAll('.btnDelete')[0].remove();

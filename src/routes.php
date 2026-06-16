@@ -48,7 +48,7 @@ $app->delete('/vault/group/{id}', WebVault\Controllers\VaultController::class.':
 	->setName('vault-group-delete');
 
 // redirect all other requests to homepage
-$errorMiddleware = $app->addErrorMiddleware(true, true, true);
+$errorMiddleware = $app->addErrorMiddleware($settings['displayErrorDetails']??false, true, true);
 $errorMiddleware->setErrorHandler(
 HttpNotFoundException::class,
 function(Request $request, Throwable $exception, bool $displayErrorDetails) {

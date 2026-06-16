@@ -34,6 +34,7 @@ class UserController {
 			if($user->locked)
 				throw new Exception('User is locked');
 
+			session_regenerate_id(true);
 			$_SESSION['user_id'] = $user->id;
 
 			$groups = [];

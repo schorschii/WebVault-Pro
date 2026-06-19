@@ -17,5 +17,6 @@ jobs:
 
       - name: Run phpunit
         run: |
-          sudo apt install -y phpunit
+          sudo apt install -y phpunit composer
+          composer install
           cd tests && phpunit

@@ -164,10 +164,10 @@ class VaultController {
 		}
 
 		// use existing share info if null
-		if($share_users == null) {
+		if($share_users === null) {
 			$share_users = $this->db->selectAllSharedUserIdByPassword($password_id);
 		}
-		if($share_groups == null) {
+		if($share_groups === null) {
 			$share_groups = $this->db->selectAllSharedUserGroupIdByPassword($password_id);
 		}
 		if(!$isNewPassword) {

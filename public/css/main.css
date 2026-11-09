@@ -457,6 +457,15 @@ input.invisible, textarea.invisible, select.invisible {
 #ulEntriesTree li.group.closed > ul {
 	display: none;
 }
+#ulEntriesTree li.password.customicon:before,
+#ulEntriesTree li.group.customicon:before {
+	content: none;
+}
+#ulEntriesTree li > img.icon {
+	margin-right: 10px;
+	margin-top: 6px;
+	vertical-align: middle;
+}
 #ulEntriesTree li.password > div {
 	display: inline-block;
 	vertical-align: middle;

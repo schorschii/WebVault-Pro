@@ -69,6 +69,7 @@ Apply the following schema changes to your existing database:
 ```
 ALTER TABLE `user_group_member` DROP FOREIGN KEY `fk_user_2`;
 ALTER TABLE `user_group_member` ADD CONSTRAINT `fk_user_2` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE `password_group` ADD `icon` varchar(50) DEFAULT NULL;
 ```
 
 ### Upgrade notes for v0.x (WebPW) users

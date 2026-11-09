@@ -434,8 +434,15 @@ function setSetting(name, value) {
 
 function generateRandomPassword(length=13, charset='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789') {
 	let generated = '';
-	for(var i = 0, n = charset.length; i < length; ++i) {
-		generated += charset.charAt(Math.floor(Math.random() * n));
+	let n = charset.length;
+	if(!n) return generated;
+	let random = new Uint32Array(1);
+	while(generated.length < length) {
+		crypto.getRandomValues(random);
+		// rejection sampling to avoid modulo bias
+		if(random[0] < 0x100000000 - (0x100000000 % n)) {
+			generated += charset.charAt(random[0] % n);
+		}
 	}
 	return generated;
 }

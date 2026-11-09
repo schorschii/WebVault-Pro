@@ -3,6 +3,8 @@ namespace WebVault\Controllers;
 
 use \PDO as PDO;
 use \Exception as Exception;
+use \DateTime as DateTime;
+use \DateTimeZone as DateTimeZone;
 use Slim\Psr7\Request as Request;
 use Slim\Psr7\Response as Response;
 
@@ -54,8 +56,8 @@ class VaultController {
 
 			$passwords = [];
 			foreach($this->db->selectAllPasswordByUser($_SESSION['user_id']) as $password) {
-				list($share_users, $share_user_permissions) = self::compileShares($this->db->selectAllSharedUserByPassword($password->id), 'user_id');
-				list($share_groups, $share_group_permissions) = self::compileShares($this->db->selectAllSharedUserGroupByPassword($password->id), 'user_group_id');
+				list($share_users, $share_user_permissions, $share_user_expires) = self::compileShares($this->db->selectAllSharedUserByPassword($password->id), 'user_id');
+				list($share_groups, $share_group_permissions, $share_group_expires) = self::compileShares($this->db->selectAllSharedUserGroupByPassword($password->id), 'user_group_id');
 				$passwords[] = [
 					'id' => $password->id,
 					'password_group_id' => $password->password_group_id,
@@ -69,12 +71,14 @@ class VaultController {
 					'share_groups' => $share_groups,
 					'share_user_permissions' => $share_user_permissions,
 					'share_group_permissions' => $share_group_permissions,
+					'share_user_expires' => $share_user_expires,
+					'share_group_expires' => $share_group_expires,
 				];
 			}
 			$groups = [];
 			foreach($this->db->selectAllPasswordGroupByUser($_SESSION['user_id']) as $group) {
-				list($share_users, $share_user_permissions) = self::compileShares($this->db->selectAllSharedUserByPasswordGroup($group->id), 'user_id');
-				list($share_groups, $share_group_permissions) = self::compileShares($this->db->selectAllSharedUserGroupByPasswordGroup($group->id), 'user_group_id');
+				list($share_users, $share_user_permissions, $share_user_expires) = self::compileShares($this->db->selectAllSharedUserByPasswordGroup($group->id), 'user_id');
+				list($share_groups, $share_group_permissions, $share_group_expires) = self::compileShares($this->db->selectAllSharedUserGroupByPasswordGroup($group->id), 'user_group_id');
 				$groups[] = [
 					'id' => $group->id,
 					'parent_password_group_id' => $group->parent_password_group_id,
@@ -84,6 +88,8 @@ class VaultController {
 					'share_groups' => $share_groups,
 					'share_user_permissions' => $share_user_permissions,
 					'share_group_permissions' => $share_group_permissions,
+					'share_user_expires' => $share_user_expires,
+					'share_group_expires' => $share_group_expires,
 				];
 			}
 
@@ -122,7 +128,7 @@ class VaultController {
 			$this->db->beginTransaction();
 			$password_id = $this->db->insertPassword($json['password_group_id'], $json['secret'], $json['aes_iv'], $revision);
 			$this->updatePasswordUser($password_id, $json['password_user'], $json['share_users'], $json['share_groups'], true,
-				$json['share_user_permissions'] ?? [], $json['share_group_permissions'] ?? []);
+				$json['share_user_permissions'] ?? [], $json['share_group_permissions'] ?? [], $json['share_user_expires'] ?? [], $json['share_group_expires'] ?? []);
 			$this->db->commitTransaction();
 
 			// return response
@@ -159,7 +165,7 @@ class VaultController {
 			$this->db->beginTransaction();
 			$this->db->updatePassword($password_id, $json['password_group_id'], $json['secret'], $json['aes_iv'], $revision);
 			$this->updatePasswordUser($password_id, $json['password_user'], $json['share_users'], $json['share_groups'], false,
-				$json['share_user_permissions'] ?? [], $json['share_group_permissions'] ?? []);
+				$json['share_user_permissions'] ?? [], $json['share_group_permissions'] ?? [], $json['share_user_expires'] ?? [], $json['share_group_expires'] ?? []);
 			$this->db->commitTransaction();
 
 			// return response
@@ -176,7 +182,7 @@ class VaultController {
 		}
 	}
 
-	public function updatePasswordUser($password_id, Array $password_user, Array|null $share_users=null, Array|null $share_groups=null, Bool $isNewPassword=false, Array $share_user_permissions=[], Array $share_group_permissions=[]) {
+	public function updatePasswordUser($password_id, Array $password_user, Array|null $share_users=null, Array|null $share_groups=null, Bool $isNewPassword=false, Array $share_user_permissions=[], Array $share_group_permissions=[], Array $share_user_expires=[], Array $share_group_expires=[]) {
 		// input checks
 		if(empty($password_user)) {
 			throw new Exception('Not encrypted to any user');
@@ -187,10 +193,10 @@ class VaultController {
 
 		// use existing share info if null
 		if($share_users === null) {
-			list($share_users, $share_user_permissions) = self::compileShares($this->db->selectAllSharedUserByPassword($password_id), 'user_id');
+			list($share_users, $share_user_permissions, $share_user_expires) = self::compileShares($this->db->selectAllSharedUserByPassword($password_id), 'user_id');
 		}
 		if($share_groups === null) {
-			list($share_groups, $share_group_permissions) = self::compileShares($this->db->selectAllSharedUserGroupByPassword($password_id), 'user_group_id');
+			list($share_groups, $share_group_permissions, $share_group_expires) = self::compileShares($this->db->selectAllSharedUserGroupByPassword($password_id), 'user_group_id');
 		}
 		if(!$isNewPassword) {
 			// permission check
@@ -201,7 +207,7 @@ class VaultController {
 			}
 			$this->checkShareChangeAllowed($permission,
 				$this->db->selectAllSharedUserByPassword($password_id), $this->db->selectAllSharedUserGroupByPassword($password_id),
-				$share_users, $share_groups, $share_user_permissions, $share_group_permissions
+				$share_users, $share_groups, $share_user_permissions, $share_group_permissions, $share_user_expires, $share_group_expires
 			);
 		}
 		// check group permission: only members can add a group share, existing group shares can be kept
@@ -238,11 +244,11 @@ class VaultController {
 		}
 		$this->db->deletePasswordUserShareByPassword($password_id);
 		foreach($share_users as $user_id) {
-			$this->db->insertPasswordUserShare($password_id, $user_id, intval($share_user_permissions[$user_id] ?? 0));
+			$this->db->insertPasswordUserShare($password_id, $user_id, intval($share_user_permissions[$user_id] ?? 0), self::parseExpires($share_user_expires[$user_id] ?? null));
 		}
 		$this->db->deletePasswordUserGroupShareByPassword($password_id);
 		foreach($share_groups as $group_id) {
-			$this->db->insertPasswordUserGroupShare($password_id, $group_id, intval($share_group_permissions[$group_id] ?? 0));
+			$this->db->insertPasswordUserGroupShare($password_id, $group_id, intval($share_group_permissions[$group_id] ?? 0), self::parseExpires($share_group_expires[$group_id] ?? null));
 		}
 	}
 
@@ -309,11 +315,11 @@ class VaultController {
 			$id = $this->db->insertPasswordGroup($json['parent_password_group_id']??null, $json['title']);
 			$this->db->deletePasswordGroupUserShareByPasswordGroup($id);
 			foreach($json['share_users'] as $user_id) {
-				$this->db->insertPasswordGroupUserShare($id, $user_id, intval($json['share_user_permissions'][$user_id] ?? 0));
+				$this->db->insertPasswordGroupUserShare($id, $user_id, intval($json['share_user_permissions'][$user_id] ?? 0), self::parseExpires($json['share_user_expires'][$user_id] ?? null));
 			}
 			$this->db->deletePasswordGroupUserGroupShareByPasswordGroup($id);
 			foreach($json['share_groups'] as $group_id) {
-				$this->db->insertPasswordGroupUserGroupShare($id, $group_id, intval($json['share_group_permissions'][$group_id] ?? 0));
+				$this->db->insertPasswordGroupUserGroupShare($id, $group_id, intval($json['share_group_permissions'][$group_id] ?? 0), self::parseExpires($json['share_group_expires'][$group_id] ?? null));
 			}
 			$this->db->commitTransaction();
 
@@ -371,7 +377,8 @@ class VaultController {
 			}
 			$this->checkShareChangeAllowed($permission,
 				$this->db->selectAllSharedUserByPasswordGroup($id), $this->db->selectAllSharedUserGroupByPasswordGroup($id),
-				$json['share_users'], $json['share_groups'], $json['share_user_permissions'] ?? [], $json['share_group_permissions'] ?? []
+				$json['share_users'], $json['share_groups'], $json['share_user_permissions'] ?? [], $json['share_group_permissions'] ?? [],
+				$json['share_user_expires'] ?? [], $json['share_group_expires'] ?? []
 			);
 
 			// update data
@@ -379,11 +386,11 @@ class VaultController {
 			$this->db->updatePasswordGroup($id, $json['parent_password_group_id'], $json['title']);
 			$this->db->deletePasswordGroupUserShareByPasswordGroup($id);
 			foreach($json['share_users'] as $user_id) {
-				$this->db->insertPasswordGroupUserShare($id, $user_id, intval($json['share_user_permissions'][$user_id] ?? 0));
+				$this->db->insertPasswordGroupUserShare($id, $user_id, intval($json['share_user_permissions'][$user_id] ?? 0), self::parseExpires($json['share_user_expires'][$user_id] ?? null));
 			}
 			$this->db->deletePasswordGroupUserGroupShareByPasswordGroup($id);
 			foreach($json['share_groups'] as $group_id) {
-				$this->db->insertPasswordGroupUserGroupShare($id, $group_id, intval($json['share_group_permissions'][$group_id] ?? 0));
+				$this->db->insertPasswordGroupUserGroupShare($id, $group_id, intval($json['share_group_permissions'][$group_id] ?? 0), self::parseExpires($json['share_group_expires'][$group_id] ?? null));
 			}
 			// update subgroups and passwords
 			if(!empty($json['passwords']) && is_array($json['passwords'])) {
@@ -397,7 +404,7 @@ class VaultController {
 					}
 					$this->db->updatePassword($password_id, $lastRevision->password_group_id, $passwordData['secret'], $passwordData['aes_iv'], $lastRevision->revision+1);
 					$this->updatePasswordUser($password_id, $passwordData['password_user'], $json['share_users'], $json['share_groups'], false,
-						$json['share_user_permissions'] ?? [], $json['share_group_permissions'] ?? []);
+						$json['share_user_permissions'] ?? [], $json['share_group_permissions'] ?? [], $json['share_user_expires'] ?? [], $json['share_group_expires'] ?? []);
 				}
 			}
 			if(!empty($json['groups']) && is_array($json['groups'])) {
@@ -410,16 +417,17 @@ class VaultController {
 					}
 					$this->checkShareChangeAllowed($subPermission,
 						$this->db->selectAllSharedUserByPasswordGroup($sub_group_id), $this->db->selectAllSharedUserGroupByPasswordGroup($sub_group_id),
-						$json['share_users'], $json['share_groups'], $json['share_user_permissions'] ?? [], $json['share_group_permissions'] ?? []
+						$json['share_users'], $json['share_groups'], $json['share_user_permissions'] ?? [], $json['share_group_permissions'] ?? [],
+						$json['share_user_expires'] ?? [], $json['share_group_expires'] ?? []
 					);
 					// update subgroup
 					$this->db->deletePasswordGroupUserShareByPasswordGroup($sub_group_id);
 					foreach($json['share_users'] as $user_id) {
-						$this->db->insertPasswordGroupUserShare($sub_group_id, $user_id, intval($json['share_user_permissions'][$user_id] ?? 0));
+						$this->db->insertPasswordGroupUserShare($sub_group_id, $user_id, intval($json['share_user_permissions'][$user_id] ?? 0), self::parseExpires($json['share_user_expires'][$user_id] ?? null));
 					}
 					$this->db->deletePasswordGroupUserGroupShareByPasswordGroup($sub_group_id);
 					foreach($json['share_groups'] as $group_id) {
-						$this->db->insertPasswordGroupUserGroupShare($sub_group_id, $group_id, intval($json['share_group_permissions'][$group_id] ?? 0));
+						$this->db->insertPasswordGroupUserGroupShare($sub_group_id, $group_id, intval($json['share_group_permissions'][$group_id] ?? 0), self::parseExpires($json['share_group_expires'][$group_id] ?? null));
 					}
 				}
 			}
@@ -466,31 +474,42 @@ class VaultController {
 	}
 
 	private static function compileShares($shares, $idColumn) {
-		// split share rows into an id list and a permission map
+		// split share rows into an id list, a permission map and an expiry map
 		$ids = [];
 		$permissions = [];
+		$expires = [];
 		foreach($shares as $share) {
 			$ids[] = $share->$idColumn;
 			$permissions[$share->$idColumn] = $share->permission;
+			$expires[$share->$idColumn] = $share->expires;
 		}
-		return [$ids, $permissions];
+		return [$ids, $permissions, $expires];
+	}
+	private static function parseExpires($expires) {
+		// expiry dates are transferred as UTC 'Y-m-d H:i:s' strings
+		if(empty($expires)) return null;
+		$date = DateTime::createFromFormat('Y-m-d H:i:s', $expires, new DateTimeZone('UTC'));
+		if(!$date || $date->format('Y-m-d H:i:s') !== $expires) {
+			throw new Exception('Invalid expiry date');
+		}
+		return $expires;
 	}
 
-	private static function shareMap($ids, $permissions) {
+	private static function shareMap($ids, $permissions, $expires) {
 		$map = [];
 		foreach($ids as $id) {
-			$map[intval($id)] = intval($permissions[$id] ?? 0);
+			$map[intval($id)] = [intval($permissions[$id] ?? 0), self::parseExpires($expires[$id] ?? null)];
 		}
 		ksort($map);
 		return $map;
 	}
-	private function checkShareChangeAllowed($permission, $existingUserShares, $existingGroupShares, $share_users, $share_groups, $share_user_permissions, $share_group_permissions) {
+	private function checkShareChangeAllowed($permission, $existingUserShares, $existingGroupShares, $share_users, $share_groups, $share_user_permissions, $share_group_permissions, $share_user_expires, $share_group_expires) {
 		// users without resharing permission must leave the shares as they are
 		if(!($permission & self::PERMISSION_NO_RESHARE)) return;
-		list($existingUsers, $existingUserPermissions) = self::compileShares($existingUserShares, 'user_id');
-		list($existingGroups, $existingGroupPermissions) = self::compileShares($existingGroupShares, 'user_group_id');
-		if(self::shareMap($share_users, $share_user_permissions) != self::shareMap($existingUsers, $existingUserPermissions)
-		|| self::shareMap($share_groups, $share_group_permissions) != self::shareMap($existingGroups, $existingGroupPermissions)) {
+		list($existingUsers, $existingUserPermissions, $existingUserExpires) = self::compileShares($existingUserShares, 'user_id');
+		list($existingGroups, $existingGroupPermissions, $existingGroupExpires) = self::compileShares($existingGroupShares, 'user_group_id');
+		if(self::shareMap($share_users, $share_user_permissions, $share_user_expires) != self::shareMap($existingUsers, $existingUserPermissions, $existingUserExpires)
+		|| self::shareMap($share_groups, $share_group_permissions, $share_group_expires) != self::shareMap($existingGroups, $existingGroupPermissions, $existingGroupExpires)) {
 			throw new Exception('Permission denied');
 		}
 	}

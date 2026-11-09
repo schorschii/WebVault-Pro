@@ -55,7 +55,8 @@ CREATE TABLE `password_group` (
 CREATE TABLE `share_password_group_user` (
   `password_group_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
-  `permission` tinyint(4) NOT NULL DEFAULT 0
+  `permission` tinyint(4) NOT NULL DEFAULT 0,
+  `expires` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -67,7 +68,8 @@ CREATE TABLE `share_password_group_user` (
 CREATE TABLE `share_password_group_user_group` (
   `password_group_id` int(11) NOT NULL,
   `user_group_id` int(11) NOT NULL,
-  `permission` tinyint(4) NOT NULL DEFAULT 0
+  `permission` tinyint(4) NOT NULL DEFAULT 0,
+  `expires` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -79,7 +81,8 @@ CREATE TABLE `share_password_group_user_group` (
 CREATE TABLE `share_password_user` (
   `password_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
-  `permission` tinyint(4) NOT NULL DEFAULT 0
+  `permission` tinyint(4) NOT NULL DEFAULT 0,
+  `expires` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -91,7 +94,8 @@ CREATE TABLE `share_password_user` (
 CREATE TABLE `share_password_user_group` (
   `password_id` int(11) NOT NULL,
   `user_group_id` int(11) NOT NULL,
-  `permission` tinyint(4) NOT NULL DEFAULT 0
+  `permission` tinyint(4) NOT NULL DEFAULT 0,
+  `expires` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------

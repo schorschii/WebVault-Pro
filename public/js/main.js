@@ -211,7 +211,7 @@ function loadVault(privKey=null, pubKey=null) {
 						'group':password.password_group_id, 'title':decryptedData.title,
 						'username':decryptedData.username, 'password':decryptedData.password,
 						'url':decryptedData.url, 'description':decryptedData.description,
-						'icon':decryptedData.icon, 'permission':password.permission,
+						'icon':decryptedData.icon, 'fields':decryptedData.fields || [], 'permission':password.permission,
 						'share_users':password.share_users, 'share_groups':password.share_groups,
 						'share_user_permissions':password.share_user_permissions, 'share_group_permissions':password.share_group_permissions,
 						'share_user_expires':password.share_user_expires, 'share_group_expires':password.share_group_expires
@@ -512,6 +512,10 @@ function search(q) {
 			match = (item[key].toUpperCase().indexOf(filter) > -1);
 			if(match) break;
 		}
+		(item['fields'] || []).forEach((field) => {
+			if(field.name.toUpperCase().indexOf(filter) > -1
+			|| (field.type != 'password' && field.value.toUpperCase().indexOf(filter) > -1)) match = true;
+		});
 		// show or hide password
 		if(match) {
 			matches ++;
@@ -613,6 +617,7 @@ function showUserGroupManagement(id=null) {
 						'url': sessionVaultContent['passwords'][passwordId].url,
 						'description': sessionVaultContent['passwords'][passwordId].description,
 						'icon': sessionVaultContent['passwords'][passwordId].icon,
+						'fields': sessionVaultContent['passwords'][passwordId].fields,
 					};
 					promiseChain.push(
 						encryptData(targetPublicKeys, JSON.stringify(secret), passwordId)
@@ -946,6 +951,7 @@ function showGroupDetails(id=null) {
 					'url': entriesToUpdate.passwords[passwordId].url,
 					'description': entriesToUpdate.passwords[passwordId].description,
 					'icon': entriesToUpdate.passwords[passwordId].icon,
+					'fields': entriesToUpdate.passwords[passwordId].fields,
 				};
 				promiseChain.push(
 					encryptData(targetPublicKeys, JSON.stringify(secret), passwordId)
@@ -1032,6 +1038,7 @@ function showPasswordDetails(id=null) {
 	let txtPassword = clone.querySelectorAll('[name=txtPassword]')[0];
 	let divPasswordStrength = clone.querySelectorAll('.passwordStrength > .bar')[0];
 	let txtDescription = clone.querySelectorAll('[name=txtDescription]')[0];
+	let trAddField = clone.querySelectorAll('.btnAddField')[0].parentNode.parentNode;
 	let sltShareUser = clone.querySelectorAll('[name=sltShareUser]')[0];
 	let sltShareUserGroup = clone.querySelectorAll('[name=sltShareUserGroup]')[0];
 	let tblShares = clone.querySelectorAll('.shares')[0];
@@ -1078,6 +1085,9 @@ function showPasswordDetails(id=null) {
 		txtUrl.value = password['url'];
 		txtDescription.value = password['description'];
 		sltIcon.value = password['icon'] || '';
+		password['fields'].forEach((field) => {
+			addCustomFieldRow(trAddField, field.name, field.value, field.type);
+		});
 		clone.querySelectorAll('.btnDelete')[0].addEventListener('click', function(e){
 			if(confirm(strings.are_you_sure_delete)) {
 				jsonRequest(
@@ -1127,6 +1137,9 @@ function showPasswordDetails(id=null) {
 	clone.querySelectorAll('.btnAddUserGroupShare')[0].addEventListener('click', function(e){
 		addShareGroupRow(tblShares, sltShareUserGroup.value, 0);
 	});
+	clone.querySelectorAll('.btnAddField')[0].addEventListener('click', function(e){
+		addCustomFieldRow(trAddField).focus();
+	});
 	clone.querySelectorAll('.btnCopyUsername')[0].addEventListener('click', function(e){
 		copyInputValueToClipboard(txtUsername);
 	});
@@ -1158,7 +1171,12 @@ function showPasswordDetails(id=null) {
 			'url': txtUrl.value,
 			'description': txtDescription.value,
 			'icon': sltIcon.value,
+			'fields': [],
 		};
+		clone.querySelectorAll('tr.field').forEach((tr) => {
+			let txtValue = tr.querySelectorAll('.fieldvalue')[0];
+			secret.fields.push({'name': tr.querySelectorAll('.fieldname')[0].value, 'value': txtValue.value, 'type': txtValue.type});
+		});
 
 		// collect selected users and groups and compile target keys
 		let shareUsers = [];
@@ -1216,7 +1234,7 @@ function showPasswordDetails(id=null) {
 				'group': group, 'title': secret.title,
 				'username': secret.username, 'password': secret.password,
 				'url': secret.url, 'description': secret.description,
-				'icon': secret.icon, 'permission': (id ? sessionVaultContent['passwords'][id]['permission'] : 0),
+				'icon': secret.icon, 'fields': secret.fields, 'permission': (id ? sessionVaultContent['passwords'][id]['permission'] : 0),
 				'share_users': shareUsers, 'share_groups': shareGroups,
 				'share_user_permissions': shareUserPermissions, 'share_group_permissions': shareGroupPermissions,
 				'share_user_expires': shareUserExpires, 'share_group_expires': shareGroupExpires
@@ -1376,9 +1394,53 @@ function localDateTimeInputToUtc(local) {
 }
 function disableEditing(divWindow) {
 	// read only permission: hide save/delete and make all inputs read only
-	divWindow.querySelectorAll('.btnSave, .btnDelete').forEach((btn) => btn.remove());
+	divWindow.querySelectorAll('.btnSave, .btnDelete, .btnAddField').forEach((btn) => btn.remove());
 	divWindow.querySelectorAll('input, textarea').forEach((input) => input.readOnly = true);
 	divWindow.querySelectorAll('select').forEach((select) => select.disabled = true);
+}
+function addCustomFieldRow(trAddField, name='', value='', type='text') {
+	// custom fields are stored inside the encrypted secret as {name, value, type}
+	let tr = document.createElement('TR');
+	tr.classList.add('field');
+	let th = document.createElement('TH');
+	let txtName = document.createElement('INPUT');
+	txtName.type = 'text';
+	txtName.classList.add('fieldname');
+	txtName.placeholder = strings.field_name;
+	txtName.value = name;
+	th.appendChild(txtName);
+	tr.appendChild(th);
+	let td = document.createElement('TD');
+	let div = document.createElement('DIV');
+	div.classList.add('with2button');
+	let txtValue = document.createElement('INPUT');
+	txtValue.type = (type == 'password') ? 'password' : 'text';
+	txtValue.classList.add('fieldvalue');
+	txtValue.placeholder = strings.value;
+	txtValue.value = value;
+	div.appendChild(txtValue);
+	let btnToggle = document.createElement('BUTTON');
+	btnToggle.title = strings.show_hide_password;
+	btnToggle.addEventListener('click', function(e){
+		togglePasswordInput(txtValue);
+	});
+	let imgToggle = document.createElement('IMG');
+	imgToggle.src = 'img/eye.svg';
+	btnToggle.appendChild(imgToggle);
+	div.appendChild(btnToggle);
+	let btnRemove = document.createElement('BUTTON');
+	btnRemove.title = strings.remove;
+	btnRemove.addEventListener('click', function(e){
+		tr.remove();
+	});
+	let imgRemove = document.createElement('IMG');
+	imgRemove.src = 'img/minus.svg';
+	btnRemove.appendChild(imgRemove);
+	div.appendChild(btnRemove);
+	td.appendChild(div);
+	tr.appendChild(td);
+	trAddField.parentNode.insertBefore(tr, trAddField);
+	return txtName;
 }
 function addShareUserRow(shareTable, userId, permission=null, expires=null) {
 	if(!(userId in sessionEnvironment['users'])) return;

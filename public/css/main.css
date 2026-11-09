@@ -315,6 +315,9 @@ input[type=submit]:not(.nobold) {
 	white-space: nowrap;
 	padding-right: 5px;
 }
+.inputtable tr.field th input {
+	width: 100px;
+}
 .inputtable.actionbtn tr td:last-child {
 	width: 1%;
 }
@@ -333,22 +336,30 @@ input[type=submit]:not(.nobold) {
 	width: auto;
 }
 .inputtable .with1button,
+.inputtable .with2button,
 .inputtable .with3button {
 	position: relative;
 }
 .inputtable .with1button input {
 	padding-right: 35px;
 }
+.inputtable .with2button input {
+	padding-right: 62px;
+}
 .inputtable .with3button input {
 	padding-right: 90px;
 }
 .inputtable .with1button button,
+.inputtable .with2button button,
 .inputtable .with3button button {
 	position: absolute;
 	right: 4px; top: 4px;
 	width: auto;
 	padding: 4px;
 	background-color: transparent;
+}
+.inputtable .with2button button:nth-of-type(1) {
+	right: 32px;
 }
 .inputtable .with3button button:nth-of-type(1) {
 	right: 62px;
@@ -357,6 +368,7 @@ input[type=submit]:not(.nobold) {
 	right: 32px;
 }
 .inputtable .with1button button img,
+.inputtable .with2button button img,
 .inputtable .with3button button img {
 	display: block;
 }

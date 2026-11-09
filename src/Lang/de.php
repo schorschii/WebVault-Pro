@@ -69,6 +69,9 @@ return [
 	'read_only' => 'Nur lesen',
 	'no_resharing' => 'Keine Weitergabe',
 	'expires' => 'Gültig bis',
+	'add_field' => 'Feld hinzufügen',
+	'field_name' => 'Feldname',
+	'value' => 'Wert',
 	'default' => 'Standard',
 	'cannot_delete_group_contains_items' => 'Die Gruppe kann nicht gelöscht werden, da sie noch untergeordnete Elemente besitzt.',
 ];

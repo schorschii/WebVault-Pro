@@ -452,8 +452,6 @@ function restoreGroupState() {
 		let groupId = elements[i].getAttribute('groupid');
 		if(groupStates[groupId]) {
 			elements[i].classList.remove('closed');
-		} else {
-			elements[i].classList.remove('add');
 		}
 	}
 }

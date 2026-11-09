@@ -179,7 +179,7 @@ class VaultControllerTest extends TestCase {
 		$_SESSION['user_id'] = 1;
 		$this->mockDb->method('selectAllUserByPasswordShare')->with(42)->willReturn([1]);
 		$this->mockDb->method('selectPasswordPermission')->with(42, 1)->willReturn(VaultController::PERMISSION_NO_RESHARE);
-		$this->mockDb->method('selectAllSharedUserByPassword')->with(42)->willReturn([(object)['user_id' => 1, 'permission' => 2]]);
+		$this->mockDb->method('selectAllSharedUserByPassword')->with(42)->willReturn([(object)['user_id' => 1, 'permission' => 2, 'expires' => null]]);
 		$this->mockDb->method('selectAllSharedUserGroupByPassword')->with(42)->willReturn([]);
 
 		// user 1 tries to add user 2
@@ -199,7 +199,7 @@ class VaultControllerTest extends TestCase {
 		$_SESSION['user_id'] = 1;
 		$this->mockDb->method('selectAllUserByPasswordShare')->with(42)->willReturn([1, 2]);
 		$this->mockDb->method('selectPasswordPermission')->with(42, 1)->willReturn(VaultController::PERMISSION_NO_RESHARE);
-		$this->mockDb->method('selectAllSharedUserByPassword')->with(42)->willReturn([(object)['user_id' => 2, 'permission' => 0], (object)['user_id' => 1, 'permission' => 2]]);
+		$this->mockDb->method('selectAllSharedUserByPassword')->with(42)->willReturn([(object)['user_id' => 2, 'permission' => 0, 'expires' => null], (object)['user_id' => 1, 'permission' => 2, 'expires' => null]]);
 		$this->mockDb->method('selectAllSharedUserGroupByPassword')->with(42)->willReturn([]);
 		$this->mockDb->method('deletePasswordUserByPassword')->willReturn(true);
 		$this->mockDb->method('insertPasswordUser')->willReturn(true);
@@ -216,6 +216,44 @@ class VaultControllerTest extends TestCase {
 			[1 => 2, 2 => 0]
 		);
 		$this->assertTrue(true); // no exception = success
+	}
+
+	public function testUpdatePasswordUserThrowsOnInvalidExpiryDate(): void {
+		$_SESSION['user_id'] = 1;
+		$this->mockDb->method('deletePasswordUserByPassword')->willReturn(true);
+		$this->mockDb->method('insertPasswordUser')->willReturn(true);
+		$this->mockDb->method('deletePasswordUserShareByPassword')->willReturn(true);
+
+		$this->expectException(\Exception::class);
+		$this->expectExceptionMessage('Invalid expiry date');
+		$this->controller->updatePasswordUser(
+			42,
+			[1 => ['aes_key' => 'k', 'rsa_iv' => 'i']],
+			[1],
+			[],
+			true,
+			[], [],
+			[1 => '2026-13-45 99:00:00']
+		);
+	}
+
+	public function testUpdatePasswordUserStoresShareExpiry(): void {
+		$_SESSION['user_id'] = 1;
+		$this->mockDb->method('deletePasswordUserByPassword')->willReturn(true);
+		$this->mockDb->method('insertPasswordUser')->willReturn(true);
+		$this->mockDb->method('deletePasswordUserShareByPassword')->willReturn(true);
+		$this->mockDb->method('deletePasswordUserGroupShareByPassword')->willReturn(true);
+		$this->mockDb->expects($this->once())->method('insertPasswordUserShare')->with(42, 1, 0, '2030-01-01 12:00:00');
+
+		$this->controller->updatePasswordUser(
+			42,
+			[1 => ['aes_key' => 'k', 'rsa_iv' => 'i']],
+			[1],
+			[],
+			true,
+			[], [],
+			[1 => '2030-01-01 12:00:00']
+		);
 	}
 
 	public function testUpdatePasswordUserStoresSharePermissions(): void {
@@ -264,7 +302,7 @@ class VaultControllerTest extends TestCase {
 		// user 1 is NOT a member of group 10, but the password is already shared with the group
 		$this->mockDb->method('selectAllUserByPasswordShare')->with(42)->willReturn([1, 2, 3]);
 		$this->mockDb->method('selectAllUserIdByUserGroup')->with(10)->willReturn([2, 3]);
-		$this->mockDb->method('selectAllSharedUserGroupByPassword')->with(42)->willReturn([(object)['user_group_id' => 10, 'permission' => 0]]);
+		$this->mockDb->method('selectAllSharedUserGroupByPassword')->with(42)->willReturn([(object)['user_group_id' => 10, 'permission' => 0, 'expires' => null]]);
 		$this->mockDb->method('deletePasswordUserByPassword')->willReturn(true);
 		$this->mockDb->method('insertPasswordUser')->willReturn(true);
 		$this->mockDb->method('deletePasswordUserShareByPassword')->willReturn(true);
@@ -327,7 +365,7 @@ class VaultControllerTest extends TestCase {
 
 	public function testUpdatePasswordUserFetchesSharesFromDbWhenNull(): void {
 		$_SESSION['user_id'] = 1;
-		$this->mockDb->method('selectAllSharedUserByPassword')->with(42)->willReturn([(object)['user_id' => 1, 'permission' => 0]]);
+		$this->mockDb->method('selectAllSharedUserByPassword')->with(42)->willReturn([(object)['user_id' => 1, 'permission' => 0, 'expires' => null]]);
 		$this->mockDb->method('selectAllSharedUserGroupByPassword')->with(42)->willReturn([]);
 		$this->mockDb->method('selectAllUserByPasswordShare')->with(42)->willReturn([1]);
 		$this->mockDb->method('selectAllUserIdByUserGroup')->willReturn([]);

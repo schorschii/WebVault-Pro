@@ -193,8 +193,9 @@ function loadVault(privKey=null, pubKey=null) {
 		response.groups.forEach((group) => {
 			sessionVaultContent['groups'][group.id] = {
 				'group':group.parent_password_group_id,
-				'title':group.title, 'icon':group.icon,
-				'share_users':group.share_users, 'share_groups':group.share_groups
+				'title':group.title, 'icon':group.icon, 'permission':group.permission,
+				'share_users':group.share_users, 'share_groups':group.share_groups,
+				'share_user_permissions':group.share_user_permissions, 'share_group_permissions':group.share_group_permissions
 			};
 		});
 		// decrypt all passwords
@@ -209,8 +210,9 @@ function loadVault(privKey=null, pubKey=null) {
 						'group':password.password_group_id, 'title':decryptedData.title,
 						'username':decryptedData.username, 'password':decryptedData.password,
 						'url':decryptedData.url, 'description':decryptedData.description,
-						'icon':decryptedData.icon,
-						'share_users':password.share_users, 'share_groups':password.share_groups
+						'icon':decryptedData.icon, 'permission':password.permission,
+						'share_users':password.share_users, 'share_groups':password.share_groups,
+						'share_user_permissions':password.share_user_permissions, 'share_group_permissions':password.share_group_permissions
 					};
 				})
 			);
@@ -590,7 +592,8 @@ function showUserGroupManagement(id=null) {
 		var encryptedPasswords = {};
 		if(id) {
 			for(let passwordId in sessionVaultContent['passwords']) {
-				if(sessionVaultContent['passwords'][passwordId]['share_groups'].includes(parseInt(id))) {
+				if(sessionVaultContent['passwords'][passwordId]['share_groups'].includes(parseInt(id))
+				&& !(sessionVaultContent['passwords'][passwordId]['permission'] & SHARE_PERMISSION_READ_ONLY)) { // read only passwords cannot be re-encrypted
 					let targetPublicKeys = {};
 					sessionVaultContent['passwords'][passwordId]['share_users'].forEach((userId) => {
 						targetPublicKeys[userId] = sessionEnvironment['users'][userId]['public_key'];
@@ -850,10 +853,10 @@ function showGroupDetails(id=null) {
 			}
 		});
 		group['share_groups'].forEach((shareGroupId) => {
-			addShareGroupRow(tblShares, shareGroupId);
+			addShareGroupRow(tblShares, shareGroupId, group['share_group_permissions'][shareGroupId]);
 		});
 		group['share_users'].forEach((shareUserId) => {
-			addShareUserRow(tblShares, shareUserId);
+			addShareUserRow(tblShares, shareUserId, group['share_user_permissions'][shareUserId]);
 		});
 	}
 	sltGroup.addEventListener('change', function(e) {
@@ -866,22 +869,23 @@ function showGroupDetails(id=null) {
 		}
 		if(sltGroup.value != '' && sltGroup.value != '-') {
 			// apply permissions from parent folder
-			sessionVaultContent['groups'][sltGroup.value]['share_groups'].forEach((shareGroupId) => {
-				addShareGroupRow(tblShares, shareGroupId);
+			let parentGroup = sessionVaultContent['groups'][sltGroup.value];
+			parentGroup['share_groups'].forEach((shareGroupId) => {
+				addShareGroupRow(tblShares, shareGroupId, parentGroup['share_group_permissions'][shareGroupId]);
 			});
-			sessionVaultContent['groups'][sltGroup.value]['share_users'].forEach((shareUserId) => {
-				addShareUserRow(tblShares, shareUserId);
+			parentGroup['share_users'].forEach((shareUserId) => {
+				addShareUserRow(tblShares, shareUserId, parentGroup['share_user_permissions'][shareUserId]);
 			});
 		} else {
 			// add self only
-			addShareUserRow(tblShares, sessionEnvironment['userId']);
+			addShareUserRow(tblShares, sessionEnvironment['userId'], 0);
 		}
 	});
 	clone.querySelectorAll('.btnAddUserShare')[0].addEventListener('click', function(e){
-		addShareUserRow(tblShares, sltShareUser.value);
+		addShareUserRow(tblShares, sltShareUser.value, 0);
 	});
 	clone.querySelectorAll('.btnAddUserGroupShare')[0].addEventListener('click', function(e){
-		addShareGroupRow(tblShares, sltShareUserGroup.value);
+		addShareGroupRow(tblShares, sltShareUserGroup.value, 0);
 	});
 	clone.querySelectorAll('.btnContents')[0].addEventListener('click', function(e){
 		clone.querySelectorAll('.box.contents')[0].classList.remove('invisible');
@@ -895,6 +899,8 @@ function showGroupDetails(id=null) {
 	clone.querySelectorAll('.btnSave')[0].addEventListener('click', function(e){
 		let shareUsers = [];
 		let shareGroups = [];
+		let shareUserPermissions = {};
+		let shareGroupPermissions = {};
 		let targetPublicKeys = {};
 		// add all other users
 		tblShares.querySelectorAll('tr').forEach(function(item){
@@ -903,8 +909,10 @@ function showGroupDetails(id=null) {
 			if(userId && !shareUsers.includes(userId)) {
 				targetPublicKeys[userId] = sessionEnvironment['users'][userId]['public_key'];
 				shareUsers.push(userId);
+				shareUserPermissions[userId] = parseInt(item.querySelector('select.permission').value);
 			}
 			if(groupId && !shareGroups.includes(groupId)) {
+				shareGroupPermissions[groupId] = parseInt(item.querySelector('select.permission').value);
 				sessionEnvironment['groups'][groupId]['members'].forEach((groupUserId) => {
 					targetPublicKeys[groupUserId] = sessionEnvironment['users'][groupUserId]['public_key'];
 				});
@@ -914,6 +922,7 @@ function showGroupDetails(id=null) {
 		if(!isOwnUserIdIncluded(shareUsers, shareGroups)) {
 			let myUserId = sessionEnvironment['userId'];
 			shareUsers.push(myUserId);
+			shareUserPermissions[myUserId] = 0;
 			targetPublicKeys[myUserId] = sessionEnvironment['users'][myUserId]['public_key'];
 		}
 		// change permissions and re-encrypt all subitems
@@ -953,23 +962,30 @@ function showGroupDetails(id=null) {
 			{
 				'parent_password_group_id': group, 'title': txtTitle.value, 'icon': sltIcon.value,
 				'share_users': shareUsers, 'share_groups': shareGroups,
+				'share_user_permissions': shareUserPermissions, 'share_group_permissions': shareGroupPermissions,
 				'passwords': encryptedPasswords, 'groups': entriesToUpdate.groups
 			}
 		)).then((response) => {
 			// append to session vault
 			sessionVaultContent['groups'][response.id] = {
 				'group':group, 'title':txtTitle.value, 'icon':sltIcon.value,
-				'share_users':shareUsers, 'share_groups':shareGroups
+				'permission': (id ? sessionVaultContent['groups'][id]['permission'] : 0),
+				'share_users':shareUsers, 'share_groups':shareGroups,
+				'share_user_permissions':shareUserPermissions, 'share_group_permissions':shareGroupPermissions
 			};
 			// update share info of updated entries
 			for(let groupId in entriesToUpdate.groups) {
 				sessionVaultContent['groups'][groupId]['share_users'] = shareUsers;
 				sessionVaultContent['groups'][groupId]['share_groups'] = shareGroups;
+				sessionVaultContent['groups'][groupId]['share_user_permissions'] = shareUserPermissions;
+				sessionVaultContent['groups'][groupId]['share_group_permissions'] = shareGroupPermissions;
 			}
 			for(let passwordId in entriesToUpdate.passwords) {
 				sessionVaultContent['passwords'][passwordId]['revision'] += 1;
 				sessionVaultContent['passwords'][passwordId]['share_users'] = shareUsers;
 				sessionVaultContent['passwords'][passwordId]['share_groups'] = shareGroups;
+				sessionVaultContent['passwords'][passwordId]['share_user_permissions'] = shareUserPermissions;
+				sessionVaultContent['passwords'][passwordId]['share_group_permissions'] = shareGroupPermissions;
 			}
 			populateVaultWindowEntries();
 			closeAnimation(e);
@@ -979,6 +995,9 @@ function showGroupDetails(id=null) {
 			alert(error);
 		});
 	});
+	if(id && (sessionVaultContent['groups'][id]['permission'] & SHARE_PERMISSION_READ_ONLY)) {
+		disableEditing(clone);
+	}
 	// show with animation
 	document.body.appendChild(clone);
 	windowOpenAnimation(clone);
@@ -1058,10 +1077,10 @@ function showPasswordDetails(id=null) {
 			}
 		});
 		password['share_groups'].forEach((shareGroupId) => {
-			addShareGroupRow(tblShares, shareGroupId);
+			addShareGroupRow(tblShares, shareGroupId, password['share_group_permissions'][shareGroupId]);
 		});
 		password['share_users'].forEach((shareUserId) => {
-			addShareUserRow(tblShares, shareUserId);
+			addShareUserRow(tblShares, shareUserId, password['share_user_permissions'][shareUserId]);
 		});
 	}
 	sltGroup.addEventListener('change', function(e) {
@@ -1074,22 +1093,23 @@ function showPasswordDetails(id=null) {
 		}
 		if(sltGroup.value != '' && sltGroup.value != '-') {
 			// apply permissions from parent folder
-			sessionVaultContent['groups'][sltGroup.value]['share_groups'].forEach((shareGroupId) => {
-				addShareGroupRow(tblShares, shareGroupId);
+			let parentGroup = sessionVaultContent['groups'][sltGroup.value];
+			parentGroup['share_groups'].forEach((shareGroupId) => {
+				addShareGroupRow(tblShares, shareGroupId, parentGroup['share_group_permissions'][shareGroupId]);
 			});
-			sessionVaultContent['groups'][sltGroup.value]['share_users'].forEach((shareUserId) => {
-				addShareUserRow(tblShares, shareUserId);
+			parentGroup['share_users'].forEach((shareUserId) => {
+				addShareUserRow(tblShares, shareUserId, parentGroup['share_user_permissions'][shareUserId]);
 			});
 		} else {
 			// add self only
-			addShareUserRow(tblShares, sessionEnvironment['userId']);
+			addShareUserRow(tblShares, sessionEnvironment['userId'], 0);
 		}
 	});
 	clone.querySelectorAll('.btnAddUserShare')[0].addEventListener('click', function(e){
-		addShareUserRow(tblShares, sltShareUser.value);
+		addShareUserRow(tblShares, sltShareUser.value, 0);
 	});
 	clone.querySelectorAll('.btnAddUserGroupShare')[0].addEventListener('click', function(e){
-		addShareGroupRow(tblShares, sltShareUserGroup.value);
+		addShareGroupRow(tblShares, sltShareUserGroup.value, 0);
 	});
 	clone.querySelectorAll('.btnCopyUsername')[0].addEventListener('click', function(e){
 		copyInputValueToClipboard(txtUsername);
@@ -1127,6 +1147,8 @@ function showPasswordDetails(id=null) {
 		// collect selected users and groups and compile target keys
 		let shareUsers = [];
 		let shareGroups = [];
+		let shareUserPermissions = {};
+		let shareGroupPermissions = {};
 		let targetPublicKeys = {};
 		tblShares.querySelectorAll('tr').forEach(function(item){
 			let userId = item.getAttribute('userid') ? parseInt(item.getAttribute('userid')) : null;
@@ -1134,8 +1156,10 @@ function showPasswordDetails(id=null) {
 			if(userId && !shareUsers.includes(userId)) {
 				targetPublicKeys[userId] = sessionEnvironment['users'][userId]['public_key'];
 				shareUsers.push(userId);
+				shareUserPermissions[userId] = parseInt(item.querySelector('select.permission').value);
 			}
 			if(groupId && !shareGroups.includes(groupId)) {
+				shareGroupPermissions[groupId] = parseInt(item.querySelector('select.permission').value);
 				sessionEnvironment['groups'][groupId]['members'].forEach((groupUserId) => {
 					targetPublicKeys[groupUserId] = sessionEnvironment['users'][groupUserId]['public_key'];
 				});
@@ -1145,6 +1169,7 @@ function showPasswordDetails(id=null) {
 		if(!isOwnUserIdIncluded(shareUsers, shareGroups)) {
 			let myUserId = sessionEnvironment['userId'];
 			shareUsers.push(myUserId);
+			shareUserPermissions[myUserId] = 0;
 			targetPublicKeys[myUserId] = sessionEnvironment['users'][myUserId]['public_key'];
 		}
 
@@ -1159,6 +1184,7 @@ function showPasswordDetails(id=null) {
 				'revision': txtRevision.value,
 				'password_user': result.password_user,
 				'share_users': shareUsers, 'share_groups': shareGroups,
+				'share_user_permissions': shareUserPermissions, 'share_group_permissions': shareGroupPermissions,
 			}
 		))
 		.then((response) => {
@@ -1168,8 +1194,9 @@ function showPasswordDetails(id=null) {
 				'group': group, 'title': secret.title,
 				'username': secret.username, 'password': secret.password,
 				'url': secret.url, 'description': secret.description,
-				'icon': secret.icon,
-				'share_users': shareUsers, 'share_groups': shareGroups
+				'icon': secret.icon, 'permission': (id ? sessionVaultContent['passwords'][id]['permission'] : 0),
+				'share_users': shareUsers, 'share_groups': shareGroups,
+				'share_user_permissions': shareUserPermissions, 'share_group_permissions': shareGroupPermissions
 			};
 			populateVaultWindowEntries();
 			closeAnimation(e);
@@ -1179,6 +1206,9 @@ function showPasswordDetails(id=null) {
 			alert(error);
 		});
 	});
+	if(id && (sessionVaultContent['passwords'][id]['permission'] & SHARE_PERMISSION_READ_ONLY)) {
+		disableEditing(clone);
+	}
 	// show with animation
 	document.body.appendChild(clone);
 	windowOpenAnimation(clone);
@@ -1280,15 +1310,39 @@ function addUserGroupRow(groupTable, userGroupId, editAction) {
 	tr.appendChild(td2);
 	groupTable.appendChild(tr);
 }
-function addShareUserRow(shareTable, userId) {
+const SHARE_PERMISSION_READ_ONLY = 1;
+const SHARE_PERMISSIONS = {0:'full_access', 1:'read_only'};
+function createPermissionCell(permission) {
+	let td = document.createElement('TD');
+	let slt = document.createElement('SELECT');
+	slt.classList.add('permission');
+	for(let value in SHARE_PERMISSIONS) {
+		let option = document.createElement('OPTION');
+		option.value = value;
+		option.innerText = strings[SHARE_PERMISSIONS[value]];
+		slt.appendChild(option);
+	}
+	slt.value = permission || 0;
+	td.appendChild(slt);
+	return td;
+}
+function disableEditing(divWindow) {
+	// read only permission: hide save/delete and make all inputs read only
+	divWindow.querySelectorAll('.btnSave, .btnDelete').forEach((btn) => btn.remove());
+	divWindow.querySelectorAll('input, textarea').forEach((input) => input.readOnly = true);
+	divWindow.querySelectorAll('select').forEach((select) => select.disabled = true);
+}
+function addShareUserRow(shareTable, userId, permission=null) {
 	if(!(userId in sessionEnvironment['users'])) return;
 	let user = sessionEnvironment['users'][userId];
 	let tr = document.createElement('TR');
 	tr.setAttribute('userid', userId);
 	let td1 = document.createElement('TD');
-	td1.setAttribute('colspan', '2');
 	td1.innerText = user['display_name'];
 	tr.appendChild(td1);
+	// permission is null for user group member rows
+	if(permission === null) td1.setAttribute('colspan', '2');
+	else tr.appendChild(createPermissionCell(permission));
 	let td2 = document.createElement('TD');
 	let btn = document.createElement('BUTTON');
 	btn.title = strings.remove;
@@ -1302,15 +1356,15 @@ function addShareUserRow(shareTable, userId) {
 	tr.appendChild(td2);
 	shareTable.appendChild(tr);
 }
-function addShareGroupRow(shareTable, groupId) {
+function addShareGroupRow(shareTable, groupId, permission=0) {
 	if(!(groupId in sessionEnvironment['groups'])) return;
 	let group = sessionEnvironment['groups'][groupId];
 	let tr = document.createElement('TR');
 	tr.setAttribute('groupid', groupId);
 	let td1 = document.createElement('TD');
-	td1.setAttribute('colspan', '2');
 	td1.innerText = group['title'];
 	tr.appendChild(td1);
+	tr.appendChild(createPermissionCell(permission));
 	let td2 = document.createElement('TD');
 	let btn = document.createElement('BUTTON');
 	btn.title = strings.remove;

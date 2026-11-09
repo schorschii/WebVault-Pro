@@ -282,49 +282,33 @@ class DatabaseController {
 		return $this->stmt->execute([':password_id' => $password_id]);
 	}
 
-	public function selectAllSharedUserIdByPassword($password_id) {
+	public function selectAllSharedUserByPassword($password_id) {
 		$this->stmt = $this->dbh->prepare(
 			'SELECT user_id, permission FROM share_password_user WHERE password_id = :password_id'
 		);
 		$this->stmt->execute([':password_id' => $password_id]);
-		$array = [];
-		foreach($this->stmt->fetchAll(PDO::FETCH_CLASS) as $row) {
-			$array[] = $row->user_id;
-		}
-		return $array;
+		return $this->stmt->fetchAll(PDO::FETCH_CLASS);
 	}
-	public function selectAllSharedUserGroupIdByPassword($password_id) {
+	public function selectAllSharedUserGroupByPassword($password_id) {
 		$this->stmt = $this->dbh->prepare(
 			'SELECT user_group_id, permission FROM share_password_user_group WHERE password_id = :password_id'
 		);
 		$this->stmt->execute([':password_id' => $password_id]);
-		$array = [];
-		foreach($this->stmt->fetchAll(PDO::FETCH_CLASS) as $row) {
-			$array[] = $row->user_group_id;
-		}
-		return $array;
+		return $this->stmt->fetchAll(PDO::FETCH_CLASS);
 	}
-	public function selectAllSharedUserIdByPasswordGroup($password_group_id) {
+	public function selectAllSharedUserByPasswordGroup($password_group_id) {
 		$this->stmt = $this->dbh->prepare(
 			'SELECT user_id, permission FROM share_password_group_user WHERE password_group_id = :password_group_id'
 		);
 		$this->stmt->execute([':password_group_id' => $password_group_id]);
-		$array = [];
-		foreach($this->stmt->fetchAll(PDO::FETCH_CLASS) as $row) {
-			$array[] = $row->user_id;
-		}
-		return $array;
+		return $this->stmt->fetchAll(PDO::FETCH_CLASS);
 	}
-	public function selectAllSharedUserGroupIdByPasswordGroup($password_group_id) {
+	public function selectAllSharedUserGroupByPasswordGroup($password_group_id) {
 		$this->stmt = $this->dbh->prepare(
 			'SELECT user_group_id, permission FROM share_password_group_user_group WHERE password_group_id = :password_group_id'
 		);
 		$this->stmt->execute([':password_group_id' => $password_group_id]);
-		$array = [];
-		foreach($this->stmt->fetchAll(PDO::FETCH_CLASS) as $row) {
-			$array[] = $row->user_group_id;
-		}
-		return $array;
+		return $this->stmt->fetchAll(PDO::FETCH_CLASS);
 	}
 	public function selectAllUserByPasswordShare($password_id) {
 		$this->stmt = $this->dbh->prepare(
@@ -364,43 +348,78 @@ class DatabaseController {
 		}
 		return $array;
 	}
-	public function insertPasswordUserShare($password_id, $user_id) {
+	public function selectPasswordPermission($password_id, $user_id) {
+		// combines the restriction bits of all shares the user has on the password (all bits set if not shared)
 		$this->stmt = $this->dbh->prepare(
-			'INSERT INTO share_password_user (password_id, user_id) VALUES (:password_id, :user_id)'
+			'SELECT BIT_AND(permission) AS permission FROM (
+				SELECT permission FROM share_password_user
+				WHERE password_id = :password_id AND user_id = :user_id
+				UNION ALL SELECT spug.permission FROM share_password_user_group spug
+				JOIN user_group_member ugm ON ugm.user_group_id = spug.user_group_id
+				WHERE spug.password_id = :password_id AND ugm.user_id = :user_id
+			) shares'
+		);
+		$this->stmt->execute([':password_id' => $password_id, ':user_id' => $user_id]);
+		foreach($this->stmt->fetchAll(PDO::FETCH_CLASS) as $row) {
+			return intval($row->permission);
+		}
+	}
+	public function selectPasswordGroupPermission($password_group_id, $user_id) {
+		$this->stmt = $this->dbh->prepare(
+			'SELECT BIT_AND(permission) AS permission FROM (
+				SELECT permission FROM share_password_group_user
+				WHERE password_group_id = :password_group_id AND user_id = :user_id
+				UNION ALL SELECT spgug.permission FROM share_password_group_user_group spgug
+				JOIN user_group_member ugm ON ugm.user_group_id = spgug.user_group_id
+				WHERE spgug.password_group_id = :password_group_id AND ugm.user_id = :user_id
+			) shares'
+		);
+		$this->stmt->execute([':password_group_id' => $password_group_id, ':user_id' => $user_id]);
+		foreach($this->stmt->fetchAll(PDO::FETCH_CLASS) as $row) {
+			return intval($row->permission);
+		}
+	}
+	public function insertPasswordUserShare($password_id, $user_id, $permission) {
+		$this->stmt = $this->dbh->prepare(
+			'INSERT INTO share_password_user (password_id, user_id, permission) VALUES (:password_id, :user_id, :permission)'
 		);
 		$this->stmt->execute([
 			':password_id' => $password_id,
 			':user_id' => $user_id,
+			':permission' => $permission,
 		]);
 		return $this->dbh->lastInsertId();
 	}
-	public function insertPasswordUserGroupShare($password_id, $user_group_id) {
+	public function insertPasswordUserGroupShare($password_id, $user_group_id, $permission) {
 		$this->stmt = $this->dbh->prepare(
-			'INSERT INTO share_password_user_group (password_id, user_group_id) VALUES (:password_id, :user_group_id)'
+			'INSERT INTO share_password_user_group (password_id, user_group_id, permission) VALUES (:password_id, :user_group_id, :permission)'
 		);
 		$this->stmt->execute([
 			':password_id' => $password_id,
 			':user_group_id' => $user_group_id,
+			':permission' => $permission,
 		]);
 		return $this->dbh->lastInsertId();
 	}
-	public function insertPasswordGroupUserShare($password_group_id, $user_id) {
+	public function insertPasswordGroupUserShare($password_group_id, $user_id, $permission) {
 		$this->stmt = $this->dbh->prepare(
-			'INSERT INTO share_password_group_user (password_group_id, user_id) VALUES (:password_group_id, :user_id)'
+			'INSERT INTO share_password_group_user (password_group_id, user_id, permission) VALUES (:password_group_id, :user_id, :permission)'
 		);
 		$this->stmt->execute([
 			':password_group_id' => $password_group_id,
 			':user_id' => $user_id,
+			':permission' => $permission,
 		]);
 		return $this->dbh->lastInsertId();
 	}
-	public function insertPasswordGroupUserGroupShare($password_group_id, $user_group_id) {
+	public function insertPasswordGroupUserGroupShare($password_group_id, $user_group_id, $permission) {
 		$this->stmt = $this->dbh->prepare(
-			'INSERT INTO share_password_group_user_group (password_group_id, user_group_id) VALUES (:password_group_id, :user_group_id)'
+			'INSERT INTO share_password_group_user_group (password_group_id, user_group_id, permission) VALUES (:password_group_id, :user_group_id, :permission)'
 		);
 		$this->stmt->execute([
 			':password_group_id' => $password_group_id,
 			':user_group_id' => $user_group_id,
+			':permission' => $permission,
 		]);
 		return $this->dbh->lastInsertId();
 	}

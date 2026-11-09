@@ -13,6 +13,9 @@ class VaultController {
 
 	private $langCtrl;
 
+	// share permission bits are restrictions, so that 0 (existing shares) means full access
+	const PERMISSION_READ_ONLY = 1;
+
 	public function __construct($container, $db) {
 		$this->container = $container;
 		$this->db = $db;
@@ -50,6 +53,8 @@ class VaultController {
 
 			$passwords = [];
 			foreach($this->db->selectAllPasswordByUser($_SESSION['user_id']) as $password) {
+				list($share_users, $share_user_permissions) = self::compileShares($this->db->selectAllSharedUserByPassword($password->id), 'user_id');
+				list($share_groups, $share_group_permissions) = self::compileShares($this->db->selectAllSharedUserGroupByPassword($password->id), 'user_group_id');
 				$passwords[] = [
 					'id' => $password->id,
 					'password_group_id' => $password->password_group_id,
@@ -58,18 +63,26 @@ class VaultController {
 					'aes_key' => $password->aes_key,
 					'aes_iv' => $password->aes_iv,
 					'rsa_iv' => $password->rsa_iv,
-					'share_users' => $this->db->selectAllSharedUserIdByPassword($password->id),
-					'share_groups' => $this->db->selectAllSharedUserGroupIdByPassword($password->id),
+					'permission' => $this->db->selectPasswordPermission($password->id, $_SESSION['user_id']),
+					'share_users' => $share_users,
+					'share_groups' => $share_groups,
+					'share_user_permissions' => $share_user_permissions,
+					'share_group_permissions' => $share_group_permissions,
 				];
 			}
 			$groups = [];
 			foreach($this->db->selectAllPasswordGroupByUser($_SESSION['user_id']) as $group) {
+				list($share_users, $share_user_permissions) = self::compileShares($this->db->selectAllSharedUserByPasswordGroup($group->id), 'user_id');
+				list($share_groups, $share_group_permissions) = self::compileShares($this->db->selectAllSharedUserGroupByPasswordGroup($group->id), 'user_group_id');
 				$groups[] = [
 					'id' => $group->id,
 					'parent_password_group_id' => $group->parent_password_group_id,
 					'title' => $group->title,
-					'share_users' => $this->db->selectAllSharedUserIdByPasswordGroup($group->id),
-					'share_groups' => $this->db->selectAllSharedUserGroupIdByPasswordGroup($group->id),
+					'permission' => $this->db->selectPasswordGroupPermission($group->id, $_SESSION['user_id']),
+					'share_users' => $share_users,
+					'share_groups' => $share_groups,
+					'share_user_permissions' => $share_user_permissions,
+					'share_group_permissions' => $share_group_permissions,
 				];
 			}
 
@@ -97,11 +110,18 @@ class VaultController {
 				throw new Exception('Invalid secret provided');
 			}
 
+			// permission check
+			if(!empty($json['password_group_id'])
+			&& $this->db->selectPasswordGroupPermission($json['password_group_id'], $_SESSION['user_id']) & self::PERMISSION_READ_ONLY) {
+				throw new Exception('Permission denied');
+			}
+
 			// insert data
 			$revision = 1;
 			$this->db->beginTransaction();
 			$password_id = $this->db->insertPassword($json['password_group_id'], $json['secret'], $json['aes_iv'], $revision);
-			$this->updatePasswordUser($password_id, $json['password_user'], $json['share_users'], $json['share_groups'], true);
+			$this->updatePasswordUser($password_id, $json['password_user'], $json['share_users'], $json['share_groups'], true,
+				$json['share_user_permissions'] ?? [], $json['share_group_permissions'] ?? []);
 			$this->db->commitTransaction();
 
 			// return response
@@ -137,7 +157,8 @@ class VaultController {
 			// update data
 			$this->db->beginTransaction();
 			$this->db->updatePassword($password_id, $json['password_group_id'], $json['secret'], $json['aes_iv'], $revision);
-			$this->updatePasswordUser($password_id, $json['password_user'], $json['share_users'], $json['share_groups']);
+			$this->updatePasswordUser($password_id, $json['password_user'], $json['share_users'], $json['share_groups'], false,
+				$json['share_user_permissions'] ?? [], $json['share_group_permissions'] ?? []);
 			$this->db->commitTransaction();
 
 			// return response
@@ -154,7 +175,7 @@ class VaultController {
 		}
 	}
 
-	public function updatePasswordUser($password_id, Array $password_user, Array|null $share_users=null, Array|null $share_groups=null, Bool $isNewPassword=false) {
+	public function updatePasswordUser($password_id, Array $password_user, Array|null $share_users=null, Array|null $share_groups=null, Bool $isNewPassword=false, Array $share_user_permissions=[], Array $share_group_permissions=[]) {
 		// input checks
 		if(empty($password_user)) {
 			throw new Exception('Not encrypted to any user');
@@ -165,21 +186,22 @@ class VaultController {
 
 		// use existing share info if null
 		if($share_users === null) {
-			$share_users = $this->db->selectAllSharedUserIdByPassword($password_id);
+			list($share_users, $share_user_permissions) = self::compileShares($this->db->selectAllSharedUserByPassword($password_id), 'user_id');
 		}
 		if($share_groups === null) {
-			$share_groups = $this->db->selectAllSharedUserGroupIdByPassword($password_id);
+			list($share_groups, $share_group_permissions) = self::compileShares($this->db->selectAllSharedUserGroupByPassword($password_id), 'user_group_id');
 		}
 		if(!$isNewPassword) {
 			// permission check
-			if(!in_array($_SESSION['user_id'], $this->db->selectAllUserByPasswordShare($password_id))) {
+			if(!in_array($_SESSION['user_id'], $this->db->selectAllUserByPasswordShare($password_id))
+			|| $this->db->selectPasswordPermission($password_id, $_SESSION['user_id']) & self::PERMISSION_READ_ONLY) {
 				throw new Exception('Permission denied');
 			}
 		}
 		// check group permission: only members can add a group share, existing group shares can be kept
 		foreach($share_groups as $group_id) {
 			if(in_array($_SESSION['user_id'], $this->db->selectAllUserIdByUserGroup($group_id))) continue;
-			if($isNewPassword || !in_array($group_id, $this->db->selectAllSharedUserGroupIdByPassword($password_id))) {
+			if($isNewPassword || !in_array($group_id, array_column($this->db->selectAllSharedUserGroupByPassword($password_id), 'user_group_id'))) {
 				throw new Exception('You are not member of this group');
 			}
 		}
@@ -210,11 +232,11 @@ class VaultController {
 		}
 		$this->db->deletePasswordUserShareByPassword($password_id);
 		foreach($share_users as $user_id) {
-			$this->db->insertPasswordUserShare($password_id, $user_id);
+			$this->db->insertPasswordUserShare($password_id, $user_id, intval($share_user_permissions[$user_id] ?? 0));
 		}
 		$this->db->deletePasswordUserGroupShareByPassword($password_id);
 		foreach($share_groups as $group_id) {
-			$this->db->insertPasswordUserGroupShare($password_id, $group_id);
+			$this->db->insertPasswordUserGroupShare($password_id, $group_id, intval($share_group_permissions[$group_id] ?? 0));
 		}
 	}
 
@@ -224,7 +246,8 @@ class VaultController {
 			$id = $request->getAttribute('id');
 
 			// permission check
-			if(!in_array($_SESSION['user_id'], $this->db->selectAllUserByPasswordShare($id))) {
+			if(!in_array($_SESSION['user_id'], $this->db->selectAllUserByPasswordShare($id))
+			|| $this->db->selectPasswordPermission($id, $_SESSION['user_id']) & self::PERMISSION_READ_ONLY) {
 				throw new Exception('Permission denied');
 			}
 
@@ -268,7 +291,10 @@ class VaultController {
 			}
 
 			// permission check
-			if(!empty($json['parent_password_group_id']) && !in_array($_SESSION['user_id'], $this->db->selectAllUserByPasswordGroupShare($json['parent_password_group_id']))) {
+			if(!empty($json['parent_password_group_id']) && (
+				!in_array($_SESSION['user_id'], $this->db->selectAllUserByPasswordGroupShare($json['parent_password_group_id']))
+				|| $this->db->selectPasswordGroupPermission($json['parent_password_group_id'], $_SESSION['user_id']) & self::PERMISSION_READ_ONLY
+			)) {
 				throw new Exception('Permission denied');
 			}
 
@@ -277,11 +303,11 @@ class VaultController {
 			$id = $this->db->insertPasswordGroup($json['parent_password_group_id']??null, $json['title']);
 			$this->db->deletePasswordGroupUserShareByPasswordGroup($id);
 			foreach($json['share_users'] as $user_id) {
-				$this->db->insertPasswordGroupUserShare($id, $user_id);
+				$this->db->insertPasswordGroupUserShare($id, $user_id, intval($json['share_user_permissions'][$user_id] ?? 0));
 			}
 			$this->db->deletePasswordGroupUserGroupShareByPasswordGroup($id);
 			foreach($json['share_groups'] as $group_id) {
-				$this->db->insertPasswordGroupUserGroupShare($id, $group_id);
+				$this->db->insertPasswordGroupUserGroupShare($id, $group_id, intval($json['share_group_permissions'][$group_id] ?? 0));
 			}
 			$this->db->commitTransaction();
 
@@ -328,6 +354,7 @@ class VaultController {
 			$group = $this->db->selectPasswordGroup($id);
 			if(empty($group)) throw new Exception('Not found');
 			if(!in_array($_SESSION['user_id'], $this->db->selectAllUserByPasswordGroupShare($id))
+			|| $this->db->selectPasswordGroupPermission($id, $_SESSION['user_id']) & self::PERMISSION_READ_ONLY
 			|| (
 				!empty($json['parent_password_group_id'])
 				&& !in_array($_SESSION['user_id'], $this->db->selectAllUserByPasswordGroupShare($json['parent_password_group_id']))
@@ -341,11 +368,11 @@ class VaultController {
 			$this->db->updatePasswordGroup($id, $json['parent_password_group_id'], $json['title']);
 			$this->db->deletePasswordGroupUserShareByPasswordGroup($id);
 			foreach($json['share_users'] as $user_id) {
-				$this->db->insertPasswordGroupUserShare($id, $user_id);
+				$this->db->insertPasswordGroupUserShare($id, $user_id, intval($json['share_user_permissions'][$user_id] ?? 0));
 			}
 			$this->db->deletePasswordGroupUserGroupShareByPasswordGroup($id);
 			foreach($json['share_groups'] as $group_id) {
-				$this->db->insertPasswordGroupUserGroupShare($id, $group_id);
+				$this->db->insertPasswordGroupUserGroupShare($id, $group_id, intval($json['share_group_permissions'][$group_id] ?? 0));
 			}
 			// update subgroups and passwords
 			if(!empty($json['passwords']) && is_array($json['passwords'])) {
@@ -358,23 +385,25 @@ class VaultController {
 						throw new Exception('No password user data');
 					}
 					$this->db->updatePassword($password_id, $lastRevision->password_group_id, $passwordData['secret'], $passwordData['aes_iv'], $lastRevision->revision+1);
-					$this->updatePasswordUser($password_id, $passwordData['password_user'], $json['share_users'], $json['share_groups']);
+					$this->updatePasswordUser($password_id, $passwordData['password_user'], $json['share_users'], $json['share_groups'], false,
+						$json['share_user_permissions'] ?? [], $json['share_group_permissions'] ?? []);
 				}
 			}
 			if(!empty($json['groups']) && is_array($json['groups'])) {
 				foreach($json['groups'] as $sub_group_id => $groupData) {
 					// permission check
-					if(!in_array($_SESSION['user_id'], $this->db->selectAllUserByPasswordGroupShare($sub_group_id))) {
+					if(!in_array($_SESSION['user_id'], $this->db->selectAllUserByPasswordGroupShare($sub_group_id))
+					|| $this->db->selectPasswordGroupPermission($sub_group_id, $_SESSION['user_id']) & self::PERMISSION_READ_ONLY) {
 						throw new Exception('Permission to subgroup denied');
 					}
 					// update subgroup
 					$this->db->deletePasswordGroupUserShareByPasswordGroup($sub_group_id);
 					foreach($json['share_users'] as $user_id) {
-						$this->db->insertPasswordGroupUserShare($sub_group_id, $user_id);
+						$this->db->insertPasswordGroupUserShare($sub_group_id, $user_id, intval($json['share_user_permissions'][$user_id] ?? 0));
 					}
 					$this->db->deletePasswordGroupUserGroupShareByPasswordGroup($sub_group_id);
 					foreach($json['share_groups'] as $group_id) {
-						$this->db->insertPasswordGroupUserGroupShare($sub_group_id, $group_id);
+						$this->db->insertPasswordGroupUserGroupShare($sub_group_id, $group_id, intval($json['share_group_permissions'][$group_id] ?? 0));
 					}
 				}
 			}
@@ -399,7 +428,8 @@ class VaultController {
 			$id = $request->getAttribute('id');
 
 			// permission check
-			if(!in_array($_SESSION['user_id'], $this->db->selectAllUserByPasswordGroupShare($id))) {
+			if(!in_array($_SESSION['user_id'], $this->db->selectAllUserByPasswordGroupShare($id))
+			|| $this->db->selectPasswordGroupPermission($id, $_SESSION['user_id']) & self::PERMISSION_READ_ONLY) {
 				throw new Exception('Permission denied');
 			}
 
@@ -419,6 +449,16 @@ class VaultController {
 		}
 	}
 
+	private static function compileShares($shares, $idColumn) {
+		// split share rows into an id list and a permission map
+		$ids = [];
+		$permissions = [];
+		foreach($shares as $share) {
+			$ids[] = $share->$idColumn;
+			$permissions[$share->$idColumn] = $share->permission;
+		}
+		return [$ids, $permissions];
+	}
 	public function checkLogin() {
 		if(empty($_SESSION['user_id'])) {
 			throw new Exception('Not logged in');

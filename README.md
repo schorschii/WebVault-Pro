@@ -64,8 +64,17 @@ Crypto API capable browser with Javascript enabled
 - Chrome/Chromium based browsers, Firefox (both desktop and mobile)
 - IE/Edge are **not** supported
 
+### Upgrade notes for v1.0.0-RC5 users
+Apply the following schema changes to your existing database:
+```
+ALTER TABLE `user` ADD `totp_secret` text DEFAULT NULL, ADD `totp_recovery` text DEFAULT NULL, ADD `totp_last_step` int(11) DEFAULT NULL;
+```
+
 ### Upgrade notes for v0.x (WebPW) users
 Since the concept and database schema of WebVault Pro differs completely from v0.x ("WebPW"), there is no direct upgrade path. You need to manually export and re-import your passwords in the new version.
+
+### Two-factor authentication
+Every user can enable time-based one-time passwords (TOTP, RFC 6238) for their account via the "More" menu in the vault window. The secret has to be entered manually in an authenticator app (no QR code is displayed). Recovery codes are shown once after enabling and can each be used once instead of a one-time code. Note that the TOTP secret is stored in plaintext in the database (like in most web applications) since the server needs it to verify the codes. If a user lost both the authenticator and the recovery codes, an administrator can reset the second factor with `php bin/user.php totp-reset USER_ID`.
 
 ## FAQ
 ### I'm not able to share passwords with some users, they are disabled in the select box

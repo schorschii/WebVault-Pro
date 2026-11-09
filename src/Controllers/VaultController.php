@@ -157,11 +157,18 @@ class VaultController {
 			if(empty($json['secret']) || empty($json['secret'])) {
 				throw new Exception('Invalid secret provided');
 			}
-			$revision = $this->db->selectMaxPasswordRevision($password_id)->revision;
+			$lastRevision = $this->db->selectMaxPasswordRevision($password_id);
+			$revision = $lastRevision->revision;
 			if(!isset($json['revision']) || $json['revision'] != $revision) {
 				throw new Exception($this->langCtrl->translate('record_changed_by_another_user'));
 			}
 			$revision += 1;
+
+			// permission check for the target folder if the entry is moved
+			if(!empty($json['password_group_id']) && $json['password_group_id'] != $lastRevision->password_group_id
+			&& $this->db->selectPasswordGroupPermission($json['password_group_id'], $_SESSION['user_id']) & self::PERMISSION_READ_ONLY) {
+				throw new Exception('Permission denied');
+			}
 
 			// update data
 			$this->db->beginTransaction();

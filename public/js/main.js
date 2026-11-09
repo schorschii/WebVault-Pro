@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
 	btnMore.addEventListener('click', () => showMore());
 	btnUserGroups.addEventListener('click', () => showUserGroupsManagement());
 	btnImport.addEventListener('click', () => showImport());
+	btnTotp.addEventListener('click', () => showTotp());
 	btnReload.addEventListener('click', () => {
 		imgReload.classList.add('rotating');
 		divVault.classList.add('loading');
@@ -36,11 +37,13 @@ document.addEventListener('DOMContentLoaded', (event) => {
 	txtUsername.addEventListener('keyup', loginAction);
 	txtPassword.addEventListener('keyup', loginAction);
 	txtOldPassword.addEventListener('keyup', loginAction);
+	txtTotp.addEventListener('keyup', loginAction);
 	activateWindowMouseDrag(divVaultContainer, divVaultTitlebar);
 });
 
 
 class PrivateKeyDecryptionError extends Error {}
+class TotpRequiredError extends Error {}
 
 function jsonRequest(method, url, data) {
 	return new Promise(function(resolve, reject) {
@@ -82,10 +85,18 @@ function login() {
 
 	btnLogin.classList.add('loading');
 	btnLogin.disabled = true;
-	jsonRequest(
-		'POST', 'user/login',
-		{'username':username, 'password':password}
-	).then((response) => {
+	let request;
+	if(!txtTotp.classList.contains('invisible')) {
+		// second step: the password was already checked, only the one-time code is required
+		request = jsonRequest('POST', 'user/login/totp', {'code':txtTotp.value});
+	} else {
+		request = jsonRequest('POST', 'user/login', {'username':username, 'password':password});
+	}
+	request.then((response) => {
+		if(response.totp_required) {
+			throw new TotpRequiredError();
+		}
+		sessionEnvironment['totp'] = response.totp;
 		if(response.private_key) {
 			// store users and groups for sharing options
 			sessionEnvironment['userId'] = response.id;
@@ -145,16 +156,26 @@ function login() {
 		txtPassword.value = '';
 		txtOldPassword.value = '';
 		txtOldPassword.classList.add('invisible');
+		txtTotp.value = '';
+		txtTotp.classList.add('invisible');
 		divLoginInfoBox.classList.add('invisible');
 
 		clearInterval(sessionCheckTimer);
 		sessionCheckTimer = setInterval(checkSession, 5000);
 	}).catch((error) => {
-		console.error(error);
-		txtPassword.value = '';
-		txtOldPassword.value = '';
 		btnLogin.classList.remove('loading');
 		btnLogin.disabled = false;
+		if(error instanceof TotpRequiredError) {
+			txtTotp.classList.remove('invisible');
+			txtTotp.focus();
+			return;
+		}
+		console.error(error);
+		if(txtTotp.classList.contains('invisible')) {
+			txtPassword.value = '';
+			txtOldPassword.value = '';
+		}
+		txtTotp.value = ''; // keep the password in the second step, it is needed to decrypt the private key
 		if(!(error instanceof PrivateKeyDecryptionError)) {
 			infobox(divLoginInfoBox, 'red', strings.login_failed);
 			divLoginInfoBox.classList.remove('invisible');
@@ -700,6 +721,70 @@ function showMore() {
 	divMore.onclick = function(e) {
 		divMore.classList.toggle('invisible');
 	};
+}
+function showTotp() {
+	let divNotes = divTotpContainer.querySelectorAll('.notes')[0];
+	let txtSecret = divTotpContainer.querySelectorAll('[name=txtSecret]')[0];
+	let txtUri = divTotpContainer.querySelectorAll('[name=txtUri]')[0];
+	let txtCode = divTotpContainer.querySelectorAll('[name=txtCode]')[0];
+	let btnEnable = divTotpContainer.querySelectorAll('.btnEnable')[0];
+	let btnDisable = divTotpContainer.querySelectorAll('.btnDisable')[0];
+	let trRecovery = divTotpContainer.querySelectorAll('tr.recovery')[0];
+	let preRecoveryCodes = divTotpContainer.querySelectorAll('[name=preRecoveryCodes]')[0];
+	let setupRows = divTotpContainer.querySelectorAll('tr.setup');
+	let codeRows = divTotpContainer.querySelectorAll('tr.code');
+	// reset state
+	txtCode.value = '';
+	trRecovery.classList.add('invisible');
+	codeRows.forEach((tr) => tr.classList.remove('invisible'));
+	if(sessionEnvironment['totp']) {
+		divNotes.innerText = strings.totp_enabled_notes;
+		setupRows.forEach((tr) => tr.classList.add('invisible'));
+		btnEnable.classList.add('invisible');
+		btnDisable.classList.remove('invisible');
+	} else {
+		divNotes.innerText = strings.totp_setup_notes;
+		setupRows.forEach((tr) => tr.classList.remove('invisible'));
+		btnEnable.classList.remove('invisible');
+		btnDisable.classList.add('invisible');
+		jsonRequest('POST', 'user/totp', {}).then((response) => {
+			txtSecret.value = response.secret;
+			txtUri.value = response.uri;
+		}).catch((error) => {
+			console.warn(error);
+			alert(error);
+		});
+	}
+	// add actions
+	let closeAction = windowCloseAction(divTotpContainer, false);
+	activateWindowMouseDrag(divTotpContainer, divTotpContainer.querySelectorAll('.titlebar')[0], divVaultContainer);
+	btnEnable.onclick = function(){
+		jsonRequest('POST', 'user/totp/enable', {'code':txtCode.value}).then((response) => {
+			sessionEnvironment['totp'] = true;
+			// show the recovery codes once
+			setupRows.forEach((tr) => tr.classList.add('invisible'));
+			codeRows.forEach((tr) => tr.classList.add('invisible'));
+			preRecoveryCodes.innerText = response.recovery_codes.join('\n');
+			trRecovery.classList.remove('invisible');
+		}).catch((error) => {
+			console.warn(error);
+			alert(error);
+		});
+	};
+	btnDisable.onclick = function(){
+		jsonRequest('POST', 'user/totp/disable', {'code':txtCode.value}).then((response) => {
+			sessionEnvironment['totp'] = false;
+			closeAction();
+		}).catch((error) => {
+			console.warn(error);
+			alert(error);
+		});
+	};
+	divTotpContainer.querySelectorAll('.btnClose')[0].onclick = closeAction;
+	// show with animation
+	document.body.appendChild(divTotpContainer);
+	windowOpenAnimation(divTotpContainer);
+	txtCode.focus();
 }
 function showImport() {
 	// add actions

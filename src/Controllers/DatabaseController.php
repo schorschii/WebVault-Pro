@@ -133,6 +133,22 @@ class DatabaseController {
 			return $row;
 		}
 	}
+	public function updateUserTotp($id, $totp_secret, $totp_recovery) {
+		$this->stmt = $this->dbh->prepare(
+			'UPDATE user SET totp_secret = :totp_secret, totp_recovery = :totp_recovery, totp_last_step = NULL WHERE id = :id'
+		);
+		return $this->stmt->execute([
+			':id' => $id,
+			':totp_secret' => $totp_secret,
+			':totp_recovery' => $totp_recovery,
+		]);
+	}
+	public function updateUserTotpLastStep($id, $totp_last_step) {
+		$this->stmt = $this->dbh->prepare(
+			'UPDATE user SET totp_last_step = :totp_last_step WHERE id = :id'
+		);
+		return $this->stmt->execute([':id' => $id, ':totp_last_step' => $totp_last_step]);
+	}
 	public function deleteUser($id) {
 		$this->stmt = $this->dbh->prepare(
 			'DELETE FROM user WHERE id = :id'

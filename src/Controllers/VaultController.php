@@ -600,6 +600,10 @@ class VaultController {
 		return $names;
 	}
 
+	public function translate($string) {
+		return $this->langCtrl->translate($string);
+	}
+
 	public function checkLogin($touch=true) {
 		if(empty($_SESSION['user_id'])) {
 			throw new Exception('Not logged in');

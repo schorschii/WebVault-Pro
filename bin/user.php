@@ -32,6 +32,14 @@ switch($argv[1] ?? '') {
 		}
 		break;
 
+	case 'totp-reset':
+		if(empty($argv[2])) {
+			die('Usage: php user.php totp-reset USER_ID'."\n");
+		}
+		$db->updateUserTotp($argv[2], null, null);
+		echo 'Disabled two-factor authentication for user #'.$argv[2]."\n";
+		break;
+
 	default:
-		die('Usage: php user.php list|create|delete <ARGUMENTS>'."\n");
+		die('Usage: php user.php list|create|delete|totp-reset <ARGUMENTS>'."\n");
 }

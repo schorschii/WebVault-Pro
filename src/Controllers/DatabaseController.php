@@ -41,7 +41,7 @@ class DatabaseController {
 		$this->dbh->commit();
 	}
 	public function rollbackTransaction() {
-		$this->dbh->rollBack();
+		if($this->dbh->inTransaction()) $this->dbh->rollBack();
 	}
 
 	public function selectAllUser() {

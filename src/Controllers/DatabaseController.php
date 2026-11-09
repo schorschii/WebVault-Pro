@@ -295,6 +295,42 @@ class DatabaseController {
 		}
 		return $array;
 	}
+	public function selectPasswordFile($id, $password_id) {
+		$this->stmt = $this->dbh->prepare(
+			'SELECT * FROM password_file WHERE id = :id AND password_id = :password_id'
+		);
+		$this->stmt->execute([':id' => $id, ':password_id' => $password_id]);
+		foreach($this->stmt->fetchAll(PDO::FETCH_CLASS) as $row) {
+			return $row;
+		}
+	}
+	public function selectAllPasswordFileIdByPassword($password_id) {
+		$this->stmt = $this->dbh->prepare(
+			'SELECT id FROM password_file WHERE password_id = :password_id'
+		);
+		$this->stmt->execute([':password_id' => $password_id]);
+		$array = [];
+		foreach($this->stmt->fetchAll(PDO::FETCH_CLASS) as $row) {
+			$array[] = $row->id;
+		}
+		return $array;
+	}
+	public function insertPasswordFile($password_id, $data) {
+		$this->stmt = $this->dbh->prepare(
+			'INSERT INTO password_file (password_id, data) VALUES (:password_id, :data)'
+		);
+		$this->stmt->bindValue(':password_id', $password_id);
+		$this->stmt->bindValue(':data', $data, PDO::PARAM_LOB);
+		$this->stmt->execute();
+		return $this->dbh->lastInsertId();
+	}
+	public function deletePasswordFile($id) {
+		$this->stmt = $this->dbh->prepare(
+			'DELETE FROM password_file WHERE id = :id'
+		);
+		return $this->stmt->execute([':id' => $id]);
+	}
+
 	public function selectAllSharedUserGroupIdByPassword($password_id) {
 		$this->stmt = $this->dbh->prepare(
 			'SELECT user_group_id, permission FROM share_password_user_group WHERE password_id = :password_id'

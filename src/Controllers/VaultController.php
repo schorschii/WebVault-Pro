@@ -15,6 +15,7 @@ class VaultController {
 
 	// share permission bits are restrictions, so that 0 (existing shares) means full access
 	const PERMISSION_READ_ONLY = 1;
+	const PERMISSION_NO_RESHARE = 2;
 
 	public function __construct($container, $db) {
 		$this->container = $container;
@@ -195,10 +196,15 @@ class VaultController {
 		}
 		if(!$isNewPassword) {
 			// permission check
+			$permission = $this->db->selectPasswordPermission($password_id, $_SESSION['user_id']);
 			if(!in_array($_SESSION['user_id'], $this->db->selectAllUserByPasswordShare($password_id))
-			|| $this->db->selectPasswordPermission($password_id, $_SESSION['user_id']) & self::PERMISSION_READ_ONLY) {
+			|| $permission & self::PERMISSION_READ_ONLY) {
 				throw new Exception('Permission denied');
 			}
+			$this->checkShareChangeAllowed($permission,
+				$this->db->selectAllSharedUserByPassword($password_id), $this->db->selectAllSharedUserGroupByPassword($password_id),
+				$share_users, $share_groups, $share_user_permissions, $share_group_permissions
+			);
 		}
 		// check group permission: only members can add a group share, existing group shares can be kept
 		foreach($share_groups as $group_id) {
@@ -363,8 +369,9 @@ class VaultController {
 			// permission check
 			$group = $this->db->selectPasswordGroup($id);
 			if(empty($group)) throw new Exception('Not found');
+			$permission = $this->db->selectPasswordGroupPermission($id, $_SESSION['user_id']);
 			if(!in_array($_SESSION['user_id'], $this->db->selectAllUserByPasswordGroupShare($id))
-			|| $this->db->selectPasswordGroupPermission($id, $_SESSION['user_id']) & self::PERMISSION_READ_ONLY
+			|| $permission & self::PERMISSION_READ_ONLY
 			|| (
 				!empty($json['parent_password_group_id'])
 				&& !in_array($_SESSION['user_id'], $this->db->selectAllUserByPasswordGroupShare($json['parent_password_group_id']))
@@ -372,6 +379,10 @@ class VaultController {
 			)) {
 				throw new Exception('Permission denied');
 			}
+			$this->checkShareChangeAllowed($permission,
+				$this->db->selectAllSharedUserByPasswordGroup($id), $this->db->selectAllSharedUserGroupByPasswordGroup($id),
+				$json['share_users'], $json['share_groups'], $json['share_user_permissions'] ?? [], $json['share_group_permissions'] ?? []
+			);
 
 			// update data
 			$this->db->beginTransaction();
@@ -402,10 +413,15 @@ class VaultController {
 			if(!empty($json['groups']) && is_array($json['groups'])) {
 				foreach($json['groups'] as $sub_group_id => $groupData) {
 					// permission check
+					$subPermission = $this->db->selectPasswordGroupPermission($sub_group_id, $_SESSION['user_id']);
 					if(!in_array($_SESSION['user_id'], $this->db->selectAllUserByPasswordGroupShare($sub_group_id))
-					|| $this->db->selectPasswordGroupPermission($sub_group_id, $_SESSION['user_id']) & self::PERMISSION_READ_ONLY) {
+					|| $subPermission & self::PERMISSION_READ_ONLY) {
 						throw new Exception('Permission to subgroup denied');
 					}
+					$this->checkShareChangeAllowed($subPermission,
+						$this->db->selectAllSharedUserByPasswordGroup($sub_group_id), $this->db->selectAllSharedUserGroupByPasswordGroup($sub_group_id),
+						$json['share_users'], $json['share_groups'], $json['share_user_permissions'] ?? [], $json['share_group_permissions'] ?? []
+					);
 					// update subgroup
 					$this->db->deletePasswordGroupUserShareByPasswordGroup($sub_group_id);
 					foreach($json['share_users'] as $user_id) {
@@ -468,6 +484,25 @@ class VaultController {
 			$permissions[$share->$idColumn] = $share->permission;
 		}
 		return [$ids, $permissions];
+	}
+
+	private static function shareMap($ids, $permissions) {
+		$map = [];
+		foreach($ids as $id) {
+			$map[intval($id)] = intval($permissions[$id] ?? 0);
+		}
+		ksort($map);
+		return $map;
+	}
+	private function checkShareChangeAllowed($permission, $existingUserShares, $existingGroupShares, $share_users, $share_groups, $share_user_permissions, $share_group_permissions) {
+		// users without resharing permission must leave the shares as they are
+		if(!($permission & self::PERMISSION_NO_RESHARE)) return;
+		list($existingUsers, $existingUserPermissions) = self::compileShares($existingUserShares, 'user_id');
+		list($existingGroups, $existingGroupPermissions) = self::compileShares($existingGroupShares, 'user_group_id');
+		if(self::shareMap($share_users, $share_user_permissions) != self::shareMap($existingUsers, $existingUserPermissions)
+		|| self::shareMap($share_groups, $share_group_permissions) != self::shareMap($existingGroups, $existingGroupPermissions)) {
+			throw new Exception('Permission denied');
+		}
 	}
 
 	private function getIconNames() {

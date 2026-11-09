@@ -74,6 +74,7 @@ ALTER TABLE `share_password_user` ADD `expires` datetime DEFAULT NULL;
 ALTER TABLE `share_password_user_group` ADD `expires` datetime DEFAULT NULL;
 ALTER TABLE `share_password_group_user` ADD `expires` datetime DEFAULT NULL;
 ALTER TABLE `share_password_group_user_group` ADD `expires` datetime DEFAULT NULL;
+CREATE TABLE `password_file` (`id` int(11) NOT NULL AUTO_INCREMENT, `password_id` int(11) NOT NULL, `data` longblob NOT NULL, PRIMARY KEY (`id`), KEY `fk_pf_password` (`password_id`), CONSTRAINT `fk_pf_password` FOREIGN KEY (`password_id`) REFERENCES `password` (`id`) ON DELETE CASCADE ON UPDATE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 ```
 
 ### Upgrade notes for v0.x (WebPW) users
@@ -88,6 +89,9 @@ Since the concept and database schema of WebVault Pro differs completely from v0
 If a user has multiple shares on an entry (e.g. directly and via a user group), the least restrictive permission applies.
 
 A share can optionally expire at a given date and time. Expired shares are ignored by the server; the next time the entry is saved by another user, it is re-encrypted without the expired user.
+
+### Can I attach files to an entry?
+Yes, files are encrypted in the browser with an individual key which is stored inside the encrypted entry, so attachments are end-to-end encrypted like the entry itself. The maximum file size is defined by `maxFileSize` in the settings file; since files are uploaded base64 encoded, PHP's `post_max_size` and `memory_limit` must be large enough too.
 
 ### I'm not able to share passwords with some users, they are disabled in the select box
 The user account doesn't have a keypair yet. Users need to log in once before passwords can be shared with them.

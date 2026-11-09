@@ -483,6 +483,7 @@ function search(q) {
 		else if(groupId) item = sessionVaultContent['groups'][groupId];
 		// iterate over all fields and check if contents match the search query
 		for(let key in item) {
+			if(key == 'password') continue; // do not leak passwords via search
 			if(!item[key] || typeof item[key] !== 'string') continue;
 			match = (item[key].toUpperCase().indexOf(filter) > -1);
 			if(match) break;

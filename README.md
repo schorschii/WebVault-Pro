@@ -70,6 +70,10 @@ Apply the following schema changes to your existing database:
 ALTER TABLE `user_group_member` DROP FOREIGN KEY `fk_user_2`;
 ALTER TABLE `user_group_member` ADD CONSTRAINT `fk_user_2` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE `password_group` ADD `icon` varchar(50) DEFAULT NULL;
+ALTER TABLE `share_password_user` ADD `expires` datetime DEFAULT NULL;
+ALTER TABLE `share_password_user_group` ADD `expires` datetime DEFAULT NULL;
+ALTER TABLE `share_password_group_user` ADD `expires` datetime DEFAULT NULL;
+ALTER TABLE `share_password_group_user_group` ADD `expires` datetime DEFAULT NULL;
 ```
 
 ### Upgrade notes for v0.x (WebPW) users
@@ -82,6 +86,8 @@ Since the concept and database schema of WebVault Pro differs completely from v0
 - *Read only*: the user can only view the entry (copying the password is still possible, which can't be prevented technically).
 
 If a user has multiple shares on an entry (e.g. directly and via a user group), the least restrictive permission applies.
+
+A share can optionally expire at a given date and time. Expired shares are ignored by the server; the next time the entry is saved by another user, it is re-encrypted without the expired user.
 
 ### I'm not able to share passwords with some users, they are disabled in the select box
 The user account doesn't have a keypair yet. Users need to log in once before passwords can be shared with them.

@@ -195,7 +195,8 @@ function loadVault(privKey=null, pubKey=null) {
 				'group':group.parent_password_group_id,
 				'title':group.title, 'icon':group.icon, 'permission':group.permission,
 				'share_users':group.share_users, 'share_groups':group.share_groups,
-				'share_user_permissions':group.share_user_permissions, 'share_group_permissions':group.share_group_permissions
+				'share_user_permissions':group.share_user_permissions, 'share_group_permissions':group.share_group_permissions,
+				'share_user_expires':group.share_user_expires, 'share_group_expires':group.share_group_expires
 			};
 		});
 		// decrypt all passwords
@@ -212,7 +213,8 @@ function loadVault(privKey=null, pubKey=null) {
 						'url':decryptedData.url, 'description':decryptedData.description,
 						'icon':decryptedData.icon, 'permission':password.permission,
 						'share_users':password.share_users, 'share_groups':password.share_groups,
-						'share_user_permissions':password.share_user_permissions, 'share_group_permissions':password.share_group_permissions
+						'share_user_permissions':password.share_user_permissions, 'share_group_permissions':password.share_group_permissions,
+						'share_user_expires':password.share_user_expires, 'share_group_expires':password.share_group_expires
 					};
 				})
 			);
@@ -853,10 +855,10 @@ function showGroupDetails(id=null) {
 			}
 		});
 		group['share_groups'].forEach((shareGroupId) => {
-			addShareGroupRow(tblShares, shareGroupId, group['share_group_permissions'][shareGroupId]);
+			addShareGroupRow(tblShares, shareGroupId, group['share_group_permissions'][shareGroupId], group['share_group_expires'][shareGroupId]);
 		});
 		group['share_users'].forEach((shareUserId) => {
-			addShareUserRow(tblShares, shareUserId, group['share_user_permissions'][shareUserId]);
+			addShareUserRow(tblShares, shareUserId, group['share_user_permissions'][shareUserId], group['share_user_expires'][shareUserId]);
 		});
 	}
 	sltGroup.addEventListener('change', function(e) {
@@ -871,10 +873,10 @@ function showGroupDetails(id=null) {
 			// apply permissions from parent folder
 			let parentGroup = sessionVaultContent['groups'][sltGroup.value];
 			parentGroup['share_groups'].forEach((shareGroupId) => {
-				addShareGroupRow(tblShares, shareGroupId, parentGroup['share_group_permissions'][shareGroupId]);
+				addShareGroupRow(tblShares, shareGroupId, parentGroup['share_group_permissions'][shareGroupId], parentGroup['share_group_expires'][shareGroupId]);
 			});
 			parentGroup['share_users'].forEach((shareUserId) => {
-				addShareUserRow(tblShares, shareUserId, parentGroup['share_user_permissions'][shareUserId]);
+				addShareUserRow(tblShares, shareUserId, parentGroup['share_user_permissions'][shareUserId], parentGroup['share_user_expires'][shareUserId]);
 			});
 		} else {
 			// add self only
@@ -901,6 +903,8 @@ function showGroupDetails(id=null) {
 		let shareGroups = [];
 		let shareUserPermissions = {};
 		let shareGroupPermissions = {};
+		let shareUserExpires = {};
+		let shareGroupExpires = {};
 		let targetPublicKeys = {};
 		// add all other users
 		tblShares.querySelectorAll('tr').forEach(function(item){
@@ -910,9 +914,11 @@ function showGroupDetails(id=null) {
 				targetPublicKeys[userId] = sessionEnvironment['users'][userId]['public_key'];
 				shareUsers.push(userId);
 				shareUserPermissions[userId] = parseInt(item.querySelector('select.permission').value);
+				shareUserExpires[userId] = localDateTimeInputToUtc(item.querySelector('input.expires').value);
 			}
 			if(groupId && !shareGroups.includes(groupId)) {
 				shareGroupPermissions[groupId] = parseInt(item.querySelector('select.permission').value);
+				shareGroupExpires[groupId] = localDateTimeInputToUtc(item.querySelector('input.expires').value);
 				sessionEnvironment['groups'][groupId]['members'].forEach((groupUserId) => {
 					targetPublicKeys[groupUserId] = sessionEnvironment['users'][groupUserId]['public_key'];
 				});
@@ -923,6 +929,7 @@ function showGroupDetails(id=null) {
 			let myUserId = sessionEnvironment['userId'];
 			shareUsers.push(myUserId);
 			shareUserPermissions[myUserId] = 0;
+			shareUserExpires[myUserId] = null;
 			targetPublicKeys[myUserId] = sessionEnvironment['users'][myUserId]['public_key'];
 		}
 		// change permissions and re-encrypt all subitems
@@ -963,6 +970,7 @@ function showGroupDetails(id=null) {
 				'parent_password_group_id': group, 'title': txtTitle.value, 'icon': sltIcon.value,
 				'share_users': shareUsers, 'share_groups': shareGroups,
 				'share_user_permissions': shareUserPermissions, 'share_group_permissions': shareGroupPermissions,
+				'share_user_expires': shareUserExpires, 'share_group_expires': shareGroupExpires,
 				'passwords': encryptedPasswords, 'groups': entriesToUpdate.groups
 			}
 		)).then((response) => {
@@ -971,7 +979,8 @@ function showGroupDetails(id=null) {
 				'group':group, 'title':txtTitle.value, 'icon':sltIcon.value,
 				'permission': (id ? sessionVaultContent['groups'][id]['permission'] : 0),
 				'share_users':shareUsers, 'share_groups':shareGroups,
-				'share_user_permissions':shareUserPermissions, 'share_group_permissions':shareGroupPermissions
+				'share_user_permissions':shareUserPermissions, 'share_group_permissions':shareGroupPermissions,
+				'share_user_expires':shareUserExpires, 'share_group_expires':shareGroupExpires
 			};
 			// update share info of updated entries
 			for(let groupId in entriesToUpdate.groups) {
@@ -979,6 +988,8 @@ function showGroupDetails(id=null) {
 				sessionVaultContent['groups'][groupId]['share_groups'] = shareGroups;
 				sessionVaultContent['groups'][groupId]['share_user_permissions'] = shareUserPermissions;
 				sessionVaultContent['groups'][groupId]['share_group_permissions'] = shareGroupPermissions;
+				sessionVaultContent['groups'][groupId]['share_user_expires'] = shareUserExpires;
+				sessionVaultContent['groups'][groupId]['share_group_expires'] = shareGroupExpires;
 			}
 			for(let passwordId in entriesToUpdate.passwords) {
 				sessionVaultContent['passwords'][passwordId]['revision'] += 1;
@@ -986,6 +997,8 @@ function showGroupDetails(id=null) {
 				sessionVaultContent['passwords'][passwordId]['share_groups'] = shareGroups;
 				sessionVaultContent['passwords'][passwordId]['share_user_permissions'] = shareUserPermissions;
 				sessionVaultContent['passwords'][passwordId]['share_group_permissions'] = shareGroupPermissions;
+				sessionVaultContent['passwords'][passwordId]['share_user_expires'] = shareUserExpires;
+				sessionVaultContent['passwords'][passwordId]['share_group_expires'] = shareGroupExpires;
 			}
 			populateVaultWindowEntries();
 			closeAnimation(e);
@@ -1080,10 +1093,10 @@ function showPasswordDetails(id=null) {
 			}
 		});
 		password['share_groups'].forEach((shareGroupId) => {
-			addShareGroupRow(tblShares, shareGroupId, password['share_group_permissions'][shareGroupId]);
+			addShareGroupRow(tblShares, shareGroupId, password['share_group_permissions'][shareGroupId], password['share_group_expires'][shareGroupId]);
 		});
 		password['share_users'].forEach((shareUserId) => {
-			addShareUserRow(tblShares, shareUserId, password['share_user_permissions'][shareUserId]);
+			addShareUserRow(tblShares, shareUserId, password['share_user_permissions'][shareUserId], password['share_user_expires'][shareUserId]);
 		});
 	}
 	sltGroup.addEventListener('change', function(e) {
@@ -1098,10 +1111,10 @@ function showPasswordDetails(id=null) {
 			// apply permissions from parent folder
 			let parentGroup = sessionVaultContent['groups'][sltGroup.value];
 			parentGroup['share_groups'].forEach((shareGroupId) => {
-				addShareGroupRow(tblShares, shareGroupId, parentGroup['share_group_permissions'][shareGroupId]);
+				addShareGroupRow(tblShares, shareGroupId, parentGroup['share_group_permissions'][shareGroupId], parentGroup['share_group_expires'][shareGroupId]);
 			});
 			parentGroup['share_users'].forEach((shareUserId) => {
-				addShareUserRow(tblShares, shareUserId, parentGroup['share_user_permissions'][shareUserId]);
+				addShareUserRow(tblShares, shareUserId, parentGroup['share_user_permissions'][shareUserId], parentGroup['share_user_expires'][shareUserId]);
 			});
 		} else {
 			// add self only
@@ -1152,6 +1165,8 @@ function showPasswordDetails(id=null) {
 		let shareGroups = [];
 		let shareUserPermissions = {};
 		let shareGroupPermissions = {};
+		let shareUserExpires = {};
+		let shareGroupExpires = {};
 		let targetPublicKeys = {};
 		tblShares.querySelectorAll('tr').forEach(function(item){
 			let userId = item.getAttribute('userid') ? parseInt(item.getAttribute('userid')) : null;
@@ -1160,9 +1175,11 @@ function showPasswordDetails(id=null) {
 				targetPublicKeys[userId] = sessionEnvironment['users'][userId]['public_key'];
 				shareUsers.push(userId);
 				shareUserPermissions[userId] = parseInt(item.querySelector('select.permission').value);
+				shareUserExpires[userId] = localDateTimeInputToUtc(item.querySelector('input.expires').value);
 			}
 			if(groupId && !shareGroups.includes(groupId)) {
 				shareGroupPermissions[groupId] = parseInt(item.querySelector('select.permission').value);
+				shareGroupExpires[groupId] = localDateTimeInputToUtc(item.querySelector('input.expires').value);
 				sessionEnvironment['groups'][groupId]['members'].forEach((groupUserId) => {
 					targetPublicKeys[groupUserId] = sessionEnvironment['users'][groupUserId]['public_key'];
 				});
@@ -1173,6 +1190,7 @@ function showPasswordDetails(id=null) {
 			let myUserId = sessionEnvironment['userId'];
 			shareUsers.push(myUserId);
 			shareUserPermissions[myUserId] = 0;
+			shareUserExpires[myUserId] = null;
 			targetPublicKeys[myUserId] = sessionEnvironment['users'][myUserId]['public_key'];
 		}
 
@@ -1188,6 +1206,7 @@ function showPasswordDetails(id=null) {
 				'password_user': result.password_user,
 				'share_users': shareUsers, 'share_groups': shareGroups,
 				'share_user_permissions': shareUserPermissions, 'share_group_permissions': shareGroupPermissions,
+				'share_user_expires': shareUserExpires, 'share_group_expires': shareGroupExpires,
 			}
 		))
 		.then((response) => {
@@ -1199,7 +1218,8 @@ function showPasswordDetails(id=null) {
 				'url': secret.url, 'description': secret.description,
 				'icon': secret.icon, 'permission': (id ? sessionVaultContent['passwords'][id]['permission'] : 0),
 				'share_users': shareUsers, 'share_groups': shareGroups,
-				'share_user_permissions': shareUserPermissions, 'share_group_permissions': shareGroupPermissions
+				'share_user_permissions': shareUserPermissions, 'share_group_permissions': shareGroupPermissions,
+				'share_user_expires': shareUserExpires, 'share_group_expires': shareGroupExpires
 			};
 			populateVaultWindowEntries();
 			closeAnimation(e);
@@ -1333,13 +1353,34 @@ function createPermissionCell(permission) {
 	td.appendChild(slt);
 	return td;
 }
+function createExpiresCell(expires) {
+	let td = document.createElement('TD');
+	let input = document.createElement('INPUT');
+	input.type = 'datetime-local';
+	input.classList.add('expires');
+	input.title = strings.expires;
+	input.value = utcToLocalDateTimeInput(expires);
+	td.appendChild(input);
+	return td;
+}
+// expiry dates are transferred as UTC 'YYYY-MM-DD HH:MM:SS' and displayed in local time
+function utcToLocalDateTimeInput(utc) {
+	if(!utc) return '';
+	let date = new Date(utc.replace(' ', 'T')+'Z');
+	let pad = (n) => String(n).padStart(2, '0');
+	return date.getFullYear()+'-'+pad(date.getMonth()+1)+'-'+pad(date.getDate())+'T'+pad(date.getHours())+':'+pad(date.getMinutes());
+}
+function localDateTimeInputToUtc(local) {
+	if(!local) return null;
+	return new Date(local).toISOString().slice(0, 19).replace('T', ' ');
+}
 function disableEditing(divWindow) {
 	// read only permission: hide save/delete and make all inputs read only
 	divWindow.querySelectorAll('.btnSave, .btnDelete').forEach((btn) => btn.remove());
 	divWindow.querySelectorAll('input, textarea').forEach((input) => input.readOnly = true);
 	divWindow.querySelectorAll('select').forEach((select) => select.disabled = true);
 }
-function addShareUserRow(shareTable, userId, permission=null) {
+function addShareUserRow(shareTable, userId, permission=null, expires=null) {
 	if(!(userId in sessionEnvironment['users'])) return;
 	let user = sessionEnvironment['users'][userId];
 	let tr = document.createElement('TR');
@@ -1348,8 +1389,12 @@ function addShareUserRow(shareTable, userId, permission=null) {
 	td1.innerText = user['display_name'];
 	tr.appendChild(td1);
 	// permission is null for user group member rows
-	if(permission === null) td1.setAttribute('colspan', '2');
-	else tr.appendChild(createPermissionCell(permission));
+	if(permission === null) {
+		td1.setAttribute('colspan', '2');
+	} else {
+		tr.appendChild(createPermissionCell(permission));
+		tr.appendChild(createExpiresCell(expires));
+	}
 	let td2 = document.createElement('TD');
 	let btn = document.createElement('BUTTON');
 	btn.title = strings.remove;
@@ -1363,7 +1408,7 @@ function addShareUserRow(shareTable, userId, permission=null) {
 	tr.appendChild(td2);
 	shareTable.appendChild(tr);
 }
-function addShareGroupRow(shareTable, groupId, permission=0) {
+function addShareGroupRow(shareTable, groupId, permission=0, expires=null) {
 	if(!(groupId in sessionEnvironment['groups'])) return;
 	let group = sessionEnvironment['groups'][groupId];
 	let tr = document.createElement('TR');
@@ -1372,6 +1417,7 @@ function addShareGroupRow(shareTable, groupId, permission=0) {
 	td1.innerText = group['title'];
 	tr.appendChild(td1);
 	tr.appendChild(createPermissionCell(permission));
+	tr.appendChild(createExpiresCell(expires));
 	let td2 = document.createElement('TD');
 	let btn = document.createElement('BUTTON');
 	btn.title = strings.remove;

@@ -21,7 +21,7 @@ The web app is independent of the client platform and it is not necessary to ins
 
 ## Setup
 ### Server Requirements
-Linux based server (Debian recommended) with Apache 2, PHP 7.4+ and MySQL/MariaDB. An LDAP server is recommended since this app is mainly intended for usage with LDAP authentication.
+Linux based server (Debian recommended) with Apache 2, PHP 8.0+ and MySQL/MariaDB. An LDAP server is recommended since this app is mainly intended for usage with LDAP authentication.
 
 ### Server Installation
 0. Install necessary Linux packages: `apt install apache2 libapache2-mod-php php php-ldap composer`

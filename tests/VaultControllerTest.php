@@ -175,6 +175,49 @@ class VaultControllerTest extends TestCase {
 		);
 	}
 
+	public function testUpdatePasswordUserDeniedWhenReshareNotAllowed(): void {
+		$_SESSION['user_id'] = 1;
+		$this->mockDb->method('selectAllUserByPasswordShare')->with(42)->willReturn([1]);
+		$this->mockDb->method('selectPasswordPermission')->with(42, 1)->willReturn(VaultController::PERMISSION_NO_RESHARE);
+		$this->mockDb->method('selectAllSharedUserByPassword')->with(42)->willReturn([(object)['user_id' => 1, 'permission' => 2]]);
+		$this->mockDb->method('selectAllSharedUserGroupByPassword')->with(42)->willReturn([]);
+
+		// user 1 tries to add user 2
+		$this->expectException(\Exception::class);
+		$this->expectExceptionMessage('Permission denied');
+		$this->controller->updatePasswordUser(
+			42,
+			[1 => ['aes_key' => 'k1', 'rsa_iv' => 'i1'], 2 => ['aes_key' => 'k2', 'rsa_iv' => 'i2']],
+			[1, 2],
+			[],
+			false,
+			[1 => 2, 2 => 0]
+		);
+	}
+
+	public function testUpdatePasswordUserAllowedWhenReshareNotAllowedButSharesUnchanged(): void {
+		$_SESSION['user_id'] = 1;
+		$this->mockDb->method('selectAllUserByPasswordShare')->with(42)->willReturn([1, 2]);
+		$this->mockDb->method('selectPasswordPermission')->with(42, 1)->willReturn(VaultController::PERMISSION_NO_RESHARE);
+		$this->mockDb->method('selectAllSharedUserByPassword')->with(42)->willReturn([(object)['user_id' => 2, 'permission' => 0], (object)['user_id' => 1, 'permission' => 2]]);
+		$this->mockDb->method('selectAllSharedUserGroupByPassword')->with(42)->willReturn([]);
+		$this->mockDb->method('deletePasswordUserByPassword')->willReturn(true);
+		$this->mockDb->method('insertPasswordUser')->willReturn(true);
+		$this->mockDb->method('deletePasswordUserShareByPassword')->willReturn(true);
+		$this->mockDb->method('insertPasswordUserShare')->willReturn(true);
+		$this->mockDb->method('deletePasswordUserGroupShareByPassword')->willReturn(true);
+
+		$this->controller->updatePasswordUser(
+			42,
+			[1 => ['aes_key' => 'k1', 'rsa_iv' => 'i1'], 2 => ['aes_key' => 'k2', 'rsa_iv' => 'i2']],
+			[1, 2],
+			[],
+			false,
+			[1 => 2, 2 => 0]
+		);
+		$this->assertTrue(true); // no exception = success
+	}
+
 	public function testUpdatePasswordUserStoresSharePermissions(): void {
 		$_SESSION['user_id'] = 1;
 		$this->mockDb->method('selectAllUserIdByUserGroup')->with(10)->willReturn([1]);

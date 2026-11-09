@@ -76,6 +76,13 @@ ALTER TABLE `password_group` ADD `icon` varchar(50) DEFAULT NULL;
 Since the concept and database schema of WebVault Pro differs completely from v0.x ("WebPW"), there is no direct upgrade path. You need to manually export and re-import your passwords in the new version.
 
 ## FAQ
+### What do the share permissions mean?
+- *Full access*: the user can view, edit, move, delete and share the entry or folder with other users and groups.
+- *No resharing*: the user can view and edit, but not change the shares.
+- *Read only*: the user can only view the entry (copying the password is still possible, which can't be prevented technically).
+
+If a user has multiple shares on an entry (e.g. directly and via a user group), the least restrictive permission applies.
+
 ### I'm not able to share passwords with some users, they are disabled in the select box
 The user account doesn't have a keypair yet. Users need to log in once before passwords can be shared with them.
 

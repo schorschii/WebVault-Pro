@@ -998,6 +998,9 @@ function showGroupDetails(id=null) {
 	if(id && (sessionVaultContent['groups'][id]['permission'] & SHARE_PERMISSION_READ_ONLY)) {
 		disableEditing(clone);
 	}
+	if(id && (sessionVaultContent['groups'][id]['permission'] & SHARE_PERMISSION_NO_RESHARE)) {
+		clone.querySelectorAll('.btnShare')[0].classList.add('invisible');
+	}
 	// show with animation
 	document.body.appendChild(clone);
 	windowOpenAnimation(clone);
@@ -1209,6 +1212,9 @@ function showPasswordDetails(id=null) {
 	if(id && (sessionVaultContent['passwords'][id]['permission'] & SHARE_PERMISSION_READ_ONLY)) {
 		disableEditing(clone);
 	}
+	if(id && (sessionVaultContent['passwords'][id]['permission'] & SHARE_PERMISSION_NO_RESHARE)) {
+		clone.querySelectorAll('.btnShare')[0].classList.add('invisible');
+	}
 	// show with animation
 	document.body.appendChild(clone);
 	windowOpenAnimation(clone);
@@ -1311,7 +1317,8 @@ function addUserGroupRow(groupTable, userGroupId, editAction) {
 	groupTable.appendChild(tr);
 }
 const SHARE_PERMISSION_READ_ONLY = 1;
-const SHARE_PERMISSIONS = {0:'full_access', 1:'read_only'};
+const SHARE_PERMISSION_NO_RESHARE = 2;
+const SHARE_PERMISSIONS = {0:'full_access', 2:'no_resharing', 3:'read_only'};
 function createPermissionCell(permission) {
 	let td = document.createElement('TD');
 	let slt = document.createElement('SELECT');

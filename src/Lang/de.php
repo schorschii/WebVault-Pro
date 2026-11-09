@@ -66,6 +66,7 @@ return [
 	'no_search_results' => 'Keine Suchergebnisse',
 	'full_access' => 'Vollzugriff',
 	'read_only' => 'Nur lesen',
+	'no_resharing' => 'Keine Weitergabe',
 	'default' => 'Standard',
 	'cannot_delete_group_contains_items' => 'Die Gruppe kann nicht gelöscht werden, da sie noch untergeordnete Elemente besitzt.',
 ];

@@ -66,6 +66,7 @@ return [
 	'no_search_results' => 'No search results',
 	'full_access' => 'Full access',
 	'read_only' => 'Read only',
+	'no_resharing' => 'No resharing',
 	'default' => 'Default',
 	'cannot_delete_group_contains_items' => 'The group cannot be deleted because it still contains sub items.',
 ];

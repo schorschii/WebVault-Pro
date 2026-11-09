@@ -184,14 +184,14 @@ class VaultController {
 		}
 
 		// check if given password_user data matches shares
-		$givenDataUserIds = array_keys($password_user);
-		asort($givenDataUserIds);
+		$givenDataUserIds = array_map('intval', array_keys($password_user));
+		sort($givenDataUserIds);
 		$absoluteShareUserIds = $share_users;
 		foreach($share_groups as $group_id) {
 			$absoluteShareUserIds = array_merge($absoluteShareUserIds, $this->db->selectAllUserIdByUserGroup($group_id));
 		}
-		$absoluteShareUserIds = array_unique($absoluteShareUserIds);
-		asort($absoluteShareUserIds);
+		$absoluteShareUserIds = array_unique(array_map('intval', $absoluteShareUserIds));
+		sort($absoluteShareUserIds);
 		if($givenDataUserIds !== $absoluteShareUserIds) {
 			throw new Exception('Encrypted secrets do not match shares. Try to reload your vault for updated group memberships.');
 		}

@@ -28,6 +28,7 @@ class VaultController {
 			'customcss' => $this->container->get('settings')['customStylesheet'] ?? '',
 			'subtitle' => $this->container->get('settings')['subtitle'] ?? '',
 			'httpwarn' => (!isset($_SERVER['HTTPS'])),
+			'icons' => $this->getIconNames(),
 		]);
 	}
 	public function aboutPage(Request $request, Response $response, $args) {
@@ -68,6 +69,7 @@ class VaultController {
 					'id' => $group->id,
 					'parent_password_group_id' => $group->parent_password_group_id,
 					'title' => $group->title,
+					'icon' => $group->icon,
 					'share_users' => $this->db->selectAllSharedUserIdByPasswordGroup($group->id),
 					'share_groups' => $this->db->selectAllSharedUserGroupIdByPasswordGroup($group->id),
 				];
@@ -258,6 +260,10 @@ class VaultController {
 			if(!array_key_exists('parent_password_group_id', $json)) {
 				throw new Exception($this->langCtrl->translate('choose_another_parent_folder'));
 			}
+			$icon = empty($json['icon']) ? null : $json['icon'];
+			if($icon !== null && !in_array($icon, $this->getIconNames())) {
+				throw new Exception('Invalid icon');
+			}
 			$absoluteShareUserIds = $json['share_users'];
 			foreach($json['share_groups'] as $group_id) {
 				$absoluteShareUserIds = array_merge($absoluteShareUserIds, $this->db->selectAllUserIdByUserGroup($group_id));
@@ -273,7 +279,7 @@ class VaultController {
 
 			// insert data
 			$this->db->beginTransaction();
-			$id = $this->db->insertPasswordGroup($json['parent_password_group_id']??null, $json['title']);
+			$id = $this->db->insertPasswordGroup($json['parent_password_group_id']??null, $json['title'], $icon);
 			$this->db->deletePasswordGroupUserShareByPasswordGroup($id);
 			foreach($json['share_users'] as $user_id) {
 				$this->db->insertPasswordGroupUserShare($id, $user_id);
@@ -315,6 +321,10 @@ class VaultController {
 			|| $json['parent_password_group_id'] == $id) {
 				throw new Exception($this->langCtrl->translate('choose_another_parent_folder'));
 			}
+			$icon = empty($json['icon']) ? null : $json['icon'];
+			if($icon !== null && !in_array($icon, $this->getIconNames())) {
+				throw new Exception('Invalid icon');
+			}
 			$absoluteShareUserIds = $json['share_users'];
 			foreach($json['share_groups'] as $group_id) {
 				$absoluteShareUserIds = array_merge($absoluteShareUserIds, $this->db->selectAllUserIdByUserGroup($group_id));
@@ -337,7 +347,7 @@ class VaultController {
 
 			// update data
 			$this->db->beginTransaction();
-			$this->db->updatePasswordGroup($id, $json['parent_password_group_id'], $json['title']);
+			$this->db->updatePasswordGroup($id, $json['parent_password_group_id'], $json['title'], $icon);
 			$this->db->deletePasswordGroupUserShareByPasswordGroup($id);
 			foreach($json['share_users'] as $user_id) {
 				$this->db->insertPasswordGroupUserShare($id, $user_id);
@@ -418,6 +428,13 @@ class VaultController {
 		}
 	}
 
+	private function getIconNames() {
+		$names = [];
+		foreach(glob(__DIR__.'/../../public/img/icon/*.svg') as $file) {
+			$names[] = basename($file, '.svg');
+		}
+		return $names;
+	}
 	public function checkLogin() {
 		if(empty($_SESSION['user_id'])) {
 			throw new Exception('Not logged in');

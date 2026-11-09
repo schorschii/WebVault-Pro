@@ -327,7 +327,7 @@ function addPasswordHtml(parentUl, id, passwordItem) {
 		divDesc.appendChild(aUrl);
 	}
 	let spanDesc = document.createElement('SPAN');
-	setTruncatedText(spanDesc, passwordItem.description.replace('\n', ' '), (passwordItem.url&&passwordItem.description ? ' - ' : ''));
+	setTruncatedText(spanDesc, passwordItem.description.replaceAll('\n', ' '), (passwordItem.url&&passwordItem.description ? ' - ' : ''));
 	divDesc.appendChild(spanDesc);
 	let shareText = compileShareText(passwordItem['share_users'], passwordItem['share_groups']);
 	if(shareText) {

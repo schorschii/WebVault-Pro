@@ -193,7 +193,7 @@ function loadVault(privKey=null, pubKey=null) {
 		response.groups.forEach((group) => {
 			sessionVaultContent['groups'][group.id] = {
 				'group':group.parent_password_group_id,
-				'title':group.title,
+				'title':group.title, 'icon':group.icon,
 				'share_users':group.share_users, 'share_groups':group.share_groups
 			};
 		});
@@ -209,6 +209,7 @@ function loadVault(privKey=null, pubKey=null) {
 						'group':password.password_group_id, 'title':decryptedData.title,
 						'username':decryptedData.username, 'password':decryptedData.password,
 						'url':decryptedData.url, 'description':decryptedData.description,
+						'icon':decryptedData.icon,
 						'share_users':password.share_users, 'share_groups':password.share_groups
 					};
 				})
@@ -269,6 +270,7 @@ function addPasswordHtml(parentUl, id, passwordItem) {
 	li.setAttribute('passwordid', id);
 	li.addEventListener('click', openDetailsAction);
 	parentUl.appendChild(li);
+	addIconHtml(li, passwordItem.icon);
 	let divCont = document.createElement('DIV');
 	divCont.classList.add('passwordheader');
 	li.appendChild(divCont);
@@ -322,6 +324,7 @@ function addGroupHtml(parentUl, id, groupItem) {
 	li.setAttribute('groupid', id);
 	li.addEventListener('click', openDetailsAction);
 	parentUl.appendChild(li);
+	addIconHtml(li, groupItem.icon);
 	let divCont = document.createElement('DIV');
 	divCont.classList.add('groupheader');
 	li.appendChild(divCont);
@@ -353,6 +356,16 @@ function addGroupHtml(parentUl, id, groupItem) {
 	let ulSub = document.createElement('UL');
 	li.appendChild(ulSub);
 	return ulSub;
+}
+function addIconHtml(li, icon) {
+	// only icons offered by the server are allowed since the icon name could be manipulated by another user
+	if(!icon || !/^[a-z_]+$/.test(icon)
+	|| !divPasswordTemplateContainer.querySelector('[name=sltIcon] option[value="'+icon+'"]')) return;
+	li.classList.add('customicon');
+	let img = document.createElement('IMG');
+	img.classList.add('icon');
+	img.src = 'img/icon/'+icon+'.svg';
+	li.appendChild(img);
 }
 function compileShareText(shareUsers, shareGroups) {
 	let infos = [];
@@ -594,6 +607,7 @@ function showUserGroupManagement(id=null) {
 						'password': sessionVaultContent['passwords'][passwordId].password,
 						'url': sessionVaultContent['passwords'][passwordId].url,
 						'description': sessionVaultContent['passwords'][passwordId].description,
+						'icon': sessionVaultContent['passwords'][passwordId].icon,
 					};
 					promiseChain.push(
 						encryptData(targetPublicKeys, JSON.stringify(secret), passwordId)
@@ -784,6 +798,7 @@ function showGroupDetails(id=null) {
 	// identify inputs
 	let sltGroup = clone.querySelectorAll('[name=sltGroup]')[0];
 	let txtTitle = clone.querySelectorAll('[name=txtTitle]')[0];
+	let sltIcon = clone.querySelectorAll('[name=sltIcon]')[0];
 	let sltShareUser = clone.querySelectorAll('[name=sltShareUser]')[0];
 	let sltShareUserGroup = clone.querySelectorAll('[name=sltShareUserGroup]')[0];
 	let chkInheritPermissions = clone.querySelectorAll('[name=chkInheritPermissions]')[0];
@@ -814,6 +829,7 @@ function showGroupDetails(id=null) {
 		let group = sessionVaultContent['groups'][id];
 		sltGroup.value = group['group'];
 		txtTitle.value = group['title'];
+		sltIcon.value = group['icon'] || '';
 		clone.querySelectorAll('.btnDelete')[0].addEventListener('click', function(e){
 			let subItems = getAllSubentriesOfGroup(id);
 			if(Object.keys(subItems['passwords']).length || Object.keys(subItems['groups']).length) {
@@ -913,6 +929,7 @@ function showGroupDetails(id=null) {
 					'password': entriesToUpdate.passwords[passwordId].password,
 					'url': entriesToUpdate.passwords[passwordId].url,
 					'description': entriesToUpdate.passwords[passwordId].description,
+					'icon': entriesToUpdate.passwords[passwordId].icon,
 				};
 				promiseChain.push(
 					encryptData(targetPublicKeys, JSON.stringify(secret), passwordId)
@@ -934,14 +951,14 @@ function showGroupDetails(id=null) {
 		.then(() => jsonRequest(
 			'POST', (id==null ? 'vault/group' : 'vault/group/'+encodeURIComponent(id)),
 			{
-				'parent_password_group_id': group, 'title': txtTitle.value,
+				'parent_password_group_id': group, 'title': txtTitle.value, 'icon': sltIcon.value,
 				'share_users': shareUsers, 'share_groups': shareGroups,
 				'passwords': encryptedPasswords, 'groups': entriesToUpdate.groups
 			}
 		)).then((response) => {
 			// append to session vault
 			sessionVaultContent['groups'][response.id] = {
-				'group':group, 'title':txtTitle.value,
+				'group':group, 'title':txtTitle.value, 'icon':sltIcon.value,
 				'share_users':shareUsers, 'share_groups':shareGroups
 			};
 			// update share info of updated entries
@@ -974,6 +991,7 @@ function showPasswordDetails(id=null) {
 	let txtRevision = clone.querySelectorAll('[name=txtRevision]')[0];
 	let sltGroup = clone.querySelectorAll('[name=sltGroup]')[0];
 	let txtTitle = clone.querySelectorAll('[name=txtTitle]')[0];
+	let sltIcon = clone.querySelectorAll('[name=sltIcon]')[0];
 	let txtUrl = clone.querySelectorAll('[name=txtUrl]')[0];
 	let txtUsername = clone.querySelectorAll('[name=txtUsername]')[0];
 	let txtPassword = clone.querySelectorAll('[name=txtPassword]')[0];
@@ -1024,6 +1042,7 @@ function showPasswordDetails(id=null) {
 		updatePasswordStrength();
 		txtUrl.value = password['url'];
 		txtDescription.value = password['description'];
+		sltIcon.value = password['icon'] || '';
 		clone.querySelectorAll('.btnDelete')[0].addEventListener('click', function(e){
 			if(confirm(strings.are_you_sure_delete)) {
 				jsonRequest(
@@ -1102,6 +1121,7 @@ function showPasswordDetails(id=null) {
 			'password': txtPassword.value,
 			'url': txtUrl.value,
 			'description': txtDescription.value,
+			'icon': sltIcon.value,
 		};
 
 		// collect selected users and groups and compile target keys
@@ -1148,6 +1168,7 @@ function showPasswordDetails(id=null) {
 				'group': group, 'title': secret.title,
 				'username': secret.username, 'password': secret.password,
 				'url': secret.url, 'description': secret.description,
+				'icon': secret.icon,
 				'share_users': shareUsers, 'share_groups': shareGroups
 			};
 			populateVaultWindowEntries();

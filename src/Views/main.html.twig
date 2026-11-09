@@ -90,6 +90,17 @@
 					</select>
 				</td>
 			</tr>
+			<tr>
+				<th>{{ "icon"|trans }}</th>
+				<td>
+					<select name="sltIcon">
+						<option value="">{{ "default"|trans }}</option>
+						{% for icon in icons %}
+						<option value="{{ icon }}">{{ icon|replace({'_': ' '}) }}</option>
+						{% endfor %}
+					</select>
+				</td>
+			</tr>
 		</table>
 	</div>
 	<div class="share box invisible">
@@ -153,6 +164,17 @@
 				<th>{{ "title"|trans }}</th>
 				<td>
 					<input type="text" name="txtTitle" autocomplete="new-password">
+				</td>
+			</tr>
+			<tr>
+				<th>{{ "icon"|trans }}</th>
+				<td>
+					<select name="sltIcon">
+						<option value="">{{ "default"|trans }}</option>
+						{% for icon in icons %}
+						<option value="{{ icon }}">{{ icon|replace({'_': ' '}) }}</option>
+						{% endfor %}
+					</select>
 				</td>
 			</tr>
 			<tr>

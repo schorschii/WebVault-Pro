@@ -206,7 +206,7 @@ class DatabaseController {
 	}
 	public function selectAllPasswordGroupByUser($user_id) {
 		$this->stmt = $this->dbh->prepare(
-			'SELECT pg.id, pg.parent_password_group_id, pg.title
+			'SELECT pg.id, pg.parent_password_group_id, pg.title, pg.icon
 			FROM password_group pg
 			WHERE pg.id IN (
 				SELECT spgu.password_group_id FROM share_password_group_user spgu
@@ -438,26 +438,28 @@ class DatabaseController {
 			return $row;
 		}
 	}
-	public function insertPasswordGroup($parent_password_group_id, $title) {
+	public function insertPasswordGroup($parent_password_group_id, $title, $icon) {
 		$this->stmt = $this->dbh->prepare(
-			'INSERT INTO password_group (parent_password_group_id, title)
-			VALUES (:parent_password_group_id, :title)'
+			'INSERT INTO password_group (parent_password_group_id, title, icon)
+			VALUES (:parent_password_group_id, :title, :icon)'
 		);
 		$this->stmt->execute([
 			':parent_password_group_id' => $parent_password_group_id,
 			':title' => $title,
+			':icon' => $icon,
 		]);
 		return $this->dbh->lastInsertId();
 	}
-	public function updatePasswordGroup($id, $parent_password_group_id, $title) {
+	public function updatePasswordGroup($id, $parent_password_group_id, $title, $icon) {
 		$this->stmt = $this->dbh->prepare(
-			'UPDATE password_group SET parent_password_group_id = :parent_password_group_id, title = :title
+			'UPDATE password_group SET parent_password_group_id = :parent_password_group_id, title = :title, icon = :icon
 			WHERE id = :id'
 		);
 		$this->stmt->execute([
 			':id' => $id,
 			':parent_password_group_id' => $parent_password_group_id,
 			':title' => $title,
+			':icon' => $icon,
 		]);
 		return $this->dbh->lastInsertId();
 	}

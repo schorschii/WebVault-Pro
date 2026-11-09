@@ -175,11 +175,12 @@ class VaultController {
 			if(!in_array($_SESSION['user_id'], $this->db->selectAllUserByPasswordShare($password_id))) {
 				throw new Exception('Permission denied');
 			}
-			// check group permission
-			foreach($share_groups as $group_id) {
-				if(!in_array($_SESSION['user_id'], $this->db->selectAllUserIdByUserGroup($group_id))) {
-					throw new Exception('You are not member of this group');
-				}
+		}
+		// check group permission: only members can add a group share, existing group shares can be kept
+		foreach($share_groups as $group_id) {
+			if(in_array($_SESSION['user_id'], $this->db->selectAllUserIdByUserGroup($group_id))) continue;
+			if($isNewPassword || !in_array($group_id, $this->db->selectAllSharedUserGroupIdByPassword($password_id))) {
+				throw new Exception('You are not member of this group');
 			}
 		}
 

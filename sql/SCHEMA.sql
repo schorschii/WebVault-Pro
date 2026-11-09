@@ -297,7 +297,7 @@ ALTER TABLE `share_password_user_group`
 -- Constraints der Tabelle `user_group_member`
 --
 ALTER TABLE `user_group_member`
-  ADD CONSTRAINT `fk_user_2` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`),
+  ADD CONSTRAINT `fk_user_2` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_user_group` FOREIGN KEY (`user_group_id`) REFERENCES `user_group` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 COMMIT;
 

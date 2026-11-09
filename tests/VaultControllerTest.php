@@ -153,14 +153,37 @@ class VaultControllerTest extends TestCase {
 		$_SESSION['user_id'] = 1;
 		// user 1 is allowed on the password itself
 		$this->mockDb->method('selectAllUserByPasswordShare')->with(42)->willReturn([1, 2]);
-		// but user 1 is NOT a member of group 10
+		// but user 1 is NOT a member of group 10 and the password was not shared with the group before
 		$this->mockDb->method('selectAllUserIdByUserGroup')->with(10)->willReturn([2, 3]);
+		$this->mockDb->method('selectAllSharedUserGroupIdByPassword')->with(42)->willReturn([]);
 
 		$this->expectException(\Exception::class);
 		$this->expectExceptionMessage('You are not member of this group');
 		$this->controller->updatePasswordUser(
 			42,
 			[1 => ['aes_key' => 'k', 'rsa_iv' => 'i']],
+			[1],
+			[10],
+			false
+		);
+	}
+
+	public function testUpdatePasswordUserKeepsExistingShareOfForeignGroup(): void {
+		$_SESSION['user_id'] = 1;
+		// user 1 is NOT a member of group 10, but the password is already shared with the group
+		$this->mockDb->method('selectAllUserByPasswordShare')->with(42)->willReturn([1, 2, 3]);
+		$this->mockDb->method('selectAllUserIdByUserGroup')->with(10)->willReturn([2, 3]);
+		$this->mockDb->method('selectAllSharedUserGroupIdByPassword')->with(42)->willReturn([10]);
+		$this->mockDb->method('deletePasswordUserByPassword')->willReturn(true);
+		$this->mockDb->method('insertPasswordUser')->willReturn(true);
+		$this->mockDb->method('deletePasswordUserShareByPassword')->willReturn(true);
+		$this->mockDb->method('insertPasswordUserShare')->willReturn(true);
+		$this->mockDb->method('deletePasswordUserGroupShareByPassword')->willReturn(true);
+		$this->mockDb->expects($this->once())->method('insertPasswordUserGroupShare')->with(42, 10);
+
+		$this->controller->updatePasswordUser(
+			42,
+			[1 => ['aes_key' => 'k1', 'rsa_iv' => 'i1'], 2 => ['aes_key' => 'k2', 'rsa_iv' => 'i2'], 3 => ['aes_key' => 'k3', 'rsa_iv' => 'i3']],
 			[1],
 			[10],
 			false

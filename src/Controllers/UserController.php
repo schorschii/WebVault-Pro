@@ -273,6 +273,7 @@ class UserController {
 			return $response->withHeader('Content-Type', 'application/json');
 
 		} catch(Exception $e) {
+			$this->db->rollbackTransaction();
 			$response->getBody()->write($e->getMessage());
 			return $response->withStatus(400);
 		}
@@ -327,6 +328,7 @@ class UserController {
 			return $response->withHeader('Content-Type', 'application/json');
 
 		} catch(Exception $e) {
+			$this->db->rollbackTransaction();
 			$response->getBody()->write($e->getMessage());
 			return $response->withStatus(400);
 		}

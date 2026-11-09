@@ -277,11 +277,11 @@ function addPasswordHtml(parentUl, id, passwordItem) {
 	a.addEventListener('click', openDetailsAction);
 	divCont.appendChild(a);
 	let spanTitle = document.createElement('SPAN');
-	spanTitle.innerText = truncate(passwordItem.title);
+	setTruncatedText(spanTitle, passwordItem.title);
 	a.appendChild(spanTitle);
 	let spanUsername = document.createElement('SPAN');
 	spanUsername.classList.add('username');
-	spanUsername.innerText = truncate(passwordItem.username);
+	setTruncatedText(spanUsername, passwordItem.username);
 	a.appendChild(spanUsername);
 	let divDesc = document.createElement('DIV');
 	divDesc.classList.add('entrydescription');
@@ -293,13 +293,13 @@ function addPasswordHtml(parentUl, id, passwordItem) {
 		|| passwordItem.url.startsWith('ftp://')) {
 			aUrl.href = passwordItem.url;
 		}
-		aUrl.innerText = truncate(passwordItem.url);
+		setTruncatedText(aUrl, passwordItem.url);
 		aUrl.target = '_blank';
 		aUrl.addEventListener('click', (e) => e.stopPropagation());
 		divDesc.appendChild(aUrl);
 	}
 	let spanDesc = document.createElement('SPAN');
-	spanDesc.innerText = (passwordItem.url&&passwordItem.description ? ' - ' : '') + truncate(passwordItem.description.replace('\n', ' '));
+	setTruncatedText(spanDesc, passwordItem.description.replace('\n', ' '), (passwordItem.url&&passwordItem.description ? ' - ' : ''));
 	divDesc.appendChild(spanDesc);
 	let shareText = compileShareText(passwordItem['share_users'], passwordItem['share_groups']);
 	if(shareText) {
@@ -1174,6 +1174,8 @@ function showPasswordGenerator(input, divParentWindow) {
 	// set defaults
 	txtCharCount.value = getSetting('generatorCharCount', '13');
 	txtCharset.value = getSetting('generatorCharset', 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789');
+	txtCharset.title = txtCharset.value; // the charset is usually longer than the input field
+	txtCharset.addEventListener('input', function(e){ txtCharset.title = txtCharset.value; });
 	// add actions
 	activateWindowMouseDrag(clone, clone.querySelectorAll('.titlebar')[0], divParentWindow);
 	let closeAnimation = windowCloseAction(clone);
@@ -1305,6 +1307,12 @@ function addShareGroupRow(shareTable, groupId) {
 function truncate(str, n=null){
 	if(!n) n = getSetting('truncateChars', 60);
 	return (str.length > n) ? str.slice(0, n-1) + '…' : str;
+}
+function setTruncatedText(element, str, prefix='') {
+	let truncated = truncate(str);
+	element.innerText = prefix + truncated;
+	// show the full text as tooltip if it was truncated
+	if(truncated !== str) element.title = str;
 }
 function onlyUnique(value, index, array) {
 	return array.indexOf(value) === index;

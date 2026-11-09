@@ -188,6 +188,29 @@ class VaultControllerTest extends TestCase {
 		);
 	}
 
+	public function testUpdatePasswordUserSucceedsWhenSharedDirectlyAndViaGroup(): void {
+		$_SESSION['user_id'] = 1;
+		// user 1 is shared directly and is also member of group 10,
+		// share_users is not sorted and the db returns the ids as strings
+		$this->mockDb->method('selectAllUserIdByUserGroup')->with(10)->willReturn(['1', '2']);
+		$this->mockDb->method('selectAllUserByPasswordShare')->with(42)->willReturn([1, 2]);
+		$this->mockDb->method('deletePasswordUserByPassword')->willReturn(true);
+		$this->mockDb->method('insertPasswordUser')->willReturn(true);
+		$this->mockDb->method('deletePasswordUserShareByPassword')->willReturn(true);
+		$this->mockDb->method('insertPasswordUserShare')->willReturn(true);
+		$this->mockDb->method('deletePasswordUserGroupShareByPassword')->willReturn(true);
+		$this->mockDb->method('insertPasswordUserGroupShare')->willReturn(true);
+
+		$this->controller->updatePasswordUser(
+			42,
+			[1 => ['aes_key' => 'k1', 'rsa_iv' => 'i1'], 2 => ['aes_key' => 'k2', 'rsa_iv' => 'i2']],
+			[2, 1],
+			[10],
+			false
+		);
+		$this->assertTrue(true); // no exception = success
+	}
+
 	public function testUpdatePasswordUserFetchesSharesFromDbWhenNull(): void {
 		$_SESSION['user_id'] = 1;
 		$this->mockDb->method('selectAllSharedUserIdByPassword')->with(42)->willReturn([1]);

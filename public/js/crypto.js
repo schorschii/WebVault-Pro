@@ -75,12 +75,12 @@ function convertPemToBinary(pem) {
 }
 
 function importPublicKey(pemKey, user_id=null) {
-	return new Promise(function(resolve) {
+	return new Promise(function(resolve, reject) {
 		crypto.subtle.importKey(
 			'spki', convertPemToBinary(pemKey), encryptAlgorithm, false, ['encrypt']
 		).then(function(key) {
 			resolve({'key':key, 'user_id':user_id});
-		});
+		}).catch(reject);
 	});
 }
 function importPrivateKey(pemKey, passphrase=null, saltb64=null, ivb64=null, exportable=false) {
@@ -125,12 +125,12 @@ function importPrivateKey(pemKey, passphrase=null, saltb64=null, ivb64=null, exp
 }
 
 function exportPublicKey(keys) {
-	return new Promise(function(resolve) {
+	return new Promise(function(resolve, reject) {
 		crypto.subtle.exportKey(
 			'spki', keys
 		).then(function(spki) {
 			resolve(convertBinaryToPem(spki));
-		});
+		}).catch(reject);
 	});
 }
 function exportPrivateKey(keys, passphrase=null) {
@@ -177,12 +177,12 @@ function exportPrivateKey(keys, passphrase=null) {
 	})
 }
 function exportPemKeys(keys, passphrase=null) {
-	return new Promise(function(resolve) {
+	return new Promise(function(resolve, reject) {
 		exportPublicKey(keys.publicKey).then(function(pubKey) {
 			exportPrivateKey(keys.privateKey, passphrase).then(function(privKey) {
 				resolve({publicKey:pubKey, privateKey:privKey.key, salt:privKey.salt, iv:privKey.iv});
-			});
-		});
+			}).catch(reject);
+		}).catch(reject);
 	});
 }
 
@@ -191,12 +191,12 @@ function getRandomCryptoValues(length) {
 }
 
 function generateKey(alg, scope) {
-	return new Promise(function(resolve) {
+	return new Promise(function(resolve, reject) {
 		crypto.subtle.generateKey(
 			alg, true, scope
 		).then(function (pair) {
 			resolve(pair);
-		});
+		}).catch(reject);
 	});
 }
 

@@ -39,6 +39,10 @@ $app->post('/vault/password/{id}', WebVault\Controllers\VaultController::class.'
 	->setName('vault-password-edit');
 $app->delete('/vault/password/{id}', WebVault\Controllers\VaultController::class.':removePassword')
 	->setName('vault-password-delete');
+$app->post('/vault/password/{id}/file', WebVault\Controllers\VaultController::class.':uploadFile')
+	->setName('vault-password-file-upload');
+$app->get('/vault/password/{id}/file/{fid}', WebVault\Controllers\VaultController::class.':downloadFile')
+	->setName('vault-password-file-download');
 
 $app->post('/vault/group', WebVault\Controllers\VaultController::class.':createGroup')
 	->setName('vault-group-new');

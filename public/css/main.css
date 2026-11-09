@@ -321,6 +321,9 @@ input[type=submit]:not(.nobold) {
 .inputtable.actionbtn tr td:last-child {
 	width: 1%;
 }
+.inputtable.files td {
+	text-align: left;
+}
 .inputtable input:not([type=checkbox]):not([type=radio]),
 .inputtable select, .inputtable button, .inputtable textarea {
 	width: 100%;

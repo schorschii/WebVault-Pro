@@ -72,6 +72,8 @@ return [
 	'add_field' => 'Feld hinzufügen',
 	'field_name' => 'Feldname',
 	'value' => 'Wert',
+	'files' => 'Dateien',
+	'file_too_large' => 'Die Datei ist zu groß',
 	'default' => 'Standard',
 	'cannot_delete_group_contains_items' => 'Die Gruppe kann nicht gelöscht werden, da sie noch untergeordnete Elemente besitzt.',
 ];

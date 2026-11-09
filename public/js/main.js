@@ -211,7 +211,8 @@ function loadVault(privKey=null, pubKey=null) {
 						'group':password.password_group_id, 'title':decryptedData.title,
 						'username':decryptedData.username, 'password':decryptedData.password,
 						'url':decryptedData.url, 'description':decryptedData.description,
-						'icon':decryptedData.icon, 'fields':decryptedData.fields || [], 'permission':password.permission,
+						'icon':decryptedData.icon, 'fields':decryptedData.fields || [], 'files':decryptedData.files || [],
+						'permission':password.permission,
 						'share_users':password.share_users, 'share_groups':password.share_groups,
 						'share_user_permissions':password.share_user_permissions, 'share_group_permissions':password.share_group_permissions,
 						'share_user_expires':password.share_user_expires, 'share_group_expires':password.share_group_expires
@@ -618,6 +619,7 @@ function showUserGroupManagement(id=null) {
 						'description': sessionVaultContent['passwords'][passwordId].description,
 						'icon': sessionVaultContent['passwords'][passwordId].icon,
 						'fields': sessionVaultContent['passwords'][passwordId].fields,
+						'files': sessionVaultContent['passwords'][passwordId].files,
 					};
 					promiseChain.push(
 						encryptData(targetPublicKeys, JSON.stringify(secret), passwordId)
@@ -952,6 +954,7 @@ function showGroupDetails(id=null) {
 					'description': entriesToUpdate.passwords[passwordId].description,
 					'icon': entriesToUpdate.passwords[passwordId].icon,
 					'fields': entriesToUpdate.passwords[passwordId].fields,
+					'files': entriesToUpdate.passwords[passwordId].files,
 				};
 				promiseChain.push(
 					encryptData(targetPublicKeys, JSON.stringify(secret), passwordId)
@@ -1039,6 +1042,9 @@ function showPasswordDetails(id=null) {
 	let divPasswordStrength = clone.querySelectorAll('.passwordStrength > .bar')[0];
 	let txtDescription = clone.querySelectorAll('[name=txtDescription]')[0];
 	let trAddField = clone.querySelectorAll('.btnAddField')[0].parentNode.parentNode;
+	let trFiles = clone.querySelectorAll('tr.files')[0];
+	let tblFiles = clone.querySelectorAll('table.files')[0];
+	let fleUpload = clone.querySelectorAll('[name=fleUpload]')[0];
 	let sltShareUser = clone.querySelectorAll('[name=sltShareUser]')[0];
 	let sltShareUserGroup = clone.querySelectorAll('[name=sltShareUserGroup]')[0];
 	let tblShares = clone.querySelectorAll('.shares')[0];
@@ -1074,6 +1080,7 @@ function showPasswordDetails(id=null) {
 	txtPassword.addEventListener('input', updatePasswordStrength);
 	if(id == null) {
 		clone.querySelectorAll('.btnDelete')[0].remove();
+		trFiles.classList.add('invisible'); // files can only be attached to saved entries
 	} else {
 		let password = sessionVaultContent['passwords'][id];
 		txtRevision.value = password['revision'];
@@ -1087,6 +1094,31 @@ function showPasswordDetails(id=null) {
 		sltIcon.value = password['icon'] || '';
 		password['fields'].forEach((field) => {
 			addCustomFieldRow(trAddField, field.name, field.value, field.type);
+		});
+		password['files'].forEach((file) => {
+			addFileRow(tblFiles, id, file);
+		});
+		fleUpload.addEventListener('change', function(e){
+			// encrypt and upload immediately, the file meta data is saved with the entry
+			let file = fleUpload.files[0];
+			if(!file) return;
+			let fileInfo = {'name': file.name, 'size': file.size};
+			file.arrayBuffer()
+			.then((data) => encryptFile(data))
+			.then((result) => {
+				fileInfo['key'] = result.key;
+				fileInfo['iv'] = result.iv;
+				return jsonRequest('POST', 'vault/password/'+encodeURIComponent(id)+'/file', {'data': arrayBufferToBase64String(result.data)});
+			})
+			.then((response) => {
+				fileInfo['id'] = response.id;
+				addFileRow(tblFiles, id, fileInfo);
+				fleUpload.value = '';
+			})
+			.catch((error) => {
+				console.warn(error);
+				alert(error);
+			});
 		});
 		clone.querySelectorAll('.btnDelete')[0].addEventListener('click', function(e){
 			if(confirm(strings.are_you_sure_delete)) {
@@ -1177,6 +1209,10 @@ function showPasswordDetails(id=null) {
 			let txtValue = tr.querySelectorAll('.fieldvalue')[0];
 			secret.fields.push({'name': tr.querySelectorAll('.fieldname')[0].value, 'value': txtValue.value, 'type': txtValue.type});
 		});
+		secret.files = [];
+		tblFiles.querySelectorAll('tr').forEach((tr) => {
+			secret.files.push(tr.fileInfo);
+		});
 
 		// collect selected users and groups and compile target keys
 		let shareUsers = [];
@@ -1225,6 +1261,7 @@ function showPasswordDetails(id=null) {
 				'share_users': shareUsers, 'share_groups': shareGroups,
 				'share_user_permissions': shareUserPermissions, 'share_group_permissions': shareGroupPermissions,
 				'share_user_expires': shareUserExpires, 'share_group_expires': shareGroupExpires,
+				'file_ids': secret.files.map((file) => file.id),
 			}
 		))
 		.then((response) => {
@@ -1234,7 +1271,8 @@ function showPasswordDetails(id=null) {
 				'group': group, 'title': secret.title,
 				'username': secret.username, 'password': secret.password,
 				'url': secret.url, 'description': secret.description,
-				'icon': secret.icon, 'fields': secret.fields, 'permission': (id ? sessionVaultContent['passwords'][id]['permission'] : 0),
+				'icon': secret.icon, 'fields': secret.fields, 'files': secret.files,
+				'permission': (id ? sessionVaultContent['passwords'][id]['permission'] : 0),
 				'share_users': shareUsers, 'share_groups': shareGroups,
 				'share_user_permissions': shareUserPermissions, 'share_group_permissions': shareGroupPermissions,
 				'share_user_expires': shareUserExpires, 'share_group_expires': shareGroupExpires
@@ -1396,7 +1434,57 @@ function disableEditing(divWindow) {
 	// read only permission: hide save/delete and make all inputs read only
 	divWindow.querySelectorAll('.btnSave, .btnDelete, .btnAddField').forEach((btn) => btn.remove());
 	divWindow.querySelectorAll('input, textarea').forEach((input) => input.readOnly = true);
+	divWindow.querySelectorAll('input[type=file]').forEach((input) => input.disabled = true);
 	divWindow.querySelectorAll('select').forEach((select) => select.disabled = true);
+}
+function addFileRow(fileTable, passwordId, fileInfo) {
+	let tr = document.createElement('TR');
+	tr.fileInfo = fileInfo; // {id, name, size, key, iv} - stored inside the encrypted secret
+	let td1 = document.createElement('TD');
+	let a = document.createElement('A');
+	a.href = '#';
+	a.innerText = fileInfo.name+' ('+Math.max(1, Math.round(fileInfo.size/1024))+' KB)';
+	a.addEventListener('click', function(e){
+		e.preventDefault();
+		downloadFile(passwordId, fileInfo);
+	});
+	td1.appendChild(a);
+	tr.appendChild(td1);
+	let td2 = document.createElement('TD');
+	let btn = document.createElement('BUTTON');
+	btn.title = strings.remove;
+	btn.addEventListener('click', function(e){
+		tr.remove();
+	});
+	let img = document.createElement('IMG');
+	img.src = 'img/minus.svg';
+	btn.appendChild(img);
+	td2.appendChild(btn);
+	tr.appendChild(td2);
+	fileTable.appendChild(tr);
+}
+function downloadFile(passwordId, fileInfo) {
+	var xhttp = new XMLHttpRequest();
+	xhttp.responseType = 'arraybuffer';
+	xhttp.onreadystatechange = function() {
+		if(this.readyState != 4) return;
+		if(this.status != 200) {
+			alert('HTTP '+this.status);
+			return;
+		}
+		decryptFile(fileInfo.key, fileInfo.iv, this.response).then((decrypted) => {
+			let a = document.createElement('A');
+			a.href = URL.createObjectURL(new Blob([decrypted]));
+			a.download = fileInfo.name;
+			a.click();
+			URL.revokeObjectURL(a.href);
+		}).catch((error) => {
+			console.warn(error);
+			alert(error);
+		});
+	};
+	xhttp.open('GET', 'vault/password/'+encodeURIComponent(passwordId)+'/file/'+encodeURIComponent(fileInfo.id), true);
+	xhttp.send();
 }
 function addCustomFieldRow(trAddField, name='', value='', type='text') {
 	// custom fields are stored inside the encrypted secret as {name, value, type}

@@ -37,6 +37,18 @@ CREATE TABLE `password_user` (
 -- --------------------------------------------------------
 
 --
+-- Tabellenstruktur für Tabelle `password_file`
+--
+
+CREATE TABLE `password_file` (
+  `id` int(11) NOT NULL,
+  `password_id` int(11) NOT NULL,
+  `data` longblob NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Tabellenstruktur für Tabelle `password_group`
 --
 
@@ -165,6 +177,13 @@ ALTER TABLE `password_user`
   ADD KEY `user_id` (`user_id`);
 
 --
+-- Indizes für die Tabelle `password_file`
+--
+ALTER TABLE `password_file`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_pf_password` (`password_id`);
+
+--
 -- Indizes für die Tabelle `password_group`
 --
 ALTER TABLE `password_group`
@@ -230,6 +249,12 @@ ALTER TABLE `password`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT für Tabelle `password_file`
+--
+ALTER TABLE `password_file`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT für Tabelle `password_group`
 --
 ALTER TABLE `password_group`
@@ -263,6 +288,12 @@ ALTER TABLE `password`
 ALTER TABLE `password_user`
   ADD CONSTRAINT `fk_password` FOREIGN KEY (`password_id`) REFERENCES `password` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints der Tabelle `password_file`
+--
+ALTER TABLE `password_file`
+  ADD CONSTRAINT `fk_pf_password` FOREIGN KEY (`password_id`) REFERENCES `password` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints der Tabelle `password_group`

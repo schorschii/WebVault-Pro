@@ -168,6 +168,12 @@ class VaultController {
 			$this->db->updatePassword($password_id, $json['password_group_id'], $json['secret'], $json['aes_iv'], $revision);
 			$this->updatePasswordUser($password_id, $json['password_user'], $json['share_users'], $json['share_groups'], false,
 				$json['share_user_permissions'] ?? [], $json['share_group_permissions'] ?? [], $json['share_user_expires'] ?? [], $json['share_group_expires'] ?? []);
+			// remove files which are not referenced by the entry anymore (deleted or never saved after upload)
+			foreach($this->db->selectAllPasswordFileIdByPassword($password_id) as $file_id) {
+				if(!in_array($file_id, $json['file_ids'] ?? [])) {
+					$this->db->deletePasswordFile($file_id);
+				}
+			}
 			$this->db->commitTransaction();
 
 			// return response
@@ -251,6 +257,68 @@ class VaultController {
 		$this->db->deletePasswordUserGroupShareByPassword($password_id);
 		foreach($share_groups as $group_id) {
 			$this->db->insertPasswordUserGroupShare($password_id, $group_id, intval($share_group_permissions[$group_id] ?? 0), self::parseExpires($share_group_expires[$group_id] ?? null));
+		}
+	}
+
+	public function uploadFile(Request $request, Response $response, $args) {
+		try {
+			$this->checkLogin();
+			$password_id = $request->getAttribute('id');
+			$json = JsonRpc::parseJsonRequest($request);
+
+			// permission check
+			if(!in_array($_SESSION['user_id'], $this->db->selectAllUserByPasswordShare($password_id))
+			|| $this->db->selectPasswordPermission($password_id, $_SESSION['user_id']) & self::PERMISSION_READ_ONLY) {
+				throw new Exception('Permission denied');
+			}
+
+			// input checks - the server only stores the ciphertext, the file key is part of the encrypted secret
+			$data = base64_decode($json['data'] ?? '', true);
+			if(empty($data)) {
+				throw new Exception('Invalid data');
+			}
+			if(strlen($data) > ($this->container->get('settings')['maxFileSize'] ?? 10*1024*1024)) {
+				throw new Exception($this->langCtrl->translate('file_too_large'));
+			}
+
+			// insert data
+			$id = $this->db->insertPasswordFile($password_id, $data);
+
+			// return response
+			$response->getBody()->write(json_encode([
+				'success' => true,
+				'id' => $id,
+			]));
+			return $response->withHeader('Content-Type', 'application/json');
+
+		} catch(Exception $e) {
+			$response->getBody()->write($e->getMessage());
+			return $response->withStatus(400);
+		}
+	}
+
+	public function downloadFile(Request $request, Response $response, $args) {
+		try {
+			$this->checkLogin();
+			$password_id = $request->getAttribute('id');
+
+			// permission check
+			if(!in_array($_SESSION['user_id'], $this->db->selectAllUserByPasswordShare($password_id))) {
+				throw new Exception('Permission denied');
+			}
+			$file = $this->db->selectPasswordFile($request->getAttribute('fid'), $password_id);
+			if(empty($file)) {
+				throw new Exception('Not found');
+			}
+
+			// return ciphertext
+			$response->getBody()->write($file->data);
+			return $response->withHeader('Content-Type', 'application/octet-stream')
+				->withHeader('Content-Disposition', 'attachment');
+
+		} catch(Exception $e) {
+			$response->getBody()->write($e->getMessage());
+			return $response->withStatus(400);
 		}
 	}
 

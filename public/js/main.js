@@ -527,11 +527,12 @@ function populateUserGroups() {
 	let tblGroups = divUserGroupsContainer.querySelectorAll('.groups')[0];
 	tblGroups.innerHTML = '';
 	for(let groupId in sessionEnvironment['groups']) {
+		if(!sessionEnvironment['groups'][groupId]['members'].includes(sessionEnvironment['userId'])) continue;
 		addUserGroupRow(tblGroups, groupId, function(){
 			showUserGroupManagement(groupId);
 		});
 	}
-	if(!Object.keys(sessionEnvironment['groups']).length) {
+	if(!tblGroups.rows.length) {
 		let tr = document.createElement('TR');
 		tblGroups.appendChild(tr);
 		let td = document.createElement('TD');
@@ -567,7 +568,7 @@ function showUserGroupManagement(id=null) {
 		let userEntries = clone.querySelectorAll('.members tr');
 		for(let i=0; i<userEntries.length; i++) {
 			if(userEntries[i].getAttribute('userid')) {
-				newGroupMemberIds.push(userEntries[i].getAttribute('userid'));
+				newGroupMemberIds.push(parseInt(userEntries[i].getAttribute('userid')));
 			}
 		}
 		// re-encrypt all passwords which are shared with the edited group
@@ -796,6 +797,8 @@ function showGroupDetails(id=null) {
 		sltShareUser.appendChild(option);
 	}
 	for(let userGroupId in sessionEnvironment['groups']) {
+		// only members can add a group share
+		if(!sessionEnvironment['groups'][userGroupId]['members'].includes(sessionEnvironment['userId'])) continue;
 		let option = document.createElement('OPTION');
 		option.value = userGroupId;
 		option.innerText = sessionEnvironment['groups'][userGroupId]['title'];
@@ -988,6 +991,8 @@ function showPasswordDetails(id=null) {
 		sltShareUser.appendChild(option);
 	}
 	for(let userGroupId in sessionEnvironment['groups']) {
+		// only members can add a group share
+		if(!sessionEnvironment['groups'][userGroupId]['members'].includes(sessionEnvironment['userId'])) continue;
 		let option = document.createElement('OPTION');
 		option.value = userGroupId;
 		option.innerText = sessionEnvironment['groups'][userGroupId]['title'];

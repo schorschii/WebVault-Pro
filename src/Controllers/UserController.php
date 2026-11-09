@@ -39,7 +39,7 @@ class UserController {
 			$_SESSION['last_activity'] = time();
 
 			$groups = [];
-			foreach($this->db->selectAllUserGroupForShare($_SESSION['user_id']) as $group) {
+			foreach($this->db->selectAllUserGroup() as $group) {
 				$groups[] = [
 					'id' => $group->id, 'title' => $group->title,
 					'members' => $this->db->selectAllUserIdByUserGroup($group->id)

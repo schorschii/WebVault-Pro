@@ -130,7 +130,10 @@ CREATE TABLE `user` (
   `public_key` text DEFAULT NULL,
   `private_key` text DEFAULT NULL,
   `salt` text DEFAULT NULL,
-  `iv` text DEFAULT NULL
+  `iv` text DEFAULT NULL,
+  `totp_secret` text DEFAULT NULL,
+  `totp_recovery` text DEFAULT NULL,
+  `totp_last_step` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------

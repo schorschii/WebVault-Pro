@@ -86,6 +86,7 @@ class UserController {
 
 	public function setUserKeys(Request $request, Response $response, $args) {
 		try {
+			$this->vc->checkLogin();
 			$json = JsonRpc::parseJsonRequest($request);
 
 			// input checks
@@ -121,6 +122,7 @@ class UserController {
 
 	public function createGroup(Request $request, Response $response, $args) {
 		try {
+			$this->vc->checkLogin();
 			$json = JsonRpc::parseJsonRequest($request);
 			if(empty($json['title'])) {
 				throw new Exception('Title cannot be empty');
@@ -155,6 +157,7 @@ class UserController {
 
 	public function editGroup(Request $request, Response $response, $args) {
 		try {
+			$this->vc->checkLogin();
 			$json = JsonRpc::parseJsonRequest($request);
 			$id = $request->getAttribute('id');
 			if(empty($json['title'])) {
@@ -208,6 +211,7 @@ class UserController {
 
 	public function deleteGroup(Request $request, Response $response, $args) {
 		try {
+			$this->vc->checkLogin();
 			$id = $request->getAttribute('id');
 
 			// permission check

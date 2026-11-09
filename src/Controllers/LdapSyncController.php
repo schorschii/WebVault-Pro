@@ -164,7 +164,7 @@ class LdapSyncController {
 				}
 			}
 			if(!$found) {
-				if(!empty($details['lock-deleted-users'])) {
+				if(!empty($this->settings[$dbUser->ldap]['lock-deleted-users'])) {
 					if($this->db->updateUser($dbUser->id, $dbUser->uid, $dbUser->username, $dbUser->display_name, null/*password*/, $dbUser->ldap, $dbUser->email, $dbUser->description, 1/*locked*/)) {
 						if($this->debug) echo '--> '.$dbUser->username.': locking  OK'."\n";
 					}

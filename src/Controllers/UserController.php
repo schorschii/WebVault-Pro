@@ -36,6 +36,7 @@ class UserController {
 
 			session_regenerate_id(true);
 			$_SESSION['user_id'] = $user->id;
+			$_SESSION['last_activity'] = time();
 
 			$groups = [];
 			foreach($this->db->selectAllUserGroup() as $group) {
@@ -63,7 +64,7 @@ class UserController {
 
 	public function session(Request $request, Response $response, $args) {
 		try {
-			$this->vc->checkLogin();
+			$this->vc->checkLogin(false); // periodic session check must not extend the session
 			$response->getBody()->write(json_encode([
 				'success' => true
 			]));

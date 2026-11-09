@@ -49,6 +49,16 @@ class VaultControllerTest extends TestCase {
 		$this->controller->checkLogin();
 	}
 
+	public function testCheckLoginThrowsWhenSessionExpired(): void {
+		$_SESSION['user_id'] = 1;
+		$_SESSION['last_activity'] = time() - 11;
+		$this->mockContainer->method('get')->with('settings')->willReturn(['sessionTimeout' => 10]);
+
+		$this->expectException(\Exception::class);
+		$this->expectExceptionMessage('Session expired');
+		$this->controller->checkLogin();
+	}
+
 	public function testCheckLoginSucceeds(): void {
 		$_SESSION['user_id'] = 1;
 		$user = new \stdClass();

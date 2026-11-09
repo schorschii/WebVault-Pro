@@ -159,13 +159,51 @@ class VaultControllerTest extends TestCase {
 		);
 	}
 
+	public function testUpdatePasswordUserDeniedForReadOnlyUser(): void {
+		$_SESSION['user_id'] = 1;
+		$this->mockDb->method('selectAllUserByPasswordShare')->with(42)->willReturn([1, 2]);
+		$this->mockDb->method('selectPasswordPermission')->with(42, 1)->willReturn(VaultController::PERMISSION_READ_ONLY);
+
+		$this->expectException(\Exception::class);
+		$this->expectExceptionMessage('Permission denied');
+		$this->controller->updatePasswordUser(
+			42,
+			[1 => ['aes_key' => 'k', 'rsa_iv' => 'i']],
+			[1],
+			[],
+			false
+		);
+	}
+
+	public function testUpdatePasswordUserStoresSharePermissions(): void {
+		$_SESSION['user_id'] = 1;
+		$this->mockDb->method('selectAllUserIdByUserGroup')->with(10)->willReturn([1]);
+		$this->mockDb->method('deletePasswordUserByPassword')->willReturn(true);
+		$this->mockDb->method('insertPasswordUser')->willReturn(true);
+		$this->mockDb->method('deletePasswordUserShareByPassword')->willReturn(true);
+		$this->mockDb->method('deletePasswordUserGroupShareByPassword')->willReturn(true);
+		$this->mockDb->expects($this->exactly(2))->method('insertPasswordUserShare')
+			->withConsecutive([42, 1, 0], [42, 2, VaultController::PERMISSION_READ_ONLY]);
+		$this->mockDb->expects($this->once())->method('insertPasswordUserGroupShare')->with(42, 10, VaultController::PERMISSION_READ_ONLY);
+
+		$this->controller->updatePasswordUser(
+			42,
+			[1 => ['aes_key' => 'k1', 'rsa_iv' => 'i1'], 2 => ['aes_key' => 'k2', 'rsa_iv' => 'i2']],
+			[1, 2],
+			[10],
+			true,
+			[2 => VaultController::PERMISSION_READ_ONLY],
+			[10 => VaultController::PERMISSION_READ_ONLY]
+		);
+	}
+
 	public function testUpdatePasswordUserThrowsWhenNotInSharedGroup(): void {
 		$_SESSION['user_id'] = 1;
 		// user 1 is allowed on the password itself
 		$this->mockDb->method('selectAllUserByPasswordShare')->with(42)->willReturn([1, 2]);
 		// but user 1 is NOT a member of group 10 and the password was not shared with the group before
 		$this->mockDb->method('selectAllUserIdByUserGroup')->with(10)->willReturn([2, 3]);
-		$this->mockDb->method('selectAllSharedUserGroupIdByPassword')->with(42)->willReturn([]);
+		$this->mockDb->method('selectAllSharedUserGroupByPassword')->with(42)->willReturn([]);
 
 		$this->expectException(\Exception::class);
 		$this->expectExceptionMessage('You are not member of this group');
@@ -183,7 +221,7 @@ class VaultControllerTest extends TestCase {
 		// user 1 is NOT a member of group 10, but the password is already shared with the group
 		$this->mockDb->method('selectAllUserByPasswordShare')->with(42)->willReturn([1, 2, 3]);
 		$this->mockDb->method('selectAllUserIdByUserGroup')->with(10)->willReturn([2, 3]);
-		$this->mockDb->method('selectAllSharedUserGroupIdByPassword')->with(42)->willReturn([10]);
+		$this->mockDb->method('selectAllSharedUserGroupByPassword')->with(42)->willReturn([(object)['user_group_id' => 10, 'permission' => 0]]);
 		$this->mockDb->method('deletePasswordUserByPassword')->willReturn(true);
 		$this->mockDb->method('insertPasswordUser')->willReturn(true);
 		$this->mockDb->method('deletePasswordUserShareByPassword')->willReturn(true);
@@ -246,8 +284,8 @@ class VaultControllerTest extends TestCase {
 
 	public function testUpdatePasswordUserFetchesSharesFromDbWhenNull(): void {
 		$_SESSION['user_id'] = 1;
-		$this->mockDb->method('selectAllSharedUserIdByPassword')->with(42)->willReturn([1]);
-		$this->mockDb->method('selectAllSharedUserGroupIdByPassword')->with(42)->willReturn([]);
+		$this->mockDb->method('selectAllSharedUserByPassword')->with(42)->willReturn([(object)['user_id' => 1, 'permission' => 0]]);
+		$this->mockDb->method('selectAllSharedUserGroupByPassword')->with(42)->willReturn([]);
 		$this->mockDb->method('selectAllUserByPasswordShare')->with(42)->willReturn([1]);
 		$this->mockDb->method('selectAllUserIdByUserGroup')->willReturn([]);
 		$this->mockDb->method('deletePasswordUserByPassword')->willReturn(true);

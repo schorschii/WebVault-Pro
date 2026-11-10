@@ -545,6 +545,59 @@ input.invisible, textarea.invisible, select.invisible {
 	margin-inline-end: 4px;
 }
 
+/* tile view: entries and closed folders as tiles, the contents of an open folder below it */
+#ulEntriesTree.tiles,
+#ulEntriesTree.tiles ul {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+	margin: 0px;
+	padding: 0px;
+	border-left: none;
+}
+#ulEntriesTree.tiles ul {
+	padding: 12px 0px 4px 0px;
+}
+#ulEntriesTree.tiles ul:empty {
+	display: none;
+}
+#ulEntriesTree.tiles li.password,
+#ulEntriesTree.tiles li.group {
+	box-sizing: border-box;
+	width: 150px;
+	margin: 0px;
+	padding: 12px;
+	text-align: center;
+	border-radius: 8px;
+	background-color: rgba(128,128,128,0.08);
+}
+#ulEntriesTree.tiles li.group:not(.closed) {
+	width: 100%;
+	text-align: left;
+}
+#ulEntriesTree.tiles li.password:before,
+#ulEntriesTree.tiles li.group.closed:before,
+#ulEntriesTree.tiles li.password > img.icon,
+#ulEntriesTree.tiles li.group.closed > img.icon {
+	display: block;
+	margin: 4px auto 8px auto;
+	zoom: 1.6;
+}
+#ulEntriesTree.tiles li > div,
+#ulEntriesTree.tiles li.group.closed .groupheader,
+#ulEntriesTree.tiles li.password > div .username {
+	display: block;
+	margin: 0px;
+	max-width: 100%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+#ulEntriesTree.tiles li.password .entrydescription,
+#ulEntriesTree.tiles li.group.closed .groupdescription {
+	display: none;
+}
+
 #ulEntriesTree.searchresults li.password,
 #ulEntriesTree.searchresults li.group {
 	display: none;

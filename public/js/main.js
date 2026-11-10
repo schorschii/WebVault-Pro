@@ -730,6 +730,7 @@ function showTotp() {
 	let divNotes = divTotpContainer.querySelectorAll('.notes')[0];
 	let txtSecret = divTotpContainer.querySelectorAll('[name=txtSecret]')[0];
 	let txtUri = divTotpContainer.querySelectorAll('[name=txtUri]')[0];
+	let imgQrCode = divTotpContainer.querySelectorAll('[name=imgQrCode]')[0];
 	let txtCode = divTotpContainer.querySelectorAll('[name=txtCode]')[0];
 	let btnEnable = divTotpContainer.querySelectorAll('.btnEnable')[0];
 	let btnDisable = divTotpContainer.querySelectorAll('.btnDisable')[0];
@@ -754,6 +755,10 @@ function showTotp() {
 		jsonRequest('POST', 'user/totp', {}).then((response) => {
 			txtSecret.value = response.secret;
 			txtUri.value = response.uri;
+			let qr = qrcode(0, 'M');
+			qr.addData(response.uri);
+			qr.make();
+			imgQrCode.src = qr.createDataURL(4);
 		}).catch((error) => {
 			console.warn(error);
 			alert(error);

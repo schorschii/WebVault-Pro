@@ -6,6 +6,7 @@
 	<script type="text/javascript" src="js/window.js?v={{ version }}"></script>
 	<script type="text/javascript" src="js/strings.js?v={{ version }}"></script>
 	<script type="text/javascript" src="js/zxcvbn.min.js?v={{ version }}"></script>
+	<script type="text/javascript" src="js/qrcode.js?v={{ version }}"></script>
 {% endblock %}
 
 {% block content %}
@@ -357,6 +358,9 @@
 		<table class="inputtable">
 			<tr>
 				<td colspan="2" class="description notes"></td>
+			</tr>
+			<tr class="setup">
+				<td colspan="2"><img name="imgQrCode"></td>
 			</tr>
 			<tr class="setup">
 				<th>{{ "secret"|trans }}</th>

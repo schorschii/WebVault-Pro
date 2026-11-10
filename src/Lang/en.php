@@ -80,7 +80,7 @@ return [
 	'enable' => 'Enable',
 	'disable' => 'Disable',
 	'invalid_code' => 'Invalid code',
-	'totp_setup_notes' => 'Add the secret to your authenticator app (e.g. by entering it manually), then enter the current code to enable two-factor authentication.',
+	'totp_setup_notes' => 'Scan the QR code with your authenticator app (or enter the secret manually), then enter the current code to enable two-factor authentication.',
 	'totp_enabled_notes' => 'Two-factor authentication is enabled. Enter a current code to disable it.',
 	'recovery_codes_notes' => 'Store these recovery codes in a safe place. Each code can be used once instead of a one-time code.',
 	'default' => 'Default',

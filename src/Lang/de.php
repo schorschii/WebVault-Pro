@@ -64,5 +64,8 @@ return [
 	'file' => 'Datei',
 	'inherit_permissions' => 'Berechtigungen vererben',
 	'no_search_results' => 'Keine Suchergebnisse',
+	'color_scheme_auto' => 'Farbschema: automatisch',
+	'color_scheme_light' => 'Farbschema: hell',
+	'color_scheme_dark' => 'Farbschema: dunkel',
 	'cannot_delete_group_contains_items' => 'Die Gruppe kann nicht gelöscht werden, da sie noch untergeordnete Elemente besitzt.',
 ];

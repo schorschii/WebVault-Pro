@@ -64,5 +64,8 @@ return [
 	'file' => 'File',
 	'inherit_permissions' => 'Inherit permissions',
 	'no_search_results' => 'No search results',
+	'color_scheme_auto' => 'Color scheme: automatic',
+	'color_scheme_light' => 'Color scheme: light',
+	'color_scheme_dark' => 'Color scheme: dark',
 	'cannot_delete_group_contains_items' => 'The group cannot be deleted because it still contains sub items.',
 ];

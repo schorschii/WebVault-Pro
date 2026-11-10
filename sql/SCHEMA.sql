@@ -133,7 +133,9 @@ CREATE TABLE `user` (
   `iv` text DEFAULT NULL,
   `totp_secret` text DEFAULT NULL,
   `totp_recovery` text DEFAULT NULL,
-  `totp_last_step` int(11) DEFAULT NULL
+  `totp_last_step` int(11) DEFAULT NULL,
+  `totp_failures` int(11) NOT NULL DEFAULT 0,
+  `totp_failed_at` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------

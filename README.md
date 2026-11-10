@@ -74,7 +74,7 @@ ALTER TABLE `share_password_user` ADD `expires` datetime DEFAULT NULL;
 ALTER TABLE `share_password_user_group` ADD `expires` datetime DEFAULT NULL;
 ALTER TABLE `share_password_group_user` ADD `expires` datetime DEFAULT NULL;
 ALTER TABLE `share_password_group_user_group` ADD `expires` datetime DEFAULT NULL;
-ALTER TABLE `user` ADD `totp_secret` text DEFAULT NULL, ADD `totp_recovery` text DEFAULT NULL, ADD `totp_last_step` int(11) DEFAULT NULL;
+ALTER TABLE `user` ADD `totp_secret` text DEFAULT NULL, ADD `totp_recovery` text DEFAULT NULL, ADD `totp_last_step` int(11) DEFAULT NULL, ADD `totp_failures` int(11) NOT NULL DEFAULT 0, ADD `totp_failed_at` int(11) DEFAULT NULL;
 CREATE TABLE `password_file` (`id` int(11) NOT NULL AUTO_INCREMENT, `password_id` int(11) NOT NULL, `data` longblob NOT NULL, PRIMARY KEY (`id`), KEY `fk_pf_password` (`password_id`), CONSTRAINT `fk_pf_password` FOREIGN KEY (`password_id`) REFERENCES `password` (`id`) ON DELETE CASCADE ON UPDATE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 ```
 

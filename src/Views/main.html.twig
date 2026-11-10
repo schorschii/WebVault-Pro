@@ -196,6 +196,24 @@
 				</td>
 			</tr>
 			<tr>
+				<th>{{ "totp_secret"|trans }}</th>
+				<td>
+					<div class="with1button">
+						<input type="password" name="txtTotpSecret" autocomplete="new-password" placeholder="otpauth://...">
+						<button class="btnShowHideTotpSecret" title="{{ "show_hide_password"|trans }}"><img src="img/eye.svg"></button>
+					</div>
+				</td>
+			</tr>
+			<tr class="totpcode invisible">
+				<th>{{ "one_time_code"|trans }}</th>
+				<td>
+					<div class="with1button">
+						<input type="text" name="txtTotpCode" readonly="true">
+						<button class="btnCopyTotpCode" title="{{ "copy_to_clipboard"|trans }}"><img src="img/clipboard.svg"></button>
+					</div>
+				</td>
+			</tr>
+			<tr>
 				<th>{{ "url"|trans }}</th>
 				<td>
 					<input type="text" name="txtUrl" autocomplete="new-password">

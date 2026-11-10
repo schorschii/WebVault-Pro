@@ -504,7 +504,7 @@ input.invisible, textarea.invisible, select.invisible {
 	display: grid;
 	grid-template-columns: repeat(8, 1fr);
 	max-width: 420px;
-	margin-bottom: 15px;
+	margin: 0 auto 15px auto;
 }
 .icons button {
 	margin: 2px;

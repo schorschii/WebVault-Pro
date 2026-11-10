@@ -70,5 +70,6 @@ return [
 	'files' => 'Files',
 	'file_too_large' => 'The file is too large',
 	'default' => 'Default',
+	'totp_secret' => 'TOTP secret',
 	'cannot_delete_group_contains_items' => 'The group cannot be deleted because it still contains sub items.',
 ];

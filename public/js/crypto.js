@@ -295,6 +295,45 @@ function decryptFile(keyB64, ivB64, data) {
 		data
 	));
 }
+// time-based one-time password (RFC 6238) from an otpauth:// URI or a plain base32 secret
+function getTotpCode(totp) {
+	let secret = totp;
+	let digits = 6;
+	let period = 30;
+	let algorithm = 'SHA-1';
+	if(totp.startsWith('otpauth://')) {
+		let params = new URL(totp).searchParams;
+		secret = params.get('secret') || '';
+		digits = parseInt(params.get('digits') || 6);
+		period = parseInt(params.get('period') || 30);
+		algorithm = (params.get('algorithm') || 'SHA1').toUpperCase().replace('SHA', 'SHA-');
+	}
+	let counter = new ArrayBuffer(8);
+	new DataView(counter).setBigUint64(0, BigInt(Math.floor(Date.now() / 1000 / period)));
+	return crypto.subtle.importKey(
+		'raw', base32StringToArrayBuffer(secret), { name: 'HMAC', hash: algorithm }, false, ['sign']
+	).then((key) => crypto.subtle.sign('HMAC', key, counter)
+	).then((signature) => {
+		let hash = new Uint8Array(signature);
+		let offset = hash[hash.length - 1] & 0x0f;
+		let code = ((hash[offset] & 0x7f) << 24) | (hash[offset+1] << 16) | (hash[offset+2] << 8) | hash[offset+3];
+		return String(code % Math.pow(10, digits)).padStart(digits, '0');
+	});
+}
+function base32StringToArrayBuffer(b32str) {
+	let alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+	let bits = '';
+	for(let char of b32str.toUpperCase().replace(/[\s=]/g, '')) {
+		let index = alphabet.indexOf(char);
+		if(index < 0) throw new Error('Invalid base32 string');
+		bits += index.toString(2).padStart(5, '0');
+	}
+	let bytes = new Uint8Array(Math.floor(bits.length / 8));
+	for(let i = 0; i < bytes.length; i++) {
+		bytes[i] = parseInt(bits.substr(i * 8, 8), 2);
+	}
+	return bytes.buffer;
+}
 function decryptData(rsaPrivKey, encryptedAesKey, aesIv, rsa_iv, data) {
 	return crypto.subtle.decrypt(
 		{ name: 'RSA-OAEP', iv: base64StringToArrayBuffer(rsa_iv) },

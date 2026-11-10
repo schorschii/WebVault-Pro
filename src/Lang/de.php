@@ -80,7 +80,7 @@ return [
 	'enable' => 'Aktivieren',
 	'disable' => 'Deaktivieren',
 	'invalid_code' => 'Ungültiger Code',
-	'totp_setup_notes' => 'Fügen Sie das Geheimnis Ihrer Authenticator-App hinzu (z. B. durch manuelle Eingabe) und geben Sie dann den aktuellen Code ein, um die Zwei-Faktor-Authentifizierung zu aktivieren.',
+	'totp_setup_notes' => 'Scannen Sie den QR-Code mit Ihrer Authenticator-App (oder geben Sie das Geheimnis manuell ein) und geben Sie dann den aktuellen Code ein, um die Zwei-Faktor-Authentifizierung zu aktivieren.',
 	'totp_enabled_notes' => 'Die Zwei-Faktor-Authentifizierung ist aktiviert. Geben Sie einen aktuellen Code ein, um sie zu deaktivieren.',
 	'recovery_codes_notes' => 'Bewahren Sie diese Wiederherstellungscodes sicher auf. Jeder Code kann einmal anstelle eines Einmalcodes verwendet werden.',
 	'default' => 'Standard',

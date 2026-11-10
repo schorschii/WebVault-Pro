@@ -82,7 +82,7 @@ CREATE TABLE `password_file` (`id` int(11) NOT NULL AUTO_INCREMENT, `password_id
 Since the concept and database schema of WebVault Pro differs completely from v0.x ("WebPW"), there is no direct upgrade path. You need to manually export and re-import your passwords in the new version.
 
 ### Two-factor authentication
-Every user can enable time-based one-time passwords (TOTP, RFC 6238) for their account via the "More" menu in the vault window. The secret has to be entered manually in an authenticator app (no QR code is displayed). Recovery codes are shown once after enabling and can each be used once instead of a one-time code. Note that the TOTP secret is stored in plaintext in the database (like in most web applications) since the server needs it to verify the codes. If a user lost both the authenticator and the recovery codes, an administrator can reset the second factor with `php bin/user.php totp-reset USER_ID`.
+Every user can enable time-based one-time passwords (TOTP, RFC 6238) for their account via the "More" menu in the vault window. The secret can be added to an authenticator app by scanning the displayed QR code (generated in the browser with [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator), MIT license). Recovery codes are shown once after enabling and can each be used once instead of a one-time code. Note that the TOTP secret is stored in plaintext in the database (like in most web applications) since the server needs it to verify the codes. If a user lost both the authenticator and the recovery codes, an administrator can reset the second factor with `php bin/user.php totp-reset USER_ID`.
 
 ## FAQ
 ### What do the share permissions mean?

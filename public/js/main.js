@@ -38,6 +38,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
 	txtPassword.addEventListener('keyup', loginAction);
 	txtOldPassword.addEventListener('keyup', loginAction);
 	txtTotp.addEventListener('keyup', loginAction);
+	// changed credentials require the first login step again
+	txtUsername.addEventListener('input', () => txtTotp.classList.add('invisible'));
+	txtPassword.addEventListener('input', () => txtTotp.classList.add('invisible'));
 	activateWindowMouseDrag(divVaultContainer, divVaultTitlebar);
 });
 

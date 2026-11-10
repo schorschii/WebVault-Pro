@@ -174,6 +174,9 @@ function login() {
 		if(txtTotp.classList.contains('invisible')) {
 			txtPassword.value = '';
 			txtOldPassword.value = '';
+		} else if(String(error).includes('Invalid session')) {
+			// too many wrong codes, start again with the password
+			txtTotp.classList.add('invisible');
 		}
 		txtTotp.value = ''; // keep the password in the second step, it is needed to decrypt the private key
 		if(!(error instanceof PrivateKeyDecryptionError)) {

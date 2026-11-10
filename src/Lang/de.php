@@ -67,5 +67,7 @@ return [
 	'color_scheme_auto' => 'Farbschema: automatisch',
 	'color_scheme_light' => 'Farbschema: hell',
 	'color_scheme_dark' => 'Farbschema: dunkel',
+	'view_tiles' => 'Als Kacheln anzeigen',
+	'view_list' => 'Als Liste anzeigen',
 	'cannot_delete_group_contains_items' => 'Die Gruppe kann nicht gelöscht werden, da sie noch untergeordnete Elemente besitzt.',
 ];

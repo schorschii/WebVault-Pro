@@ -67,5 +67,7 @@ return [
 	'color_scheme_auto' => 'Color scheme: automatic',
 	'color_scheme_light' => 'Color scheme: light',
 	'color_scheme_dark' => 'Color scheme: dark',
+	'view_tiles' => 'Show as tiles',
+	'view_list' => 'Show as list',
 	'cannot_delete_group_contains_items' => 'The group cannot be deleted because it still contains sub items.',
 ];

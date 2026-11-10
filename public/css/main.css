@@ -501,6 +501,8 @@ input.invisible, textarea.invisible, select.invisible {
 	height: 24px;
 }
 .icons {
+	display: grid;
+	grid-template-columns: repeat(8, 1fr);
 	max-width: 420px;
 	margin-bottom: 15px;
 }

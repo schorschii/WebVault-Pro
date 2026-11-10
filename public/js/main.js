@@ -357,14 +357,20 @@ function addGroupHtml(parentUl, id, groupItem) {
 	li.appendChild(ulSub);
 	return ulSub;
 }
+function getIconUrl(icon) {
+	// only icons offered by the server and small uploaded PNG images are allowed since the value could be manipulated by another user
+	if(!icon) return null;
+	if(/^data:image\/png;base64,[A-Za-z0-9+\/]+=*$/.test(icon) && icon.length <= 20000) return icon;
+	if(/^[a-z_]+$/.test(icon) && divIconPickerTemplateContainer.querySelector('.icons button[value="'+icon+'"]')) return 'img/icon/'+icon+'.svg';
+	return null;
+}
 function addIconHtml(li, icon) {
-	// only icons offered by the server are allowed since the icon name could be manipulated by another user
-	if(!icon || !/^[a-z_]+$/.test(icon)
-	|| !divPasswordTemplateContainer.querySelector('[name=sltIcon] option[value="'+icon+'"]')) return;
+	let url = getIconUrl(icon);
+	if(!url) return;
 	li.classList.add('customicon');
 	let img = document.createElement('IMG');
 	img.classList.add('icon');
-	img.src = 'img/icon/'+icon+'.svg';
+	img.src = url;
 	li.appendChild(img);
 }
 function compileShareText(shareUsers, shareGroups) {
@@ -789,7 +795,8 @@ function showGroupDetails(id=null) {
 	// identify inputs
 	let sltGroup = clone.querySelectorAll('[name=sltGroup]')[0];
 	let txtTitle = clone.querySelectorAll('[name=txtTitle]')[0];
-	let sltIcon = clone.querySelectorAll('[name=sltIcon]')[0];
+	let txtIcon = clone.querySelectorAll('[name=txtIcon]')[0];
+	let btnIcon = clone.querySelectorAll('.btnIcon')[0];
 	let sltShareUser = clone.querySelectorAll('[name=sltShareUser]')[0];
 	let sltShareUserGroup = clone.querySelectorAll('[name=sltShareUserGroup]')[0];
 	let chkInheritPermissions = clone.querySelectorAll('[name=chkInheritPermissions]')[0];
@@ -818,7 +825,8 @@ function showGroupDetails(id=null) {
 		let group = sessionVaultContent['groups'][id];
 		sltGroup.value = group['group'];
 		txtTitle.value = group['title'];
-		sltIcon.value = group['icon'] || '';
+		txtIcon.value = group['icon'] || '';
+		btnIcon.querySelectorAll('img')[0].src = getIconUrl(txtIcon.value) || 'img/folder.svg';
 		clone.querySelectorAll('.btnDelete')[0].addEventListener('click', function(e){
 			let subItems = getAllSubentriesOfGroup(id);
 			if(Object.keys(subItems['passwords']).length || Object.keys(subItems['groups']).length) {
@@ -871,6 +879,9 @@ function showGroupDetails(id=null) {
 	});
 	clone.querySelectorAll('.btnAddUserGroupShare')[0].addEventListener('click', function(e){
 		addShareGroupRow(tblShares, sltShareUserGroup.value);
+	});
+	btnIcon.addEventListener('click', function(e){
+		showIconPicker(txtIcon, btnIcon, 'img/folder.svg', clone);
 	});
 	clone.querySelectorAll('.btnContents')[0].addEventListener('click', function(e){
 		clone.querySelectorAll('.box.contents')[0].classList.remove('invisible');
@@ -940,14 +951,14 @@ function showGroupDetails(id=null) {
 		.then(() => jsonRequest(
 			'POST', (id==null ? 'vault/group' : 'vault/group/'+encodeURIComponent(id)),
 			{
-				'parent_password_group_id': group, 'title': txtTitle.value, 'icon': sltIcon.value,
+				'parent_password_group_id': group, 'title': txtTitle.value, 'icon': txtIcon.value,
 				'share_users': shareUsers, 'share_groups': shareGroups,
 				'passwords': encryptedPasswords, 'groups': entriesToUpdate.groups
 			}
 		)).then((response) => {
 			// append to session vault
 			sessionVaultContent['groups'][response.id] = {
-				'group':group, 'title':txtTitle.value, 'icon':sltIcon.value,
+				'group':group, 'title':txtTitle.value, 'icon':txtIcon.value,
 				'share_users':shareUsers, 'share_groups':shareGroups
 			};
 			// update share info of updated entries
@@ -980,7 +991,8 @@ function showPasswordDetails(id=null) {
 	let txtRevision = clone.querySelectorAll('[name=txtRevision]')[0];
 	let sltGroup = clone.querySelectorAll('[name=sltGroup]')[0];
 	let txtTitle = clone.querySelectorAll('[name=txtTitle]')[0];
-	let sltIcon = clone.querySelectorAll('[name=sltIcon]')[0];
+	let txtIcon = clone.querySelectorAll('[name=txtIcon]')[0];
+	let btnIcon = clone.querySelectorAll('.btnIcon')[0];
 	let txtUrl = clone.querySelectorAll('[name=txtUrl]')[0];
 	let txtUsername = clone.querySelectorAll('[name=txtUsername]')[0];
 	let txtPassword = clone.querySelectorAll('[name=txtPassword]')[0];
@@ -1029,7 +1041,8 @@ function showPasswordDetails(id=null) {
 		updatePasswordStrength();
 		txtUrl.value = password['url'];
 		txtDescription.value = password['description'];
-		sltIcon.value = password['icon'] || '';
+		txtIcon.value = password['icon'] || '';
+		btnIcon.querySelectorAll('img')[0].src = getIconUrl(txtIcon.value) || 'img/key.svg';
 		clone.querySelectorAll('.btnDelete')[0].addEventListener('click', function(e){
 			if(confirm(strings.are_you_sure_delete)) {
 				jsonRequest(
@@ -1090,6 +1103,9 @@ function showPasswordDetails(id=null) {
 	clone.querySelectorAll('.btnShowHidePassword')[0].addEventListener('click', function(e){
 		togglePasswordInput(txtPassword);
 	});
+	btnIcon.addEventListener('click', function(e){
+		showIconPicker(txtIcon, btnIcon, 'img/key.svg', clone);
+	});
 	clone.querySelectorAll('.btnContents')[0].addEventListener('click', function(e){
 		clone.querySelectorAll('.box.contents')[0].classList.remove('invisible');
 		clone.querySelectorAll('.box.share')[0].classList.add('invisible');
@@ -1108,7 +1124,7 @@ function showPasswordDetails(id=null) {
 			'password': txtPassword.value,
 			'url': txtUrl.value,
 			'description': txtDescription.value,
-			'icon': sltIcon.value,
+			'icon': txtIcon.value,
 		};
 
 		// collect selected users and groups and compile target keys
@@ -1170,6 +1186,54 @@ function showPasswordDetails(id=null) {
 	document.body.appendChild(clone);
 	windowOpenAnimation(clone);
 	txtTitle.focus();
+}
+function showIconPicker(txtIcon, btnIcon, defaultIcon, divParentWindow) {
+	const clone = divIconPickerTemplateContainer.cloneNode(true);
+	clone.removeAttribute('id');
+	// identify inputs
+	let txtSearch = clone.querySelectorAll('[name=txtSearch]')[0];
+	let fleIcon = clone.querySelectorAll('[name=fleIcon]')[0];
+	let btnIcons = clone.querySelectorAll('.icons button');
+	btnIcons[0].querySelectorAll('img')[0].src = defaultIcon;
+	// add actions
+	activateWindowMouseDrag(clone, clone.querySelectorAll('.titlebar')[0], divParentWindow);
+	let closeAnimation = windowCloseAction(clone);
+	let applyIcon = function(icon) {
+		txtIcon.value = icon;
+		btnIcon.querySelectorAll('img')[0].src = getIconUrl(icon) || defaultIcon;
+		closeAnimation();
+	};
+	btnIcons.forEach((btn) => {
+		btn.addEventListener('click', function(e){
+			applyIcon(btn.value);
+		});
+	});
+	txtSearch.addEventListener('input', function(e){
+		btnIcons.forEach((btn) => {
+			btn.classList.toggle('invisible', !btn.title.toUpperCase().includes(txtSearch.value.toUpperCase()));
+		});
+	});
+	fleIcon.addEventListener('change', function(e){
+		// re-encode the uploaded image as small PNG so that only plain image data is stored
+		let img = new Image();
+		img.onload = function() {
+			let canvas = document.createElement('CANVAS');
+			canvas.width = 48;
+			canvas.height = 48;
+			canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+			URL.revokeObjectURL(img.src);
+			applyIcon(canvas.toDataURL('image/png'));
+		};
+		img.onerror = function() {
+			alert(strings.invalid_image);
+		};
+		img.src = URL.createObjectURL(fleIcon.files[0]);
+	});
+	clone.querySelectorAll('.btnClose')[0].addEventListener('click', closeAnimation);
+	// show with animation
+	document.body.appendChild(clone);
+	windowOpenAnimation(clone);
+	txtSearch.focus();
 }
 function showPasswordGenerator(input, divParentWindow) {
 	const clone = divPasswordGeneratorTemplateContainer.cloneNode(true);

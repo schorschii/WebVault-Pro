@@ -67,7 +67,7 @@ Crypto API capable browser with Javascript enabled
 ### Upgrade notes for v1.0.0-RC5 users
 Apply the following schema changes to your existing database:
 ```
-ALTER TABLE `password_group` ADD `icon` varchar(50) DEFAULT NULL;
+ALTER TABLE `password_group` ADD `icon` text DEFAULT NULL;
 ```
 
 ### Upgrade notes for v0.x (WebPW) users

@@ -373,10 +373,7 @@ class VaultController {
 			if(!array_key_exists('parent_password_group_id', $json)) {
 				throw new Exception($this->langCtrl->translate('choose_another_parent_folder'));
 			}
-			$icon = empty($json['icon']) ? null : $json['icon'];
-			if($icon !== null && !in_array($icon, $this->getIconNames())) {
-				throw new Exception('Invalid icon');
-			}
+			$icon = $this->checkIcon($json['icon'] ?? null);
 			$absoluteShareUserIds = $json['share_users'];
 			foreach($json['share_groups'] as $group_id) {
 				$absoluteShareUserIds = array_merge($absoluteShareUserIds, $this->db->selectAllUserIdByUserGroup($group_id));
@@ -438,10 +435,7 @@ class VaultController {
 			|| $json['parent_password_group_id'] == $id) {
 				throw new Exception($this->langCtrl->translate('choose_another_parent_folder'));
 			}
-			$icon = empty($json['icon']) ? null : $json['icon'];
-			if($icon !== null && !in_array($icon, $this->getIconNames())) {
-				throw new Exception('Invalid icon');
-			}
+			$icon = $this->checkIcon($json['icon'] ?? null);
 			$absoluteShareUserIds = $json['share_users'];
 			foreach($json['share_groups'] as $group_id) {
 				$absoluteShareUserIds = array_merge($absoluteShareUserIds, $this->db->selectAllUserIdByUserGroup($group_id));
@@ -601,6 +595,15 @@ class VaultController {
 		|| self::shareMap($share_groups, $share_group_permissions, $share_group_expires) != self::shareMap($existingGroups, $existingGroupPermissions, $existingGroupExpires)) {
 			throw new Exception('Permission denied');
 		}
+	}
+
+	private function checkIcon($icon) {
+		// an icon file name or a small PNG image uploaded by the user (re-encoded by the client)
+		if(empty($icon)) return null;
+		if(in_array($icon, $this->getIconNames())) return $icon;
+		if(strlen($icon) <= 20000 && preg_match('/^data:image\/png;base64,([A-Za-z0-9+\/]+=*)$/', $icon, $matches)
+		&& str_starts_with(base64_decode($matches[1], true) ?: '', "\x89PNG\r\n\x1a\n")) return $icon;
+		throw new Exception('Invalid icon');
 	}
 
 	private function getIconNames() {

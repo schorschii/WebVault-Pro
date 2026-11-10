@@ -97,12 +97,8 @@
 			<tr>
 				<th>{{ "icon"|trans }}</th>
 				<td>
-					<select name="sltIcon">
-						<option value="">{{ "default"|trans }}</option>
-						{% for icon in icons %}
-						<option value="{{ icon }}">{{ icon|replace({'_': ' '}) }}</option>
-						{% endfor %}
-					</select>
+					<input type="hidden" name="txtIcon">
+					<button class="btnIcon" title="{{ "choose_icon"|trans }}"><img src="img/folder.svg"></button>
 				</td>
 			</tr>
 		</table>
@@ -173,12 +169,8 @@
 			<tr>
 				<th>{{ "icon"|trans }}</th>
 				<td>
-					<select name="sltIcon">
-						<option value="">{{ "default"|trans }}</option>
-						{% for icon in icons %}
-						<option value="{{ icon }}">{{ icon|replace({'_': ' '}) }}</option>
-						{% endfor %}
-					</select>
+					<input type="hidden" name="txtIcon">
+					<button class="btnIcon" title="{{ "choose_icon"|trans }}"><img src="img/key.svg"></button>
 				</td>
 			</tr>
 			<tr>
@@ -295,6 +287,28 @@
 			</tr>
 			<tr>
 				<td colspan="3"><hr/></td>
+			</tr>
+		</table>
+	</div>
+</div>
+
+<div id="divIconPickerTemplateContainer" class="childWindow box opaquebox fullscreen invisible">
+	<div class="titlebar">
+		<input type="search" name="txtSearch" placeholder="{{ "search..."|trans }}">
+		<span></span>
+		<button class="btnClose" title="{{ "close"|trans }}"><img src="img/close.svg"></button>
+	</div>
+	<div class="box">
+		<div class="icons">
+			<button value="" title="{{ "default"|trans }}"><img></button>
+			{% for icon in icons %}
+			<button value="{{ icon }}" title="{{ icon|replace({'_': ' '}) }}"><img src="img/icon/{{ icon }}.svg"></button>
+			{% endfor %}
+		</div>
+		<table class="inputtable">
+			<tr>
+				<th>{{ "own_icon"|trans }}</th>
+				<td><input type="file" name="fleIcon" accept="image/png,image/jpeg,image/webp"></td>
 			</tr>
 		</table>
 	</div>

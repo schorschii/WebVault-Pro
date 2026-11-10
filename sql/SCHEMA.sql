@@ -56,7 +56,7 @@ CREATE TABLE `password_group` (
   `id` int(11) NOT NULL,
   `parent_password_group_id` int(11) DEFAULT NULL,
   `title` text NOT NULL,
-  `icon` varchar(50) DEFAULT NULL
+  `icon` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------

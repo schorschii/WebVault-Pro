@@ -480,6 +480,21 @@ input.invisible, textarea.invisible, select.invisible {
 	margin-right: 10px;
 	margin-top: 6px;
 	vertical-align: middle;
+	width: 24px;
+	height: 24px;
+}
+.icons {
+	max-width: 420px;
+	margin-bottom: 15px;
+}
+.icons button {
+	margin: 2px;
+	padding: 6px;
+}
+.icons button img, .btnIcon img {
+	display: block;
+	width: 24px;
+	height: 24px;
 }
 #ulEntriesTree li.password > div {
 	display: inline-block;

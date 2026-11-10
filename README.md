@@ -69,7 +69,7 @@ Apply the following schema changes to your existing database:
 ```
 ALTER TABLE `user_group_member` DROP FOREIGN KEY `fk_user_2`;
 ALTER TABLE `user_group_member` ADD CONSTRAINT `fk_user_2` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE `password_group` ADD `icon` varchar(50) DEFAULT NULL;
+ALTER TABLE `password_group` ADD `icon` text DEFAULT NULL;
 ALTER TABLE `share_password_user` ADD `expires` datetime DEFAULT NULL;
 ALTER TABLE `share_password_user_group` ADD `expires` datetime DEFAULT NULL;
 ALTER TABLE `share_password_group_user` ADD `expires` datetime DEFAULT NULL;

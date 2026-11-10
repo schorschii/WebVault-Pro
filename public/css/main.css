@@ -315,6 +315,12 @@ input[type=submit]:not(.nobold) {
 	white-space: nowrap;
 	padding-right: 5px;
 }
+.inputtable tr.field th input {
+	width: 100px;
+}
+.inputtable input.expires {
+	margin-top: 4px;
+}
 .inputtable.actionbtn tr td:last-child {
 	width: 1%;
 }

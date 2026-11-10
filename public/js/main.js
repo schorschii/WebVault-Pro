@@ -707,6 +707,7 @@ function showTotp() {
 	let codeRows = divTotpContainer.querySelectorAll('tr.code');
 	// reset state
 	txtCode.value = '';
+	divNotes.classList.remove('invisible');
 	trRecovery.classList.add('invisible');
 	codeRows.forEach((tr) => tr.classList.remove('invisible'));
 	if(sessionEnvironment['totp']) {
@@ -738,6 +739,7 @@ function showTotp() {
 		jsonRequest('POST', 'user/totp/enable', {'code':txtCode.value}).then((response) => {
 			sessionEnvironment['totp'] = true;
 			// show the recovery codes once
+			divNotes.classList.add('invisible');
 			setupRows.forEach((tr) => tr.classList.add('invisible'));
 			codeRows.forEach((tr) => tr.classList.add('invisible'));
 			preRecoveryCodes.innerText = response.recovery_codes.join('\n');

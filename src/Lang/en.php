@@ -84,5 +84,8 @@ return [
 	'totp_enabled_notes' => 'Two-factor authentication is enabled. Enter a current code to disable it.',
 	'recovery_codes_notes' => 'Store these recovery codes in a safe place. Each code can be used once instead of a one-time code.',
 	'default' => 'Default',
+	'choose_icon' => 'Choose icon',
+	'own_icon' => 'Own icon',
+	'invalid_image' => 'The file could not be read as image.',
 	'cannot_delete_group_contains_items' => 'The group cannot be deleted because it still contains sub items.',
 ];

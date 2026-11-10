@@ -69,6 +69,24 @@ class VaultControllerTest extends TestCase {
 		$this->assertTrue(true); // no exception thrown
 	}
 
+	// --- checkIcon ---
+
+	public function testCheckIconAcceptsIconNamesAndPngOnly(): void {
+		$checkIcon = new \ReflectionMethod(VaultController::class, 'checkIcon');
+		$png = 'data:image/png;base64,'.base64_encode("\x89PNG\r\n\x1a\n".'data');
+		$this->assertNull($checkIcon->invoke($this->controller, ''));
+		$this->assertEquals('mail', $checkIcon->invoke($this->controller, 'mail'));
+		$this->assertEquals($png, $checkIcon->invoke($this->controller, $png));
+		foreach(['../mail', 'data:image/svg+xml;base64,'.base64_encode('<svg/>'), 'data:image/png;base64,'.base64_encode('<svg/>')] as $invalid) {
+			try {
+				$checkIcon->invoke($this->controller, $invalid);
+				$this->fail('Invalid icon accepted: '.$invalid);
+			} catch(\Exception $e) {
+				$this->assertEquals('Invalid icon', $e->getMessage());
+			}
+		}
+	}
+
 	// --- updatePasswordUser ---
 
 	public function testUpdatePasswordUserThrowsWhenEmpty(): void {

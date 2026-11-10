@@ -84,5 +84,8 @@ return [
 	'totp_enabled_notes' => 'Die Zwei-Faktor-Authentifizierung ist aktiviert. Geben Sie einen aktuellen Code ein, um sie zu deaktivieren.',
 	'recovery_codes_notes' => 'Bewahren Sie diese Wiederherstellungscodes sicher auf. Jeder Code kann einmal anstelle eines Einmalcodes verwendet werden.',
 	'default' => 'Standard',
+	'choose_icon' => 'Symbol auswählen',
+	'own_icon' => 'Eigenes Symbol',
+	'invalid_image' => 'Die Datei konnte nicht als Bild gelesen werden.',
 	'cannot_delete_group_contains_items' => 'Die Gruppe kann nicht gelöscht werden, da sie noch untergeordnete Elemente besitzt.',
 ];

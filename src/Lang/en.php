@@ -87,6 +87,7 @@ return [
 	'choose_icon' => 'Choose icon',
 	'own_icon' => 'Own icon',
 	'totp_secret' => 'TOTP secret',
+	'totp_secret_placeholder' => 'Secret key, e.g. JBSW Y3DP EHPK 3PXP',
 	'invalid_image' => 'The file could not be read as image.',
 	'cannot_delete_group_contains_items' => 'The group cannot be deleted because it still contains sub items.',
 ];

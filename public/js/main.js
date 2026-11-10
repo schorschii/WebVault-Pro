@@ -818,7 +818,7 @@ function showImport() {
 			.then(() => {
 				divImportContainer.querySelectorAll('.btnImport')[0].classList.remove('loading');
 				divImportContainer.querySelectorAll('.btnImport')[0].disabled = false;
-				populateVaultWindowEntries();
+				loadVault(); // reload to get the complete share and permission info of the imported entries
 				closeAction();
 			})
 			.catch((error) => {

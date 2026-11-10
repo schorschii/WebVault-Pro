@@ -87,6 +87,7 @@ return [
 	'choose_icon' => 'Choose icon',
 	'own_icon' => 'Own icon',
 	'totp_secret' => 'TOTP secret',
+	'totp_secret_placeholder' => 'Secret key, e.g. JBSW Y3DP EHPK 3PXP',
 	'color_scheme_auto' => 'Color scheme: automatic',
 	'color_scheme_light' => 'Color scheme: light',
 	'color_scheme_dark' => 'Color scheme: dark',

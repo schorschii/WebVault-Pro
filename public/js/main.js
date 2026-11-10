@@ -27,6 +27,11 @@ document.addEventListener('DOMContentLoaded', (event) => {
 		setSetting('colorScheme', schemes[(schemes.indexOf(getSetting('colorScheme', 'auto')) + 1) % schemes.length]);
 		applyColorScheme();
 	});
+	btnView.addEventListener('click', () => {
+		setSetting('view', (getSetting('view', 'list') == 'list') ? 'tiles' : 'list');
+		applyView();
+	});
+	applyView();
 	btnReload.addEventListener('click', () => {
 		imgReload.classList.add('rotating');
 		divVault.classList.add('loading');
@@ -505,6 +510,13 @@ function applyColorScheme() {
 	// also for the SVG icons and form elements of the browser
 	document.documentElement.style.colorScheme = (scheme == 'auto') ? '' : scheme;
 	btnColorScheme.title = strings['color_scheme_'+scheme];
+}
+
+function applyView() {
+	let tiles = (getSetting('view', 'list') == 'tiles');
+	ulEntriesTree.classList.toggle('tiles', tiles);
+	btnView.title = tiles ? strings.view_list : strings.view_tiles;
+	btnView.querySelectorAll('img')[0].src = tiles ? 'img/list.svg' : 'img/tiles.svg';
 }
 
 const STORAGE_KEY_SETTINGS = 'settings';

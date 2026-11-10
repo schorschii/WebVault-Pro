@@ -67,7 +67,7 @@ Crypto API capable browser with Javascript enabled
 ### Upgrade notes for v1.0.0-RC5 users
 Apply the following schema changes to your existing database:
 ```
-ALTER TABLE `user` ADD `totp_secret` text DEFAULT NULL, ADD `totp_recovery` text DEFAULT NULL, ADD `totp_last_step` int(11) DEFAULT NULL;
+ALTER TABLE `user` ADD `totp_secret` text DEFAULT NULL, ADD `totp_recovery` text DEFAULT NULL, ADD `totp_last_step` int(11) DEFAULT NULL, ADD `totp_failures` int(11) NOT NULL DEFAULT 0, ADD `totp_failed_at` int(11) DEFAULT NULL;
 ```
 
 ### Upgrade notes for v0.x (WebPW) users

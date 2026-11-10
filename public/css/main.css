@@ -472,6 +472,20 @@ input.invisible, textarea.invisible, select.invisible {
 #ulEntriesTree li.group.closed > ul {
 	display: none;
 }
+#ulEntriesTree li.group > .groupheader > a::before {
+	/* arrow indicating whether the folder is open, also visible with custom icons */
+	content: '';
+	display: inline-block;
+	border: solid currentColor;
+	border-width: 0 2px 2px 0;
+	padding: 3px;
+	margin: 0 8px 3px 0;
+	transform: rotate(45deg);
+	vertical-align: middle;
+}
+#ulEntriesTree li.group.closed > .groupheader > a::before {
+	transform: rotate(-45deg);
+}
 #ulEntriesTree li.password.customicon:before,
 #ulEntriesTree li.group.customicon:before {
 	content: none;

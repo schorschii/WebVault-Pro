@@ -100,7 +100,8 @@ class UserController {
 
 	public function session(Request $request, Response $response, $args) {
 		try {
-			$this->vc->checkLogin(false); // periodic session check must not extend the session
+			// the periodic session check only extends the session if the user was active
+			$this->vc->checkLogin(!empty($request->getQueryParams()['active']));
 			$response->getBody()->write(json_encode([
 				'success' => true
 			]));

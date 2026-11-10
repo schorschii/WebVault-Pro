@@ -9,6 +9,7 @@ var sessionEnvironment = {
 	'userId': -1, 'users': {}, 'groups': {}
 };
 var sessionCheckTimer;
+var sessionLastUserActivity = Date.now();
 
 
 // set up event listeners
@@ -42,6 +43,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
 	txtUsername.addEventListener('input', () => txtTotp.classList.add('invisible'));
 	txtPassword.addEventListener('input', () => txtTotp.classList.add('invisible'));
 	activateWindowMouseDrag(divVaultContainer, divVaultTitlebar);
+	document.addEventListener('keydown', () => sessionLastUserActivity = Date.now());
+	document.addEventListener('mousedown', () => sessionLastUserActivity = Date.now());
 });
 
 
@@ -201,7 +204,9 @@ function checkSession() {
 			}
 		}
 	};
-	xhttp.open('GET', 'user/session', true);
+	// keep the session alive while the user is working, e.g. typing a long entry
+	let active = (Date.now() - sessionLastUserActivity < 5000);
+	xhttp.open('GET', 'user/session'+(active ? '?active=1' : ''), true);
 	xhttp.send();
 }
 

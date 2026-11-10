@@ -243,7 +243,7 @@ function loadVault(privKey=null, pubKey=null) {
 						'group':password.password_group_id, 'title':decryptedData.title,
 						'username':decryptedData.username, 'password':decryptedData.password,
 						'url':decryptedData.url, 'description':decryptedData.description,
-						'icon':decryptedData.icon, 'fields':decryptedData.fields || [], 'files':decryptedData.files || [],
+						'icon':decryptedData.icon, 'fields':decryptedData.fields || [], 'files':decryptedData.files || [], 'totp':decryptedData.totp || '',
 						'permission':password.permission,
 						'share_users':password.share_users, 'share_groups':password.share_groups,
 						'share_user_permissions':password.share_user_permissions, 'share_group_permissions':password.share_group_permissions,
@@ -544,7 +544,7 @@ function search(q) {
 		else if(groupId) item = sessionVaultContent['groups'][groupId];
 		// iterate over all fields and check if contents match the search query
 		for(let key in item) {
-			if(key == 'password') continue; // do not leak passwords via search
+			if(key == 'password' || key == 'totp') continue; // do not leak secrets via search
 			if(!item[key] || typeof item[key] !== 'string') continue;
 			match = (item[key].toUpperCase().indexOf(filter) > -1);
 			if(match) break;
@@ -656,6 +656,7 @@ function showUserGroupManagement(id=null) {
 						'icon': sessionVaultContent['passwords'][passwordId].icon,
 						'fields': sessionVaultContent['passwords'][passwordId].fields,
 						'files': sessionVaultContent['passwords'][passwordId].files,
+						'totp': sessionVaultContent['passwords'][passwordId].totp,
 					};
 					promiseChain.push(
 						encryptData(targetPublicKeys, JSON.stringify(secret), passwordId)
@@ -879,6 +880,7 @@ async function importEntries(rows) {
 				'password': row[3],
 				'url': row[4],
 				'description': row[5],
+				'totp': row[6] || '',
 			};
 			let userId = sessionEnvironment['userId'];
 			let targetPublicKeys = {};
@@ -1065,6 +1067,7 @@ function showGroupDetails(id=null) {
 					'icon': entriesToUpdate.passwords[passwordId].icon,
 					'fields': entriesToUpdate.passwords[passwordId].fields,
 					'files': entriesToUpdate.passwords[passwordId].files,
+					'totp': entriesToUpdate.passwords[passwordId].totp,
 				};
 				promiseChain.push(
 					encryptData(targetPublicKeys, JSON.stringify(secret), passwordId)
@@ -1152,6 +1155,8 @@ function showPasswordDetails(id=null) {
 	let txtPassword = clone.querySelectorAll('[name=txtPassword]')[0];
 	let divPasswordStrength = clone.querySelectorAll('.passwordStrength > .bar')[0];
 	let txtDescription = clone.querySelectorAll('[name=txtDescription]')[0];
+	let txtTotpSecret = clone.querySelectorAll('[name=txtTotpSecret]')[0];
+	let txtTotpCode = clone.querySelectorAll('[name=txtTotpCode]')[0];
 	let trAddField = clone.querySelectorAll('.btnAddField')[0].parentNode.parentNode;
 	let trFiles = clone.querySelectorAll('tr.files')[0];
 	let tblFiles = clone.querySelectorAll('table.files')[0];
@@ -1202,6 +1207,7 @@ function showPasswordDetails(id=null) {
 		updatePasswordStrength();
 		txtUrl.value = password['url'];
 		txtDescription.value = password['description'];
+		txtTotpSecret.value = password['totp'];
 		txtIcon.value = password['icon'] || '';
 		btnIcon.querySelectorAll('img')[0].src = getIconUrl(txtIcon.value) || 'img/key.svg';
 		password['fields'].forEach((field) => {
@@ -1290,6 +1296,26 @@ function showPasswordDetails(id=null) {
 	clone.querySelectorAll('.btnCopyPassword')[0].addEventListener('click', function(e){
 		copyInputValueToClipboard(txtPassword);
 	});
+	clone.querySelectorAll('.btnShowHideTotpSecret')[0].addEventListener('click', function(e){
+		togglePasswordInput(txtTotpSecret);
+	});
+	clone.querySelectorAll('.btnCopyTotpCode')[0].addEventListener('click', function(e){
+		copyInputValueToClipboard(txtTotpCode);
+	});
+	let updateTotpCode = function() {
+		if(!clone.isConnected) {
+			clearInterval(totpTimer);
+			return;
+		}
+		clone.querySelectorAll('tr.totpcode')[0].classList.toggle('invisible', !txtTotpSecret.value);
+		if(!txtTotpSecret.value) return;
+		getTotpCode(txtTotpSecret.value).then((code) => {
+			txtTotpCode.value = code;
+		}).catch((error) => {
+			txtTotpCode.value = strings.invalid_code;
+		});
+	};
+	let totpTimer = setInterval(updateTotpCode, 1000);
 	clone.querySelectorAll('.btnGeneratePassword')[0].addEventListener('click', function(e){
 		showPasswordGenerator(txtPassword, clone);
 	});
@@ -1319,6 +1345,7 @@ function showPasswordDetails(id=null) {
 			'description': txtDescription.value,
 			'icon': txtIcon.value,
 			'fields': [],
+			'totp': txtTotpSecret.value,
 		};
 		clone.querySelectorAll('tr.field').forEach((tr) => {
 			let txtValue = tr.querySelectorAll('.fieldvalue')[0];
@@ -1386,7 +1413,7 @@ function showPasswordDetails(id=null) {
 				'group': group, 'title': secret.title,
 				'username': secret.username, 'password': secret.password,
 				'url': secret.url, 'description': secret.description,
-				'icon': secret.icon, 'fields': secret.fields, 'files': secret.files,
+				'icon': secret.icon, 'fields': secret.fields, 'files': secret.files, 'totp': secret.totp,
 				'permission': (id ? sessionVaultContent['passwords'][id]['permission'] : 0),
 				'share_users': shareUsers, 'share_groups': shareGroups,
 				'share_user_permissions': shareUserPermissions, 'share_group_permissions': shareGroupPermissions,
@@ -1409,6 +1436,7 @@ function showPasswordDetails(id=null) {
 	// show with animation
 	document.body.appendChild(clone);
 	windowOpenAnimation(clone);
+	updateTotpCode();
 	txtTitle.focus();
 }
 function showIconPicker(txtIcon, btnIcon, defaultIcon, divParentWindow) {

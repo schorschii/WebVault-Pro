@@ -235,8 +235,14 @@ button[disabled], .button.disabled {
 		margin-top: 1px;
 	}
 }
-#divMoreContainer {
+#btnMoreContainer {
 	position: relative;
+}
+#btnMore {
+	display: flex;
+	align-items: center;
+	height: 100%;
+	box-sizing: border-box;
 }
 #divMore {
 	position: absolute;
@@ -713,5 +719,23 @@ input.invisible, textarea.invisible, select.invisible {
 	#divVaultContainer {
 		width: 85%;
 		height: 85%;
+	}
+	/* windows open at the left edge of the vault container, so they may not be wider than it */
+	.box.childWindow {
+		max-width: 85%;
+	}
+	.titlebar > input {
+		margin-right: 8px;
+	}
+	.titlebar > span {
+		flex-grow: 0;
+	}
+	.inputtable th {
+		white-space: normal;
+	}
+	/* selects are as wide as their longest option otherwise */
+	.inputtable select {
+		width: 0px;
+		min-width: 100%;
 	}
 }

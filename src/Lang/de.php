@@ -71,5 +71,6 @@ return [
 	'file_too_large' => 'Die Datei ist zu groß',
 	'default' => 'Standard',
 	'totp_secret' => 'TOTP-Geheimnis',
+	'totp_secret_placeholder' => 'Geheimer Schlüssel, z. B. JBSW Y3DP EHPK 3PXP',
 	'cannot_delete_group_contains_items' => 'Die Gruppe kann nicht gelöscht werden, da sie noch untergeordnete Elemente besitzt.',
 ];

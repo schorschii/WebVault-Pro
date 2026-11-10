@@ -87,6 +87,9 @@ return [
 	'choose_icon' => 'Symbol auswählen',
 	'own_icon' => 'Eigenes Symbol',
 	'totp_secret' => 'TOTP-Geheimnis',
+	'color_scheme_auto' => 'Farbschema: automatisch',
+	'color_scheme_light' => 'Farbschema: hell',
+	'color_scheme_dark' => 'Farbschema: dunkel',
 	'invalid_image' => 'Die Datei konnte nicht als Bild gelesen werden.',
 	'cannot_delete_group_contains_items' => 'Die Gruppe kann nicht gelöscht werden, da sie noch untergeordnete Elemente besitzt.',
 ];

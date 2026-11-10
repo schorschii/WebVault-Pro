@@ -22,6 +22,11 @@ document.addEventListener('DOMContentLoaded', (event) => {
 	btnUserGroups.addEventListener('click', () => showUserGroupsManagement());
 	btnImport.addEventListener('click', () => showImport());
 	btnTotp.addEventListener('click', () => showTotp());
+	btnColorScheme.addEventListener('click', () => {
+		let schemes = ['auto', 'light', 'dark'];
+		setSetting('colorScheme', schemes[(schemes.indexOf(getSetting('colorScheme', 'auto')) + 1) % schemes.length]);
+		applyColorScheme();
+	});
 	btnReload.addEventListener('click', () => {
 		imgReload.classList.add('rotating');
 		divVault.classList.add('loading');
@@ -47,6 +52,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
 	document.addEventListener('mousedown', () => sessionLastUserActivity = Date.now());
 });
 
+
+// stylesheets are only completely available after loading
+window.addEventListener('load', () => applyColorScheme());
 
 class PrivateKeyDecryptionError extends Error {}
 class TotpRequiredError extends Error {}
@@ -471,6 +479,32 @@ function restoreGroupState() {
 			elements[i].classList.remove('closed');
 		}
 	}
+}
+
+var colorSchemeRules = null;
+function applyColorScheme() {
+	// the dark mode of all stylesheets (incl. custom ones) is defined by media queries, so these are rewritten to force a scheme
+	let scheme = getSetting('colorScheme', 'auto');
+	if(colorSchemeRules === null) {
+		colorSchemeRules = [];
+		let collectRules = function(rules) {
+			for(let rule of rules) {
+				if(rule.styleSheet) collectRules(rule.styleSheet.cssRules); // @import
+				else if(rule.media && rule.media.mediaText.includes('prefers-color-scheme: dark')) colorSchemeRules.push([rule, rule.media.mediaText]);
+			}
+		};
+		for(let sheet of document.styleSheets) {
+			try {
+				collectRules(sheet.cssRules);
+			} catch(e) {} // stylesheet of another origin
+		}
+	}
+	colorSchemeRules.forEach(([rule, mediaText]) => {
+		rule.media.mediaText = (scheme == 'dark') ? 'all' : ((scheme == 'light') ? 'not all' : mediaText);
+	});
+	// also for the SVG icons and form elements of the browser
+	document.documentElement.style.colorScheme = (scheme == 'auto') ? '' : scheme;
+	btnColorScheme.title = strings['color_scheme_'+scheme];
 }
 
 const STORAGE_KEY_SETTINGS = 'settings';

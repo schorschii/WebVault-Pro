@@ -136,7 +136,7 @@ class DatabaseController {
 	}
 	public function updateUserTotp($id, $totp_secret, $totp_recovery) {
 		$this->stmt = $this->dbh->prepare(
-			'UPDATE user SET totp_secret = :totp_secret, totp_recovery = :totp_recovery, totp_last_step = NULL WHERE id = :id'
+			'UPDATE user SET totp_secret = :totp_secret, totp_recovery = :totp_recovery, totp_last_step = NULL, totp_failures = 0 WHERE id = :id'
 		);
 		return $this->stmt->execute([
 			':id' => $id,
@@ -146,9 +146,15 @@ class DatabaseController {
 	}
 	public function updateUserTotpLastStep($id, $totp_last_step) {
 		$this->stmt = $this->dbh->prepare(
-			'UPDATE user SET totp_last_step = :totp_last_step WHERE id = :id'
+			'UPDATE user SET totp_last_step = :totp_last_step, totp_failures = 0 WHERE id = :id'
 		);
 		return $this->stmt->execute([':id' => $id, ':totp_last_step' => $totp_last_step]);
+	}
+	public function updateUserTotpFailures($id, $totp_failures, $totp_failed_at) {
+		$this->stmt = $this->dbh->prepare(
+			'UPDATE user SET totp_failures = :totp_failures, totp_failed_at = :totp_failed_at WHERE id = :id'
+		);
+		return $this->stmt->execute([':id' => $id, ':totp_failures' => $totp_failures, ':totp_failed_at' => $totp_failed_at]);
 	}
 	public function deleteUser($id) {
 		$this->stmt = $this->dbh->prepare(

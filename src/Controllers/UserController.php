@@ -366,6 +366,12 @@ class UserController {
 
 	/*** Login Functions ***/
 	private function checkTotp($user, $code) {
+		// lock the second factor for 5 minutes after 5 wrong codes, independent of the session
+		$recentFailure = ($user->totp_failed_at > time() - 300);
+		if($recentFailure && $user->totp_failures >= 5) {
+			error_log('user '.$user->username.': second factor locked');
+			return false;
+		}
 		// accept a current one-time code (only once) or one of the recovery codes (removed after use)
 		$step = Totp::verify($user->totp_secret, $code, $user->totp_last_step);
 		if($step !== false) {
@@ -380,6 +386,7 @@ class UserController {
 				return true;
 			}
 		}
+		$this->db->updateUserTotpFailures($user->id, $recentFailure ? $user->totp_failures + 1 : 1, time());
 		error_log('user '.$user->username.': second factor failure');
 		return false;
 	}

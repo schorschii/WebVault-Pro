@@ -37,7 +37,7 @@ class LanguageController {
 	}
 
 	private function getCurrentLangCode() {
-		$browserLanguage = substr($_SERVER['HTTP_ACCEPT_LANGUAGE'], 0, 2);
+		$browserLanguage = substr($_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? '', 0, 2);
 		if(isset($_SESSION['lang']) && array_key_exists($_SESSION['lang'], self::LANG_MAP)) {
 			// user preference
 			return $_SESSION['lang'];

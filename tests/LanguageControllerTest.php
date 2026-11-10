@@ -47,6 +47,12 @@ class LanguageControllerTest extends TestCase {
 		$this->assertEquals('Close', $lc->translate('close'));
 	}
 
+	public function testMissingBrowserLangFallsBackToEnglish(): void {
+		unset($_SERVER['HTTP_ACCEPT_LANGUAGE']);
+		$lc = new LanguageController();
+		$this->assertEquals('Close', $lc->translate('close'));
+	}
+
 	public function testGermanTranslationsMergeWithEnglish(): void {
 		$_SERVER['HTTP_ACCEPT_LANGUAGE'] = 'de';
 		$lc = new LanguageController();

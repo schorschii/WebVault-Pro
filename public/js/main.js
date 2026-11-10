@@ -1523,7 +1523,9 @@ function showIconPicker(txtIcon, btnIcon, defaultIcon, divParentWindow) {
 			let canvas = document.createElement('CANVAS');
 			canvas.width = 48;
 			canvas.height = 48;
-			canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+			// keep the aspect ratio, center the image
+			let scale = Math.min(canvas.width / (img.width || canvas.width), canvas.height / (img.height || canvas.height));
+			canvas.getContext('2d').drawImage(img, (canvas.width - img.width*scale) / 2, (canvas.height - img.height*scale) / 2, img.width*scale, img.height*scale);
 			URL.revokeObjectURL(img.src);
 			applyIcon(canvas.toDataURL('image/png'));
 		};

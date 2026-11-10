@@ -226,6 +226,11 @@ class VaultController {
 				$this->db->selectAllSharedUserByPassword($password_id), $this->db->selectAllSharedUserGroupByPassword($password_id),
 				$share_users, $share_groups, $share_user_permissions, $share_group_permissions, $share_user_expires, $share_group_expires
 			);
+			// without resharing permission the secret must not be encrypted to new users, e.g. after adding a user to a shared user group
+			if($permission & self::PERMISSION_NO_RESHARE
+			&& array_diff(array_keys($password_user), $this->db->selectAllUserIdByPasswordUser($password_id))) {
+				throw new Exception('Permission denied');
+			}
 		}
 		// check group permission: only members can add a group share, existing group shares can be kept
 		foreach($share_groups as $group_id) {

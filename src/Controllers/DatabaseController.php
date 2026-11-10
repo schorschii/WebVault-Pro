@@ -292,6 +292,17 @@ class DatabaseController {
 		);
 		return $this->stmt->execute([':id' => $id]);
 	}
+	public function selectAllUserIdByPasswordUser($password_id) {
+		$this->stmt = $this->dbh->prepare(
+			'SELECT user_id FROM password_user WHERE password_id = :password_id'
+		);
+		$this->stmt->execute([':password_id' => $password_id]);
+		$array = [];
+		foreach($this->stmt->fetchAll(PDO::FETCH_CLASS) as $row) {
+			$array[] = $row->user_id;
+		}
+		return $array;
+	}
 	public function deletePasswordUserByPassword($password_id) {
 		$this->stmt = $this->dbh->prepare(
 			'DELETE FROM password_user WHERE password_id = :password_id'

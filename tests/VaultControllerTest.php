@@ -219,6 +219,7 @@ class VaultControllerTest extends TestCase {
 		$this->mockDb->method('selectPasswordPermission')->with(42, 1)->willReturn(VaultController::PERMISSION_NO_RESHARE);
 		$this->mockDb->method('selectAllSharedUserByPassword')->with(42)->willReturn([(object)['user_id' => 2, 'permission' => 0, 'expires' => null], (object)['user_id' => 1, 'permission' => 2, 'expires' => null]]);
 		$this->mockDb->method('selectAllSharedUserGroupByPassword')->with(42)->willReturn([]);
+		$this->mockDb->method('selectAllUserIdByPasswordUser')->with(42)->willReturn([1, 2]);
 		$this->mockDb->method('deletePasswordUserByPassword')->willReturn(true);
 		$this->mockDb->method('insertPasswordUser')->willReturn(true);
 		$this->mockDb->method('deletePasswordUserShareByPassword')->willReturn(true);
@@ -271,6 +272,28 @@ class VaultControllerTest extends TestCase {
 			true,
 			[], [],
 			[1 => '2030-01-01 12:00:00']
+		);
+	}
+
+	public function testUpdatePasswordUserDeniedWhenReshareNotAllowedAndGroupGotNewMember(): void {
+		$_SESSION['user_id'] = 1;
+		// shares are unchanged, but user 3 was added to group 10 and should get the secret
+		$this->mockDb->method('selectAllUserByPasswordShare')->with(42)->willReturn([1, 2, 3]);
+		$this->mockDb->method('selectPasswordPermission')->with(42, 1)->willReturn(VaultController::PERMISSION_NO_RESHARE);
+		$this->mockDb->method('selectAllSharedUserByPassword')->with(42)->willReturn([]);
+		$this->mockDb->method('selectAllSharedUserGroupByPassword')->with(42)->willReturn([(object)['user_group_id' => 10, 'permission' => 2, 'expires' => null]]);
+		$this->mockDb->method('selectAllUserIdByUserGroup')->with(10)->willReturn([1, 2, 3]);
+		$this->mockDb->method('selectAllUserIdByPasswordUser')->with(42)->willReturn([1, 2]);
+
+		$this->expectException(\Exception::class);
+		$this->expectExceptionMessage('Permission denied');
+		$this->controller->updatePasswordUser(
+			42,
+			[1 => ['aes_key' => 'k1', 'rsa_iv' => 'i1'], 2 => ['aes_key' => 'k2', 'rsa_iv' => 'i2'], 3 => ['aes_key' => 'k3', 'rsa_iv' => 'i3']],
+			[],
+			[10],
+			false,
+			[], [10 => 2]
 		);
 	}
 

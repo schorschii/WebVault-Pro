@@ -1558,7 +1558,7 @@ function addUserGroupRow(groupTable, userGroupId, editAction) {
 const SHARE_PERMISSION_READ_ONLY = 1;
 const SHARE_PERMISSION_NO_RESHARE = 2;
 const SHARE_PERMISSIONS = {0:'full_access', 2:'no_resharing', 3:'read_only'};
-function createPermissionCell(permission) {
+function createPermissionCell(permission, expires) {
 	let td = document.createElement('TD');
 	let slt = document.createElement('SELECT');
 	slt.classList.add('permission');
@@ -1570,10 +1570,6 @@ function createPermissionCell(permission) {
 	}
 	slt.value = permission || 0;
 	td.appendChild(slt);
-	return td;
-}
-function createExpiresCell(expires) {
-	let td = document.createElement('TD');
 	let input = document.createElement('INPUT');
 	input.type = 'datetime-local';
 	input.classList.add('expires');
@@ -1705,8 +1701,7 @@ function addShareUserRow(shareTable, userId, permission=null, expires=null) {
 	if(permission === null) {
 		td1.setAttribute('colspan', '2');
 	} else {
-		tr.appendChild(createPermissionCell(permission));
-		tr.appendChild(createExpiresCell(expires));
+		tr.appendChild(createPermissionCell(permission, expires));
 	}
 	let td2 = document.createElement('TD');
 	let btn = document.createElement('BUTTON');
@@ -1729,8 +1724,7 @@ function addShareGroupRow(shareTable, groupId, permission=0, expires=null) {
 	let td1 = document.createElement('TD');
 	td1.innerText = group['title'];
 	tr.appendChild(td1);
-	tr.appendChild(createPermissionCell(permission));
-	tr.appendChild(createExpiresCell(expires));
+	tr.appendChild(createPermissionCell(permission, expires));
 	let td2 = document.createElement('TD');
 	let btn = document.createElement('BUTTON');
 	btn.title = strings.remove;

@@ -300,8 +300,23 @@ class UserController {
 			}
 
 			// permission check
-			if(!in_array($_SESSION['user_id'], $this->db->selectAllUserIdByUserGroup($id))) {
+			$members = $this->db->selectAllUserIdByUserGroup($id);
+			if(!in_array($_SESSION['user_id'], $members)) {
 				throw new Exception('Permission denied');
+			}
+			// new members get access to everything shared with the group, so this requires resharing permission
+			if(array_diff($json['members'], $members)) {
+				$restricted = VaultController::PERMISSION_READ_ONLY | VaultController::PERMISSION_NO_RESHARE;
+				foreach($this->db->selectAllPasswordIdByUserGroupShare($id) as $password_id) {
+					if($this->db->selectPasswordPermission($password_id, $_SESSION['user_id']) & $restricted) {
+						throw new Exception('Permission denied');
+					}
+				}
+				foreach($this->db->selectAllPasswordGroupIdByUserGroupShare($id) as $password_group_id) {
+					if($this->db->selectPasswordGroupPermission($password_group_id, $_SESSION['user_id']) & $restricted) {
+						throw new Exception('Permission denied');
+					}
+				}
 			}
 
 			// update data

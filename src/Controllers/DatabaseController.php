@@ -380,6 +380,28 @@ class DatabaseController {
 		$this->stmt->execute([':password_group_id' => $password_group_id]);
 		return $this->stmt->fetchAll(PDO::FETCH_CLASS);
 	}
+	public function selectAllPasswordIdByUserGroupShare($user_group_id) {
+		$this->stmt = $this->dbh->prepare(
+			'SELECT password_id FROM share_password_user_group WHERE user_group_id = :user_group_id AND (expires IS NULL OR expires > UTC_TIMESTAMP())'
+		);
+		$this->stmt->execute([':user_group_id' => $user_group_id]);
+		$array = [];
+		foreach($this->stmt->fetchAll(PDO::FETCH_CLASS) as $row) {
+			$array[] = $row->password_id;
+		}
+		return $array;
+	}
+	public function selectAllPasswordGroupIdByUserGroupShare($user_group_id) {
+		$this->stmt = $this->dbh->prepare(
+			'SELECT password_group_id FROM share_password_group_user_group WHERE user_group_id = :user_group_id AND (expires IS NULL OR expires > UTC_TIMESTAMP())'
+		);
+		$this->stmt->execute([':user_group_id' => $user_group_id]);
+		$array = [];
+		foreach($this->stmt->fetchAll(PDO::FETCH_CLASS) as $row) {
+			$array[] = $row->password_group_id;
+		}
+		return $array;
+	}
 	public function selectAllUserByPasswordShare($password_id) {
 		$this->stmt = $this->dbh->prepare(
 			'SELECT u.id FROM user u

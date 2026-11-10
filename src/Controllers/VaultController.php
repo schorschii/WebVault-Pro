@@ -462,6 +462,17 @@ class VaultController {
 			)) {
 				throw new Exception('Permission denied');
 			}
+			// the new parent folder must be writable and must not be this folder or one of its sub folders
+			if(!empty($json['parent_password_group_id']) && $json['parent_password_group_id'] != $group->parent_password_group_id) {
+				if($this->db->selectPasswordGroupPermission($json['parent_password_group_id'], $_SESSION['user_id']) & self::PERMISSION_READ_ONLY) {
+					throw new Exception('Permission denied');
+				}
+				$visited = [];
+				for($parent = $this->db->selectPasswordGroup($json['parent_password_group_id']); $parent && !in_array($parent->id, $visited); $parent = $this->db->selectPasswordGroup($parent->parent_password_group_id)) {
+					if($parent->id == $id) throw new Exception($this->langCtrl->translate('choose_another_parent_folder'));
+					$visited[] = $parent->id;
+				}
+			}
 			$this->checkShareChangeAllowed($permission,
 				$this->db->selectAllSharedUserByPasswordGroup($id), $this->db->selectAllSharedUserGroupByPasswordGroup($id),
 				$json['share_users'], $json['share_groups'], $json['share_user_permissions'] ?? [], $json['share_group_permissions'] ?? [],

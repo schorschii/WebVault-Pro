@@ -12,6 +12,7 @@ class DatabaseController {
 	   "insert...", "update...", "delete..." */
 
 	private $dbh;
+	private $stmt;
 
 	function __construct($dbsettings) {
 		try {

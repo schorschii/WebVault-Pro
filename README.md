@@ -21,7 +21,7 @@ The web app is independent of the client platform and it is not necessary to ins
 
 ## Setup
 ### Server Requirements
-Linux based server (Debian recommended) with Apache 2, PHP 7.4+ and MySQL/MariaDB. An LDAP server is recommended since this app is mainly intended for usage with LDAP authentication.
+Linux based server (Debian recommended) with Apache 2, PHP 8.0+ and MySQL/MariaDB. An LDAP server is recommended since this app is mainly intended for usage with LDAP authentication.
 
 ### Server Installation
 0. Install necessary Linux packages: `apt install apache2 libapache2-mod-php php php-ldap composer`
@@ -64,10 +64,39 @@ Crypto API capable browser with Javascript enabled
 - Chrome/Chromium based browsers, Firefox (both desktop and mobile)
 - IE/Edge are **not** supported
 
+### Upgrade notes for v1.0.0-RC5 users
+Apply the following schema changes to your existing database:
+```
+ALTER TABLE `user_group_member` DROP FOREIGN KEY `fk_user_2`;
+ALTER TABLE `user_group_member` ADD CONSTRAINT `fk_user_2` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE `password_group` ADD `icon` text DEFAULT NULL;
+ALTER TABLE `share_password_user` ADD `expires` datetime DEFAULT NULL;
+ALTER TABLE `share_password_user_group` ADD `expires` datetime DEFAULT NULL;
+ALTER TABLE `share_password_group_user` ADD `expires` datetime DEFAULT NULL;
+ALTER TABLE `share_password_group_user_group` ADD `expires` datetime DEFAULT NULL;
+ALTER TABLE `user` ADD `totp_secret` text DEFAULT NULL, ADD `totp_recovery` text DEFAULT NULL, ADD `totp_last_step` int(11) DEFAULT NULL, ADD `totp_failures` int(11) NOT NULL DEFAULT 0, ADD `totp_failed_at` int(11) DEFAULT NULL;
+CREATE TABLE `password_file` (`id` int(11) NOT NULL AUTO_INCREMENT, `password_id` int(11) NOT NULL, `data` longblob NOT NULL, PRIMARY KEY (`id`), KEY `fk_pf_password` (`password_id`), CONSTRAINT `fk_pf_password` FOREIGN KEY (`password_id`) REFERENCES `password` (`id`) ON DELETE CASCADE ON UPDATE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+```
+
 ### Upgrade notes for v0.x (WebPW) users
 Since the concept and database schema of WebVault Pro differs completely from v0.x ("WebPW"), there is no direct upgrade path. You need to manually export and re-import your passwords in the new version.
 
+### Two-factor authentication
+Every user can enable time-based one-time passwords (TOTP, RFC 6238) for their account via the "More" menu in the vault window. The secret can be added to an authenticator app by scanning the displayed QR code (generated in the browser with [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator), MIT license). Recovery codes are shown once after enabling and can each be used once instead of a one-time code. Note that the TOTP secret is stored in plaintext in the database (like in most web applications) since the server needs it to verify the codes. If a user lost both the authenticator and the recovery codes, an administrator can reset the second factor with `php bin/user.php totp-reset USER_ID`.
+
 ## FAQ
+### What do the share permissions mean?
+- *Full access*: the user can view, edit, move, delete and share the entry or folder with other users and groups.
+- *No resharing*: the user can view and edit, but not change the shares.
+- *Read only*: the user can only view the entry (copying the password is still possible, which can't be prevented technically).
+
+If a user has multiple shares on an entry (e.g. directly and via a user group), the least restrictive permission applies.
+
+A share can optionally expire at a given date and time. Expired shares are ignored by the server; the next time the entry is saved by another user, it is re-encrypted without the expired user.
+
+### Can I attach files to an entry?
+Yes, files are encrypted in the browser with an individual key which is stored inside the encrypted entry, so attachments are end-to-end encrypted like the entry itself. The maximum file size is defined by `maxFileSize` in the settings file; since files are uploaded base64 encoded, PHP's `post_max_size` and `memory_limit` must be large enough too.
+
 ### I'm not able to share passwords with some users, they are disabled in the select box
 The user account doesn't have a keypair yet. Users need to log in once before passwords can be shared with them.
 

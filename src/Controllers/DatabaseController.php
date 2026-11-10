@@ -12,6 +12,7 @@ class DatabaseController {
 	   "insert...", "update...", "delete..." */
 
 	private $dbh;
+	private $stmt;
 
 	function __construct($dbsettings) {
 		try {
@@ -41,7 +42,7 @@ class DatabaseController {
 		$this->dbh->commit();
 	}
 	public function rollbackTransaction() {
-		$this->dbh->rollBack();
+		if($this->dbh->inTransaction()) $this->dbh->rollBack();
 	}
 
 	public function selectAllUser() {
@@ -133,6 +134,28 @@ class DatabaseController {
 			return $row;
 		}
 	}
+	public function updateUserTotp($id, $totp_secret, $totp_recovery) {
+		$this->stmt = $this->dbh->prepare(
+			'UPDATE user SET totp_secret = :totp_secret, totp_recovery = :totp_recovery, totp_last_step = NULL, totp_failures = 0 WHERE id = :id'
+		);
+		return $this->stmt->execute([
+			':id' => $id,
+			':totp_secret' => $totp_secret,
+			':totp_recovery' => $totp_recovery,
+		]);
+	}
+	public function updateUserTotpLastStep($id, $totp_last_step) {
+		$this->stmt = $this->dbh->prepare(
+			'UPDATE user SET totp_last_step = :totp_last_step, totp_failures = 0 WHERE id = :id'
+		);
+		return $this->stmt->execute([':id' => $id, ':totp_last_step' => $totp_last_step]);
+	}
+	public function updateUserTotpFailures($id, $totp_failures, $totp_failed_at) {
+		$this->stmt = $this->dbh->prepare(
+			'UPDATE user SET totp_failures = :totp_failures, totp_failed_at = :totp_failed_at WHERE id = :id'
+		);
+		return $this->stmt->execute([':id' => $id, ':totp_failures' => $totp_failures, ':totp_failed_at' => $totp_failed_at]);
+	}
 	public function deleteUser($id) {
 		$this->stmt = $this->dbh->prepare(
 			'DELETE FROM user WHERE id = :id'
@@ -168,13 +191,11 @@ class DatabaseController {
 		return $this->stmt->execute([':id' => $id]);
 	}
 
-	public function selectAllUserGroupForShare($user_id) {
+	public function selectAllUserGroup() {
 		$this->stmt = $this->dbh->prepare(
-			'SELECT ug.id, ug.title FROM user_group ug
-			WHERE ug.id IN (SELECT ugm.user_group_id FROM user_group_member ugm WHERE ugm.user_id = :user_id)
-			ORDER BY ug.title'
+			'SELECT id, title FROM user_group ORDER BY title'
 		);
-		$this->stmt->execute([':user_id' => $user_id]);
+		$this->stmt->execute();
 		return $this->stmt->fetchAll(PDO::FETCH_CLASS);
 	}
 	public function selectAllUserIdByUserGroup($user_group_id) {
@@ -196,11 +217,11 @@ class DatabaseController {
 			WHERE pu.user_id = :user_id
 			AND p.id IN (
 				SELECT spu.password_id FROM share_password_user spu
-				WHERE spu.user_id = :user_id
+				WHERE spu.user_id = :user_id AND (spu.expires IS NULL OR spu.expires > UTC_TIMESTAMP())
 				UNION SELECT spug.password_id FROM share_password_user_group spug
 				WHERE spug.user_group_id IN (
 					SELECT ugm.user_group_id FROM user_group_member ugm WHERE ugm.user_id = :user_id
-				)
+				) AND (spug.expires IS NULL OR spug.expires > UTC_TIMESTAMP())
 			)'
 		);
 		$this->stmt->execute([':user_id' => $user_id]);
@@ -208,15 +229,15 @@ class DatabaseController {
 	}
 	public function selectAllPasswordGroupByUser($user_id) {
 		$this->stmt = $this->dbh->prepare(
-			'SELECT pg.id, pg.parent_password_group_id, pg.title
+			'SELECT pg.id, pg.parent_password_group_id, pg.title, pg.icon
 			FROM password_group pg
 			WHERE pg.id IN (
 				SELECT spgu.password_group_id FROM share_password_group_user spgu
-				WHERE spgu.user_id = :user_id
+				WHERE spgu.user_id = :user_id AND (spgu.expires IS NULL OR spgu.expires > UTC_TIMESTAMP())
 				UNION SELECT spgug.password_group_id FROM share_password_group_user_group spgug
 				WHERE spgug.user_group_id IN (
 					SELECT ugm.user_group_id FROM user_group_member ugm WHERE ugm.user_id = :user_id
-				)
+				) AND (spgug.expires IS NULL OR spgug.expires > UTC_TIMESTAMP())
 			)'
 		);
 		$this->stmt->execute([':user_id' => $user_id]);
@@ -277,6 +298,17 @@ class DatabaseController {
 		);
 		return $this->stmt->execute([':id' => $id]);
 	}
+	public function selectAllUserIdByPasswordUser($password_id) {
+		$this->stmt = $this->dbh->prepare(
+			'SELECT user_id FROM password_user WHERE password_id = :password_id'
+		);
+		$this->stmt->execute([':password_id' => $password_id]);
+		$array = [];
+		foreach($this->stmt->fetchAll(PDO::FETCH_CLASS) as $row) {
+			$array[] = $row->user_id;
+		}
+		return $array;
+	}
 	public function deletePasswordUserByPassword($password_id) {
 		$this->stmt = $this->dbh->prepare(
 			'DELETE FROM password_user WHERE password_id = :password_id'
@@ -284,47 +316,89 @@ class DatabaseController {
 		return $this->stmt->execute([':password_id' => $password_id]);
 	}
 
-	public function selectAllSharedUserIdByPassword($password_id) {
+	public function selectPasswordFile($id, $password_id) {
 		$this->stmt = $this->dbh->prepare(
-			'SELECT user_id, permission FROM share_password_user WHERE password_id = :password_id'
+			'SELECT * FROM password_file WHERE id = :id AND password_id = :password_id'
+		);
+		$this->stmt->execute([':id' => $id, ':password_id' => $password_id]);
+		foreach($this->stmt->fetchAll(PDO::FETCH_CLASS) as $row) {
+			return $row;
+		}
+	}
+	public function selectAllPasswordFileIdByPassword($password_id) {
+		$this->stmt = $this->dbh->prepare(
+			'SELECT id FROM password_file WHERE password_id = :password_id'
 		);
 		$this->stmt->execute([':password_id' => $password_id]);
 		$array = [];
 		foreach($this->stmt->fetchAll(PDO::FETCH_CLASS) as $row) {
-			$array[] = $row->user_id;
+			$array[] = $row->id;
 		}
 		return $array;
 	}
-	public function selectAllSharedUserGroupIdByPassword($password_id) {
+	public function insertPasswordFile($password_id, $data) {
 		$this->stmt = $this->dbh->prepare(
-			'SELECT user_group_id, permission FROM share_password_user_group WHERE password_id = :password_id'
+			'INSERT INTO password_file (password_id, data) VALUES (:password_id, :data)'
+		);
+		$this->stmt->bindValue(':password_id', $password_id);
+		$this->stmt->bindValue(':data', $data, PDO::PARAM_LOB);
+		$this->stmt->execute();
+		return $this->dbh->lastInsertId();
+	}
+	public function deletePasswordFile($id) {
+		$this->stmt = $this->dbh->prepare(
+			'DELETE FROM password_file WHERE id = :id'
+		);
+		return $this->stmt->execute([':id' => $id]);
+	}
+
+	public function selectAllSharedUserByPassword($password_id) {
+		$this->stmt = $this->dbh->prepare(
+			'SELECT user_id, permission, expires FROM share_password_user WHERE password_id = :password_id AND (expires IS NULL OR expires > UTC_TIMESTAMP())'
 		);
 		$this->stmt->execute([':password_id' => $password_id]);
+		return $this->stmt->fetchAll(PDO::FETCH_CLASS);
+	}
+	public function selectAllSharedUserGroupByPassword($password_id) {
+		$this->stmt = $this->dbh->prepare(
+			'SELECT user_group_id, permission, expires FROM share_password_user_group WHERE password_id = :password_id AND (expires IS NULL OR expires > UTC_TIMESTAMP())'
+		);
+		$this->stmt->execute([':password_id' => $password_id]);
+		return $this->stmt->fetchAll(PDO::FETCH_CLASS);
+	}
+	public function selectAllSharedUserByPasswordGroup($password_group_id) {
+		$this->stmt = $this->dbh->prepare(
+			'SELECT user_id, permission, expires FROM share_password_group_user WHERE password_group_id = :password_group_id AND (expires IS NULL OR expires > UTC_TIMESTAMP())'
+		);
+		$this->stmt->execute([':password_group_id' => $password_group_id]);
+		return $this->stmt->fetchAll(PDO::FETCH_CLASS);
+	}
+	public function selectAllSharedUserGroupByPasswordGroup($password_group_id) {
+		$this->stmt = $this->dbh->prepare(
+			'SELECT user_group_id, permission, expires FROM share_password_group_user_group WHERE password_group_id = :password_group_id AND (expires IS NULL OR expires > UTC_TIMESTAMP())'
+		);
+		$this->stmt->execute([':password_group_id' => $password_group_id]);
+		return $this->stmt->fetchAll(PDO::FETCH_CLASS);
+	}
+	public function selectAllPasswordIdByUserGroupShare($user_group_id) {
+		$this->stmt = $this->dbh->prepare(
+			'SELECT password_id FROM share_password_user_group WHERE user_group_id = :user_group_id AND (expires IS NULL OR expires > UTC_TIMESTAMP())'
+		);
+		$this->stmt->execute([':user_group_id' => $user_group_id]);
 		$array = [];
 		foreach($this->stmt->fetchAll(PDO::FETCH_CLASS) as $row) {
-			$array[] = $row->user_group_id;
+			$array[] = $row->password_id;
 		}
 		return $array;
 	}
-	public function selectAllSharedUserIdByPasswordGroup($password_group_id) {
+	public function selectAllPasswordGroupIdByUserGroupShare($user_group_id) {
 		$this->stmt = $this->dbh->prepare(
-			'SELECT user_id, permission FROM share_password_group_user WHERE password_group_id = :password_group_id'
+			'SELECT password_group_id FROM share_password_group_user_group WHERE user_group_id = :user_group_id AND (expires IS NULL OR expires > UTC_TIMESTAMP())'
 		);
-		$this->stmt->execute([':password_group_id' => $password_group_id]);
+		$this->stmt->execute([':user_group_id' => $user_group_id]);
 		$array = [];
 		foreach($this->stmt->fetchAll(PDO::FETCH_CLASS) as $row) {
-			$array[] = $row->user_id;
-		}
-		return $array;
-	}
-	public function selectAllSharedUserGroupIdByPasswordGroup($password_group_id) {
-		$this->stmt = $this->dbh->prepare(
-			'SELECT user_group_id, permission FROM share_password_group_user_group WHERE password_group_id = :password_group_id'
-		);
-		$this->stmt->execute([':password_group_id' => $password_group_id]);
-		$array = [];
-		foreach($this->stmt->fetchAll(PDO::FETCH_CLASS) as $row) {
-			$array[] = $row->user_group_id;
+			$array[] = $row->password_group_id;
 		}
 		return $array;
 	}
@@ -332,12 +406,12 @@ class DatabaseController {
 		$this->stmt = $this->dbh->prepare(
 			'SELECT u.id FROM user u
 			JOIN share_password_user spu ON spu.user_id = u.id
-			WHERE spu.password_id = :password_id
+			WHERE spu.password_id = :password_id AND (spu.expires IS NULL OR spu.expires > UTC_TIMESTAMP())
 			UNION SELECT u.id FROM user u
 			WHERE u.id IN (
 				SELECT ugm.user_id FROM user_group_member ugm
 				JOIN share_password_user_group spug ON spug.user_group_id = ugm.user_group_id
-				WHERE spug.password_id = :password_id
+				WHERE spug.password_id = :password_id AND (spug.expires IS NULL OR spug.expires > UTC_TIMESTAMP())
 			)'
 		);
 		$this->stmt->execute([':password_id' => $password_id]);
@@ -351,12 +425,12 @@ class DatabaseController {
 		$this->stmt = $this->dbh->prepare(
 			'SELECT u.id FROM user u
 			JOIN share_password_group_user spgu ON spgu.user_id = u.id
-			WHERE spgu.password_group_id = :password_group_id
+			WHERE spgu.password_group_id = :password_group_id AND (spgu.expires IS NULL OR spgu.expires > UTC_TIMESTAMP())
 			UNION SELECT u.id FROM user u
 			WHERE u.id IN (
 				SELECT ugm.user_id FROM user_group_member ugm
 				JOIN share_password_group_user_group spgug ON spgug.user_group_id = ugm.user_group_id
-				WHERE spgug.password_group_id = :password_group_id
+				WHERE spgug.password_group_id = :password_group_id AND (spgug.expires IS NULL OR spgug.expires > UTC_TIMESTAMP())
 			)'
 		);
 		$this->stmt->execute([':password_group_id' => $password_group_id]);
@@ -366,43 +440,82 @@ class DatabaseController {
 		}
 		return $array;
 	}
-	public function insertPasswordUserShare($password_id, $user_id) {
+	public function selectPasswordPermission($password_id, $user_id) {
+		// combines the restriction bits of all shares the user has on the password (all bits set if not shared)
 		$this->stmt = $this->dbh->prepare(
-			'INSERT INTO share_password_user (password_id, user_id) VALUES (:password_id, :user_id)'
+			'SELECT BIT_AND(permission) AS permission FROM (
+				SELECT permission FROM share_password_user
+				WHERE password_id = :password_id AND user_id = :user_id AND (expires IS NULL OR expires > UTC_TIMESTAMP())
+				UNION ALL SELECT spug.permission FROM share_password_user_group spug
+				JOIN user_group_member ugm ON ugm.user_group_id = spug.user_group_id
+				WHERE spug.password_id = :password_id AND ugm.user_id = :user_id AND (spug.expires IS NULL OR spug.expires > UTC_TIMESTAMP())
+			) shares'
+		);
+		$this->stmt->execute([':password_id' => $password_id, ':user_id' => $user_id]);
+		foreach($this->stmt->fetchAll(PDO::FETCH_CLASS) as $row) {
+			return intval($row->permission);
+		}
+	}
+	public function selectPasswordGroupPermission($password_group_id, $user_id) {
+		$this->stmt = $this->dbh->prepare(
+			'SELECT BIT_AND(permission) AS permission FROM (
+				SELECT permission FROM share_password_group_user
+				WHERE password_group_id = :password_group_id AND user_id = :user_id AND (expires IS NULL OR expires > UTC_TIMESTAMP())
+				UNION ALL SELECT spgug.permission FROM share_password_group_user_group spgug
+				JOIN user_group_member ugm ON ugm.user_group_id = spgug.user_group_id
+				WHERE spgug.password_group_id = :password_group_id AND ugm.user_id = :user_id AND (spgug.expires IS NULL OR spgug.expires > UTC_TIMESTAMP())
+			) shares'
+		);
+		$this->stmt->execute([':password_group_id' => $password_group_id, ':user_id' => $user_id]);
+		foreach($this->stmt->fetchAll(PDO::FETCH_CLASS) as $row) {
+			return intval($row->permission);
+		}
+	}
+	public function insertPasswordUserShare($password_id, $user_id, $permission, $expires) {
+		$this->stmt = $this->dbh->prepare(
+			'INSERT INTO share_password_user (password_id, user_id, permission, expires) VALUES (:password_id, :user_id, :permission, :expires)'
 		);
 		$this->stmt->execute([
 			':password_id' => $password_id,
 			':user_id' => $user_id,
+			':permission' => $permission,
+			':expires' => $expires,
 		]);
 		return $this->dbh->lastInsertId();
 	}
-	public function insertPasswordUserGroupShare($password_id, $user_group_id) {
+	public function insertPasswordUserGroupShare($password_id, $user_group_id, $permission, $expires) {
 		$this->stmt = $this->dbh->prepare(
-			'INSERT INTO share_password_user_group (password_id, user_group_id) VALUES (:password_id, :user_group_id)'
+			'INSERT INTO share_password_user_group (password_id, user_group_id, permission, expires) VALUES (:password_id, :user_group_id, :permission, :expires)'
 		);
 		$this->stmt->execute([
 			':password_id' => $password_id,
 			':user_group_id' => $user_group_id,
+			':permission' => $permission,
+			':expires' => $expires,
 		]);
 		return $this->dbh->lastInsertId();
 	}
-	public function insertPasswordGroupUserShare($password_group_id, $user_id) {
+	public function insertPasswordGroupUserShare($password_group_id, $user_id, $permission, $expires) {
 		$this->stmt = $this->dbh->prepare(
-			'INSERT INTO share_password_group_user (password_group_id, user_id) VALUES (:password_group_id, :user_id)'
+			'INSERT INTO share_password_group_user (password_group_id, user_id, permission, expires) VALUES (:password_group_id, :user_id, :permission, :expires)'
 		);
 		$this->stmt->execute([
 			':password_group_id' => $password_group_id,
 			':user_id' => $user_id,
+			':permission' => $permission,
+			':expires' => $expires,
 		]);
 		return $this->dbh->lastInsertId();
 	}
-	public function insertPasswordGroupUserGroupShare($password_group_id, $user_group_id) {
+	public function insertPasswordGroupUserGroupShare($password_group_id, $user_group_id, $permission, $expires) {
 		$this->stmt = $this->dbh->prepare(
-			'INSERT INTO share_password_group_user_group (password_group_id, user_group_id) VALUES (:password_group_id, :user_group_id)'
+			'INSERT INTO share_password_group_user_group (password_group_id, user_group_id, permission, expires) VALUES (:password_group_id, :user_group_id, :permission, :expires)'
 		);
 		$this->stmt->execute([
 			':password_group_id' => $password_group_id,
 			':user_group_id' => $user_group_id,
+			':permission' => $permission,
+			':expires' => $expires,
 		]);
 		return $this->dbh->lastInsertId();
 	}
@@ -440,26 +553,28 @@ class DatabaseController {
 			return $row;
 		}
 	}
-	public function insertPasswordGroup($parent_password_group_id, $title) {
+	public function insertPasswordGroup($parent_password_group_id, $title, $icon) {
 		$this->stmt = $this->dbh->prepare(
-			'INSERT INTO password_group (parent_password_group_id, title)
-			VALUES (:parent_password_group_id, :title)'
+			'INSERT INTO password_group (parent_password_group_id, title, icon)
+			VALUES (:parent_password_group_id, :title, :icon)'
 		);
 		$this->stmt->execute([
 			':parent_password_group_id' => $parent_password_group_id,
 			':title' => $title,
+			':icon' => $icon,
 		]);
 		return $this->dbh->lastInsertId();
 	}
-	public function updatePasswordGroup($id, $parent_password_group_id, $title) {
+	public function updatePasswordGroup($id, $parent_password_group_id, $title, $icon) {
 		$this->stmt = $this->dbh->prepare(
-			'UPDATE password_group SET parent_password_group_id = :parent_password_group_id, title = :title
+			'UPDATE password_group SET parent_password_group_id = :parent_password_group_id, title = :title, icon = :icon
 			WHERE id = :id'
 		);
 		$this->stmt->execute([
 			':id' => $id,
 			':parent_password_group_id' => $parent_password_group_id,
 			':title' => $title,
+			':icon' => $icon,
 		]);
 		return $this->dbh->lastInsertId();
 	}

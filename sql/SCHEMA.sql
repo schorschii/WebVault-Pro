@@ -37,13 +37,26 @@ CREATE TABLE `password_user` (
 -- --------------------------------------------------------
 
 --
+-- Tabellenstruktur für Tabelle `password_file`
+--
+
+CREATE TABLE `password_file` (
+  `id` int(11) NOT NULL,
+  `password_id` int(11) NOT NULL,
+  `data` longblob NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Tabellenstruktur für Tabelle `password_group`
 --
 
 CREATE TABLE `password_group` (
   `id` int(11) NOT NULL,
   `parent_password_group_id` int(11) DEFAULT NULL,
-  `title` text NOT NULL
+  `title` text NOT NULL,
+  `icon` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -55,7 +68,8 @@ CREATE TABLE `password_group` (
 CREATE TABLE `share_password_group_user` (
   `password_group_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
-  `permission` tinyint(4) NOT NULL DEFAULT 0
+  `permission` tinyint(4) NOT NULL DEFAULT 0,
+  `expires` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -67,7 +81,8 @@ CREATE TABLE `share_password_group_user` (
 CREATE TABLE `share_password_group_user_group` (
   `password_group_id` int(11) NOT NULL,
   `user_group_id` int(11) NOT NULL,
-  `permission` tinyint(4) NOT NULL DEFAULT 0
+  `permission` tinyint(4) NOT NULL DEFAULT 0,
+  `expires` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -79,7 +94,8 @@ CREATE TABLE `share_password_group_user_group` (
 CREATE TABLE `share_password_user` (
   `password_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
-  `permission` tinyint(4) NOT NULL DEFAULT 0
+  `permission` tinyint(4) NOT NULL DEFAULT 0,
+  `expires` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -91,7 +107,8 @@ CREATE TABLE `share_password_user` (
 CREATE TABLE `share_password_user_group` (
   `password_id` int(11) NOT NULL,
   `user_group_id` int(11) NOT NULL,
-  `permission` tinyint(4) NOT NULL DEFAULT 0
+  `permission` tinyint(4) NOT NULL DEFAULT 0,
+  `expires` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -113,7 +130,12 @@ CREATE TABLE `user` (
   `public_key` text DEFAULT NULL,
   `private_key` text DEFAULT NULL,
   `salt` text DEFAULT NULL,
-  `iv` text DEFAULT NULL
+  `iv` text DEFAULT NULL,
+  `totp_secret` text DEFAULT NULL,
+  `totp_recovery` text DEFAULT NULL,
+  `totp_last_step` int(11) DEFAULT NULL,
+  `totp_failures` int(11) NOT NULL DEFAULT 0,
+  `totp_failed_at` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -158,6 +180,13 @@ ALTER TABLE `password_user`
   ADD PRIMARY KEY (`password_id`,`user_id`),
   ADD KEY `password_id` (`password_id`),
   ADD KEY `user_id` (`user_id`);
+
+--
+-- Indizes für die Tabelle `password_file`
+--
+ALTER TABLE `password_file`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_pf_password` (`password_id`);
 
 --
 -- Indizes für die Tabelle `password_group`
@@ -225,6 +254,12 @@ ALTER TABLE `password`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT für Tabelle `password_file`
+--
+ALTER TABLE `password_file`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT für Tabelle `password_group`
 --
 ALTER TABLE `password_group`
@@ -258,6 +293,12 @@ ALTER TABLE `password`
 ALTER TABLE `password_user`
   ADD CONSTRAINT `fk_password` FOREIGN KEY (`password_id`) REFERENCES `password` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints der Tabelle `password_file`
+--
+ALTER TABLE `password_file`
+  ADD CONSTRAINT `fk_pf_password` FOREIGN KEY (`password_id`) REFERENCES `password` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints der Tabelle `password_group`
@@ -297,7 +338,7 @@ ALTER TABLE `share_password_user_group`
 -- Constraints der Tabelle `user_group_member`
 --
 ALTER TABLE `user_group_member`
-  ADD CONSTRAINT `fk_user_2` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`),
+  ADD CONSTRAINT `fk_user_2` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_user_group` FOREIGN KEY (`user_group_id`) REFERENCES `user_group` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 COMMIT;
 

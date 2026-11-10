@@ -37,6 +37,7 @@ class UserController {
 			if($user->totp_secret) {
 				// second factor required, the login is completed in loginTotp()
 				$_SESSION['totp_user_id'] = $user->id;
+				$_SESSION['totp_failures'] = 0;
 				$response->getBody()->write(json_encode([
 					'totp_required' => true
 				]));
@@ -57,8 +58,11 @@ class UserController {
 			$user = empty($_SESSION['totp_user_id']) ? null : $this->db->selectUser($_SESSION['totp_user_id']);
 			if(!$user || !$user->totp_secret || $user->locked)
 				throw new Exception('Invalid session');
-			if(!$this->checkTotp($user, $json['code'] ?? ''))
+			if(!$this->checkTotp($user, $json['code'] ?? '')) {
+				// after too many wrong codes the password has to be entered again
+				if(++$_SESSION['totp_failures'] >= 5) unset($_SESSION['totp_user_id']);
 				throw new Exception($this->vc->translate('invalid_code'));
+			}
 
 			unset($_SESSION['totp_user_id']);
 			return $this->loginResponse($user, $response);

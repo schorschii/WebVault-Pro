@@ -6,6 +6,7 @@
 	<script type="text/javascript" src="js/window.js?v={{ version }}"></script>
 	<script type="text/javascript" src="js/strings.js?v={{ version }}"></script>
 	<script type="text/javascript" src="js/zxcvbn.min.js?v={{ version }}"></script>
+	<script type="text/javascript" src="js/qrcode.js?v={{ version }}"></script>
 {% endblock %}
 
 {% block content %}
@@ -29,6 +30,9 @@
 			<div class="inputwithimg">
 				<input type="password" id="txtOldPassword" class="invisible" name="password" placeholder="{{ "old_password"|trans }}" value="">
 			</div>
+			<div class="inputwithimg">
+				<input type="text" id="txtTotp" class="invisible" name="totp" placeholder="{{ "one_time_code"|trans }}" autocomplete="one-time-code" value="">
+			</div>
 			<button id="btnLogin" class="primary">
 				<span>{{ "log_in"|trans }}</span>
 				<img class="loader" src="img/loader.svg">
@@ -51,6 +55,9 @@
 			<div id="divMore" class="box invisible">
 				<button id="btnUserGroups" title="{{ "user_group_management"|trans }}"><img src="img/group.svg"></button>
 				<button id="btnImport" title="{{ "import"|trans }}"><img src="img/import.svg"></button>
+				<button id="btnTotp" title="{{ "two_factor_authentication"|trans }}"><img src="img/icon/lock.svg"></button>
+				<button id="btnColorScheme" title="{{ "color_scheme_auto"|trans }}"><img src="img/contrast.svg"></button>
+				<button id="btnView" title="{{ "view_tiles"|trans }}"><img src="img/tiles.svg"></button>
 			</div>
 		</div>
 		<button id="btnReload" title="{{ "reload"|trans }}"><img id="imgReload" src="img/reload.svg"></button>
@@ -88,6 +95,13 @@
 					<select name="sltGroup">
 						<option value="-">-</option>
 					</select>
+				</td>
+			</tr>
+			<tr>
+				<th>{{ "icon"|trans }}</th>
+				<td>
+					<input type="hidden" name="txtIcon">
+					<button class="btnIcon" title="{{ "choose_icon"|trans }}"><img src="img/folder.svg"></button>
 				</td>
 			</tr>
 		</table>
@@ -156,6 +170,13 @@
 				</td>
 			</tr>
 			<tr>
+				<th>{{ "icon"|trans }}</th>
+				<td>
+					<input type="hidden" name="txtIcon">
+					<button class="btnIcon" title="{{ "choose_icon"|trans }}"><img src="img/key.svg"></button>
+				</td>
+			</tr>
+			<tr>
 				<th>{{ "username"|trans }}</th>
 				<td>
 					<div class="with1button">
@@ -177,6 +198,24 @@
 				</td>
 			</tr>
 			<tr>
+				<th>{{ "totp_secret"|trans }}</th>
+				<td>
+					<div class="with1button">
+						<input type="password" name="txtTotpSecret" autocomplete="new-password" placeholder="{{ "totp_secret_placeholder"|trans }}">
+						<button class="btnShowHideTotpSecret" title="{{ "show_hide_password"|trans }}"><img src="img/eye.svg"></button>
+					</div>
+				</td>
+			</tr>
+			<tr class="totpcode invisible">
+				<th>{{ "one_time_code"|trans }}</th>
+				<td>
+					<div class="with1button">
+						<input type="text" name="txtTotpCode" readonly="true">
+						<button class="btnCopyTotpCode" title="{{ "copy_to_clipboard"|trans }}"><img src="img/clipboard.svg"></button>
+					</div>
+				</td>
+			</tr>
+			<tr>
 				<th>{{ "url"|trans }}</th>
 				<td>
 					<input type="text" name="txtUrl" autocomplete="new-password">
@@ -186,6 +225,19 @@
 				<th>{{ "description"|trans }}</th>
 				<td>
 					<textarea name="txtDescription"></textarea>
+				</td>
+			</tr>
+			<tr>
+				<th></th>
+				<td>
+					<button class="btnAddField"><img class="inline" src="img/add.svg">&nbsp;{{ "add_field"|trans }}</button>
+				</td>
+			</tr>
+			<tr class="files">
+				<th>{{ "files"|trans }}</th>
+				<td>
+					<table class="inputtable actionbtn files"></table>
+					<input type="file" name="fleUpload">
 				</td>
 			</tr>
 		</table>
@@ -261,6 +313,28 @@
 	</div>
 </div>
 
+<div id="divIconPickerTemplateContainer" class="childWindow box opaquebox fullscreen invisible">
+	<div class="titlebar">
+		<input type="search" name="txtSearch" placeholder="{{ "search..."|trans }}">
+		<span></span>
+		<button class="btnClose" title="{{ "close"|trans }}"><img src="img/close.svg"></button>
+	</div>
+	<div class="box">
+		<div class="icons">
+			<button value="" title="{{ "default"|trans }}"><img></button>
+			{% for icon in icons %}
+			<button value="{{ icon }}" title="{{ icon|replace({'_': ' '}) }}"><img src="img/icon/{{ icon }}.svg"></button>
+			{% endfor %}
+		</div>
+		<table class="inputtable">
+			<tr>
+				<th>{{ "own_icon"|trans }}</th>
+				<td><input type="file" name="fleIcon" accept="image/png,image/jpeg,image/webp"></td>
+			</tr>
+		</table>
+	</div>
+</div>
+
 <div id="divPasswordGeneratorTemplateContainer" class="childWindow box opaquebox fullscreen invisible">
 	<div class="titlebar">
 		<button class="btnApply" title="{{ "apply"|trans }}"><img src="img/tick.svg"></button>
@@ -290,6 +364,47 @@
 				<th>{{ "generated_password"|trans }}</th>
 				<td>
 					<input type="text" name="txtGeneratedPassword" readonly="true">
+				</td>
+			</tr>
+		</table>
+	</div>
+</div>
+
+<div id="divTotpContainer" class="childWindow box opaquebox fullscreen invisible">
+	<div class="titlebar">
+		<button class="btnClose" title="{{ "close"|trans }}"><img src="img/close.svg"></button>
+	</div>
+	<div class="box">
+		<table class="inputtable">
+			<tr>
+				<td colspan="2" class="description notes"></td>
+			</tr>
+			<tr class="setup">
+				<td colspan="2"><img name="imgQrCode"></td>
+			</tr>
+			<tr class="setup">
+				<th>{{ "secret"|trans }}</th>
+				<td><input type="text" name="txtSecret" readonly="true"></td>
+			</tr>
+			<tr class="setup">
+				<th>URI</th>
+				<td><input type="text" name="txtUri" readonly="true"></td>
+			</tr>
+			<tr class="code">
+				<th>{{ "one_time_code"|trans }}</th>
+				<td><input type="text" name="txtCode" autocomplete="one-time-code"></td>
+			</tr>
+			<tr class="code">
+				<th></th>
+				<td>
+					<button class="btnEnable"><span>{{ "enable"|trans }}</span></button>
+					<button class="btnDisable"><span>{{ "disable"|trans }}</span></button>
+				</td>
+			</tr>
+			<tr class="recovery invisible">
+				<td colspan="2" class="description">
+					{{ "recovery_codes_notes"|trans }}
+					<pre name="preRecoveryCodes"></pre>
 				</td>
 			</tr>
 		</table>

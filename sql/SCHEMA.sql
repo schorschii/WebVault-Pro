@@ -43,7 +43,8 @@ CREATE TABLE `password_user` (
 CREATE TABLE `password_group` (
   `id` int(11) NOT NULL,
   `parent_password_group_id` int(11) DEFAULT NULL,
-  `title` text NOT NULL
+  `title` text NOT NULL,
+  `icon` varchar(50) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -297,7 +298,7 @@ ALTER TABLE `share_password_user_group`
 -- Constraints der Tabelle `user_group_member`
 --
 ALTER TABLE `user_group_member`
-  ADD CONSTRAINT `fk_user_2` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`),
+  ADD CONSTRAINT `fk_user_2` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_user_group` FOREIGN KEY (`user_group_id`) REFERENCES `user_group` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 COMMIT;
 

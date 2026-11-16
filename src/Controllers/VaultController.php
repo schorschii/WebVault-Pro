@@ -28,6 +28,7 @@ class VaultController {
 			'customcss' => $this->container->get('settings')['customStylesheet'] ?? '',
 			'subtitle' => $this->container->get('settings')['subtitle'] ?? '',
 			'httpwarn' => (!isset($_SERVER['HTTPS'])),
+			'icons' => $this->getIconNames(),
 		]);
 	}
 	public function aboutPage(Request $request, Response $response, $args) {
@@ -68,6 +69,7 @@ class VaultController {
 					'id' => $group->id,
 					'parent_password_group_id' => $group->parent_password_group_id,
 					'title' => $group->title,
+					'icon' => $group->icon,
 					'share_users' => $this->db->selectAllSharedUserIdByPasswordGroup($group->id),
 					'share_groups' => $this->db->selectAllSharedUserGroupIdByPasswordGroup($group->id),
 				];
@@ -175,23 +177,24 @@ class VaultController {
 			if(!in_array($_SESSION['user_id'], $this->db->selectAllUserByPasswordShare($password_id))) {
 				throw new Exception('Permission denied');
 			}
-			// check group permission
-			foreach($share_groups as $group_id) {
-				if(!in_array($_SESSION['user_id'], $this->db->selectAllUserIdByUserGroup($group_id))) {
-					throw new Exception('You are not member of this group');
-				}
+		}
+		// check group permission: only members can add a group share, existing group shares can be kept
+		foreach($share_groups as $group_id) {
+			if(in_array($_SESSION['user_id'], $this->db->selectAllUserIdByUserGroup($group_id))) continue;
+			if($isNewPassword || !in_array($group_id, $this->db->selectAllSharedUserGroupIdByPassword($password_id))) {
+				throw new Exception('You are not member of this group');
 			}
 		}
 
 		// check if given password_user data matches shares
-		$givenDataUserIds = array_keys($password_user);
-		asort($givenDataUserIds);
+		$givenDataUserIds = array_map('intval', array_keys($password_user));
+		sort($givenDataUserIds);
 		$absoluteShareUserIds = $share_users;
 		foreach($share_groups as $group_id) {
 			$absoluteShareUserIds = array_merge($absoluteShareUserIds, $this->db->selectAllUserIdByUserGroup($group_id));
 		}
-		$absoluteShareUserIds = array_unique($absoluteShareUserIds);
-		asort($absoluteShareUserIds);
+		$absoluteShareUserIds = array_unique(array_map('intval', $absoluteShareUserIds));
+		sort($absoluteShareUserIds);
 		if($givenDataUserIds !== $absoluteShareUserIds) {
 			throw new Exception('Encrypted secrets do not match shares. Try to reload your vault for updated group memberships.');
 		}
@@ -258,6 +261,10 @@ class VaultController {
 			if(!array_key_exists('parent_password_group_id', $json)) {
 				throw new Exception($this->langCtrl->translate('choose_another_parent_folder'));
 			}
+			$icon = empty($json['icon']) ? null : $json['icon'];
+			if($icon !== null && !in_array($icon, $this->getIconNames())) {
+				throw new Exception('Invalid icon');
+			}
 			$absoluteShareUserIds = $json['share_users'];
 			foreach($json['share_groups'] as $group_id) {
 				$absoluteShareUserIds = array_merge($absoluteShareUserIds, $this->db->selectAllUserIdByUserGroup($group_id));
@@ -273,7 +280,7 @@ class VaultController {
 
 			// insert data
 			$this->db->beginTransaction();
-			$id = $this->db->insertPasswordGroup($json['parent_password_group_id']??null, $json['title']);
+			$id = $this->db->insertPasswordGroup($json['parent_password_group_id']??null, $json['title'], $icon);
 			$this->db->deletePasswordGroupUserShareByPasswordGroup($id);
 			foreach($json['share_users'] as $user_id) {
 				$this->db->insertPasswordGroupUserShare($id, $user_id);
@@ -315,6 +322,10 @@ class VaultController {
 			|| $json['parent_password_group_id'] == $id) {
 				throw new Exception($this->langCtrl->translate('choose_another_parent_folder'));
 			}
+			$icon = empty($json['icon']) ? null : $json['icon'];
+			if($icon !== null && !in_array($icon, $this->getIconNames())) {
+				throw new Exception('Invalid icon');
+			}
 			$absoluteShareUserIds = $json['share_users'];
 			foreach($json['share_groups'] as $group_id) {
 				$absoluteShareUserIds = array_merge($absoluteShareUserIds, $this->db->selectAllUserIdByUserGroup($group_id));
@@ -337,7 +348,7 @@ class VaultController {
 
 			// update data
 			$this->db->beginTransaction();
-			$this->db->updatePasswordGroup($id, $json['parent_password_group_id'], $json['title']);
+			$this->db->updatePasswordGroup($id, $json['parent_password_group_id'], $json['title'], $icon);
 			$this->db->deletePasswordGroupUserShareByPasswordGroup($id);
 			foreach($json['share_users'] as $user_id) {
 				$this->db->insertPasswordGroupUserShare($id, $user_id);
@@ -418,10 +429,25 @@ class VaultController {
 		}
 	}
 
-	public function checkLogin() {
+	private function getIconNames() {
+		$names = [];
+		foreach(glob(__DIR__.'/../../public/img/icon/*.svg') as $file) {
+			$names[] = basename($file, '.svg');
+		}
+		return $names;
+	}
+
+	public function checkLogin($touch=true) {
 		if(empty($_SESSION['user_id'])) {
 			throw new Exception('Not logged in');
 		}
+		// PHP's session gc does not reliably enforce the timeout, so check it here
+		$timeout = $this->container->get('settings')['sessionTimeout'] ?? 0;
+		if($timeout && isset($_SESSION['last_activity']) && time() - $_SESSION['last_activity'] > $timeout) {
+			$_SESSION = [];
+			throw new Exception('Session expired');
+		}
+		if($touch) $_SESSION['last_activity'] = time();
 		$user = $this->db->selectUser($_SESSION['user_id']);
 		if(empty($user) || $user->locked) {
 			throw new Exception('Invalid user');

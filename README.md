@@ -64,6 +64,13 @@ Crypto API capable browser with Javascript enabled
 - Chrome/Chromium based browsers, Firefox (both desktop and mobile)
 - IE/Edge are **not** supported
 
+### Upgrade notes for v1.0.0-RC5 users
+Apply the following schema changes to your existing database:
+```
+ALTER TABLE `user_group_member` DROP FOREIGN KEY `fk_user_2`;
+ALTER TABLE `user_group_member` ADD CONSTRAINT `fk_user_2` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+```
+
 ### Upgrade notes for v0.x (WebPW) users
 Since the concept and database schema of WebVault Pro differs completely from v0.x ("WebPW"), there is no direct upgrade path. You need to manually export and re-import your passwords in the new version.
 

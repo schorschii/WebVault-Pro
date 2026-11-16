@@ -36,6 +36,7 @@ class UserController {
 
 			session_regenerate_id(true);
 			$_SESSION['user_id'] = $user->id;
+			$_SESSION['last_activity'] = time();
 
 			$groups = [];
 			foreach($this->db->selectAllUserGroupForShare($_SESSION['user_id']) as $group) {
@@ -63,7 +64,7 @@ class UserController {
 
 	public function session(Request $request, Response $response, $args) {
 		try {
-			$this->vc->checkLogin();
+			$this->vc->checkLogin(false); // periodic session check must not extend the session
 			$response->getBody()->write(json_encode([
 				'success' => true
 			]));
@@ -85,6 +86,7 @@ class UserController {
 
 	public function setUserKeys(Request $request, Response $response, $args) {
 		try {
+			$this->vc->checkLogin();
 			$json = JsonRpc::parseJsonRequest($request);
 
 			// input checks
@@ -120,6 +122,7 @@ class UserController {
 
 	public function createGroup(Request $request, Response $response, $args) {
 		try {
+			$this->vc->checkLogin();
 			$json = JsonRpc::parseJsonRequest($request);
 			if(empty($json['title'])) {
 				throw new Exception('Title cannot be empty');
@@ -154,6 +157,7 @@ class UserController {
 
 	public function editGroup(Request $request, Response $response, $args) {
 		try {
+			$this->vc->checkLogin();
 			$json = JsonRpc::parseJsonRequest($request);
 			$id = $request->getAttribute('id');
 			if(empty($json['title'])) {
@@ -207,6 +211,7 @@ class UserController {
 
 	public function deleteGroup(Request $request, Response $response, $args) {
 		try {
+			$this->vc->checkLogin();
 			$id = $request->getAttribute('id');
 
 			// permission check

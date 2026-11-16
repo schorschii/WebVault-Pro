@@ -63,6 +63,7 @@ $settings['ldapSync'] = [
    - 'defaultLanguage': default language to use (2 char lang code)
    - 'customStylesheet': optional path to a custom stylesheet to include with your corporate design
    - 'subtitle': optional web app title (branding)
+   - 'maxFileSize': maximum size of file attachments in bytes (adjust PHP's post_max_size and memory_limit accordingly)
 ***/
 $settings['baseDir']                = '';
 $settings['templateCache']          = false;
@@ -72,3 +73,4 @@ $settings['addContentLengthHeader'] = false;
 $settings['defaultLanguage']        = 'en';
 $settings['customStylesheet']       = '';
 $settings['subtitle']               = '';
+$settings['maxFileSize']            = 10*1024*1024;

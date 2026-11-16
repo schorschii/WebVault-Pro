@@ -13,7 +13,7 @@ $session_length_seconds = $settings['sessionTimeout'];
 ini_set('session.gc_maxlifetime', $session_length_seconds);
 session_set_cookie_params([
 	'lifetime' => 0, // until browser closed (or session purged by PHP's gc_maxlifetime)
-	'path' => $settings['baseDir'],
+	'path' => $settings['baseDir'] ?: '/',
 	'domain' => null,
 	'secure' => $secure,
 	'httponly' => true,

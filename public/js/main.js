@@ -9,6 +9,7 @@ var sessionEnvironment = {
 	'userId': -1, 'users': {}, 'groups': {}
 };
 var sessionCheckTimer;
+var sessionLastUserActivity = Date.now();
 
 
 // set up event listeners
@@ -20,6 +21,17 @@ document.addEventListener('DOMContentLoaded', (event) => {
 	btnMore.addEventListener('click', () => showMore());
 	btnUserGroups.addEventListener('click', () => showUserGroupsManagement());
 	btnImport.addEventListener('click', () => showImport());
+	btnTotp.addEventListener('click', () => showTotp());
+	btnColorScheme.addEventListener('click', () => {
+		let schemes = ['auto', 'light', 'dark'];
+		setSetting('colorScheme', schemes[(schemes.indexOf(getSetting('colorScheme', 'auto')) + 1) % schemes.length]);
+		applyColorScheme();
+	});
+	btnView.addEventListener('click', () => {
+		setSetting('view', (getSetting('view', 'list') == 'list') ? 'tiles' : 'list');
+		applyView();
+	});
+	applyView();
 	btnReload.addEventListener('click', () => {
 		imgReload.classList.add('rotating');
 		divVault.classList.add('loading');
@@ -36,11 +48,21 @@ document.addEventListener('DOMContentLoaded', (event) => {
 	txtUsername.addEventListener('keyup', loginAction);
 	txtPassword.addEventListener('keyup', loginAction);
 	txtOldPassword.addEventListener('keyup', loginAction);
+	txtTotp.addEventListener('keyup', loginAction);
+	// changed credentials require the first login step again
+	txtUsername.addEventListener('input', () => txtTotp.classList.add('invisible'));
+	txtPassword.addEventListener('input', () => txtTotp.classList.add('invisible'));
 	activateWindowMouseDrag(divVaultContainer, divVaultTitlebar);
+	document.addEventListener('keydown', () => sessionLastUserActivity = Date.now());
+	document.addEventListener('mousedown', () => sessionLastUserActivity = Date.now());
 });
 
 
+// stylesheets are only completely available after loading
+window.addEventListener('load', () => applyColorScheme());
+
 class PrivateKeyDecryptionError extends Error {}
+class TotpRequiredError extends Error {}
 
 function jsonRequest(method, url, data) {
 	return new Promise(function(resolve, reject) {
@@ -82,10 +104,18 @@ function login() {
 
 	btnLogin.classList.add('loading');
 	btnLogin.disabled = true;
-	jsonRequest(
-		'POST', 'user/login',
-		{'username':username, 'password':password}
-	).then((response) => {
+	let request;
+	if(!txtTotp.classList.contains('invisible')) {
+		// second step: the password was already checked, only the one-time code is required
+		request = jsonRequest('POST', 'user/login/totp', {'code':txtTotp.value});
+	} else {
+		request = jsonRequest('POST', 'user/login', {'username':username, 'password':password});
+	}
+	request.then((response) => {
+		if(response.totp_required) {
+			throw new TotpRequiredError();
+		}
+		sessionEnvironment['totp'] = response.totp;
 		if(response.private_key) {
 			// store users and groups for sharing options
 			sessionEnvironment['userId'] = response.id;
@@ -145,16 +175,29 @@ function login() {
 		txtPassword.value = '';
 		txtOldPassword.value = '';
 		txtOldPassword.classList.add('invisible');
+		txtTotp.value = '';
+		txtTotp.classList.add('invisible');
 		divLoginInfoBox.classList.add('invisible');
 
 		clearInterval(sessionCheckTimer);
 		sessionCheckTimer = setInterval(checkSession, 5000);
 	}).catch((error) => {
-		console.error(error);
-		txtPassword.value = '';
-		txtOldPassword.value = '';
 		btnLogin.classList.remove('loading');
 		btnLogin.disabled = false;
+		if(error instanceof TotpRequiredError) {
+			txtTotp.classList.remove('invisible');
+			txtTotp.focus();
+			return;
+		}
+		console.error(error);
+		if(txtTotp.classList.contains('invisible')) {
+			txtPassword.value = '';
+			txtOldPassword.value = '';
+		} else if(String(error).includes('Invalid session')) {
+			// too many wrong codes, start again with the password
+			txtTotp.classList.add('invisible');
+		}
+		txtTotp.value = ''; // keep the password in the second step, it is needed to decrypt the private key
 		if(!(error instanceof PrivateKeyDecryptionError)) {
 			infobox(divLoginInfoBox, 'red', strings.login_failed);
 			divLoginInfoBox.classList.remove('invisible');
@@ -174,7 +217,9 @@ function checkSession() {
 			}
 		}
 	};
-	xhttp.open('GET', 'user/session', true);
+	// keep the session alive while the user is working, e.g. typing a long entry
+	let active = (Date.now() - sessionLastUserActivity < 5000);
+	xhttp.open('GET', 'user/session'+(active ? '?active=1' : ''), true);
 	xhttp.send();
 }
 
@@ -193,8 +238,10 @@ function loadVault(privKey=null, pubKey=null) {
 		response.groups.forEach((group) => {
 			sessionVaultContent['groups'][group.id] = {
 				'group':group.parent_password_group_id,
-				'title':group.title,
-				'share_users':group.share_users, 'share_groups':group.share_groups
+				'title':group.title, 'icon':group.icon, 'permission':group.permission,
+				'share_users':group.share_users, 'share_groups':group.share_groups,
+				'share_user_permissions':group.share_user_permissions, 'share_group_permissions':group.share_group_permissions,
+				'share_user_expires':group.share_user_expires, 'share_group_expires':group.share_group_expires
 			};
 		});
 		// decrypt all passwords
@@ -209,7 +256,11 @@ function loadVault(privKey=null, pubKey=null) {
 						'group':password.password_group_id, 'title':decryptedData.title,
 						'username':decryptedData.username, 'password':decryptedData.password,
 						'url':decryptedData.url, 'description':decryptedData.description,
-						'share_users':password.share_users, 'share_groups':password.share_groups
+						'icon':decryptedData.icon, 'fields':decryptedData.fields || [], 'files':decryptedData.files || [], 'totp':decryptedData.totp || '',
+						'permission':password.permission,
+						'share_users':password.share_users, 'share_groups':password.share_groups,
+						'share_user_permissions':password.share_user_permissions, 'share_group_permissions':password.share_group_permissions,
+						'share_user_expires':password.share_user_expires, 'share_group_expires':password.share_group_expires
 					};
 				})
 			);
@@ -269,6 +320,7 @@ function addPasswordHtml(parentUl, id, passwordItem) {
 	li.setAttribute('passwordid', id);
 	li.addEventListener('click', openDetailsAction);
 	parentUl.appendChild(li);
+	addIconHtml(li, passwordItem.icon);
 	let divCont = document.createElement('DIV');
 	divCont.classList.add('passwordheader');
 	li.appendChild(divCont);
@@ -277,11 +329,11 @@ function addPasswordHtml(parentUl, id, passwordItem) {
 	a.addEventListener('click', openDetailsAction);
 	divCont.appendChild(a);
 	let spanTitle = document.createElement('SPAN');
-	spanTitle.innerText = truncate(passwordItem.title);
+	setTruncatedText(spanTitle, passwordItem.title);
 	a.appendChild(spanTitle);
 	let spanUsername = document.createElement('SPAN');
 	spanUsername.classList.add('username');
-	spanUsername.innerText = truncate(passwordItem.username);
+	setTruncatedText(spanUsername, passwordItem.username);
 	a.appendChild(spanUsername);
 	let divDesc = document.createElement('DIV');
 	divDesc.classList.add('entrydescription');
@@ -293,13 +345,13 @@ function addPasswordHtml(parentUl, id, passwordItem) {
 		|| passwordItem.url.startsWith('ftp://')) {
 			aUrl.href = passwordItem.url;
 		}
-		aUrl.innerText = truncate(passwordItem.url);
+		setTruncatedText(aUrl, passwordItem.url);
 		aUrl.target = '_blank';
 		aUrl.addEventListener('click', (e) => e.stopPropagation());
 		divDesc.appendChild(aUrl);
 	}
 	let spanDesc = document.createElement('SPAN');
-	spanDesc.innerText = (passwordItem.url&&passwordItem.description ? ' - ' : '') + truncate(passwordItem.description.replace('\n', ' '));
+	setTruncatedText(spanDesc, passwordItem.description.replaceAll('\n', ' '), (passwordItem.url&&passwordItem.description ? ' - ' : ''));
 	divDesc.appendChild(spanDesc);
 	let shareText = compileShareText(passwordItem['share_users'], passwordItem['share_groups']);
 	if(shareText) {
@@ -322,6 +374,7 @@ function addGroupHtml(parentUl, id, groupItem) {
 	li.setAttribute('groupid', id);
 	li.addEventListener('click', openDetailsAction);
 	parentUl.appendChild(li);
+	addIconHtml(li, groupItem.icon);
 	let divCont = document.createElement('DIV');
 	divCont.classList.add('groupheader');
 	li.appendChild(divCont);
@@ -353,6 +406,22 @@ function addGroupHtml(parentUl, id, groupItem) {
 	let ulSub = document.createElement('UL');
 	li.appendChild(ulSub);
 	return ulSub;
+}
+function getIconUrl(icon) {
+	// only icons offered by the server and small uploaded PNG images are allowed since the value could be manipulated by another user
+	if(!icon) return null;
+	if(/^data:image\/png;base64,[A-Za-z0-9+\/]+=*$/.test(icon) && icon.length <= 20000) return icon;
+	if(/^[a-z_]+$/.test(icon) && divIconPickerTemplateContainer.querySelector('.icons button[value="'+icon+'"]')) return 'img/icon/'+icon+'.svg';
+	return null;
+}
+function addIconHtml(li, icon) {
+	let url = getIconUrl(icon);
+	if(!url) return;
+	li.classList.add('customicon');
+	let img = document.createElement('IMG');
+	img.classList.add('icon');
+	img.src = url;
+	li.appendChild(img);
 }
 function compileShareText(shareUsers, shareGroups) {
 	let infos = [];
@@ -413,10 +482,41 @@ function restoreGroupState() {
 		let groupId = elements[i].getAttribute('groupid');
 		if(groupStates[groupId]) {
 			elements[i].classList.remove('closed');
-		} else {
-			elements[i].classList.remove('add');
 		}
 	}
+}
+
+var colorSchemeRules = null;
+function applyColorScheme() {
+	// the dark mode of all stylesheets (incl. custom ones) is defined by media queries, so these are rewritten to force a scheme
+	let scheme = getSetting('colorScheme', 'auto');
+	if(colorSchemeRules === null) {
+		colorSchemeRules = [];
+		let collectRules = function(rules) {
+			for(let rule of rules) {
+				if(rule.styleSheet) collectRules(rule.styleSheet.cssRules); // @import
+				else if(rule.media && rule.media.mediaText.includes('prefers-color-scheme: dark')) colorSchemeRules.push([rule, rule.media.mediaText]);
+			}
+		};
+		for(let sheet of document.styleSheets) {
+			try {
+				collectRules(sheet.cssRules);
+			} catch(e) {} // stylesheet of another origin
+		}
+	}
+	colorSchemeRules.forEach(([rule, mediaText]) => {
+		rule.media.mediaText = (scheme == 'dark') ? 'all' : ((scheme == 'light') ? 'not all' : mediaText);
+	});
+	// also for the SVG icons and form elements of the browser
+	document.documentElement.style.colorScheme = (scheme == 'auto') ? '' : scheme;
+	btnColorScheme.title = strings['color_scheme_'+scheme];
+}
+
+function applyView() {
+	let tiles = (getSetting('view', 'list') == 'tiles');
+	ulEntriesTree.classList.toggle('tiles', tiles);
+	btnView.title = tiles ? strings.view_list : strings.view_tiles;
+	btnView.querySelectorAll('img')[0].src = tiles ? 'img/list.svg' : 'img/tiles.svg';
 }
 
 const STORAGE_KEY_SETTINGS = 'settings';
@@ -434,8 +534,15 @@ function setSetting(name, value) {
 
 function generateRandomPassword(length=13, charset='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789') {
 	let generated = '';
-	for(var i = 0, n = charset.length; i < length; ++i) {
-		generated += charset.charAt(Math.floor(Math.random() * n));
+	let n = charset.length;
+	if(!n) return generated;
+	let random = new Uint32Array(1);
+	while(generated.length < length) {
+		crypto.getRandomValues(random);
+		// rejection sampling to avoid modulo bias
+		if(random[0] < 0x100000000 - (0x100000000 % n)) {
+			generated += charset.charAt(random[0] % n);
+		}
 	}
 	return generated;
 }
@@ -483,10 +590,15 @@ function search(q) {
 		else if(groupId) item = sessionVaultContent['groups'][groupId];
 		// iterate over all fields and check if contents match the search query
 		for(let key in item) {
+			if(key == 'password' || key == 'totp') continue; // do not leak secrets via search
 			if(!item[key] || typeof item[key] !== 'string') continue;
 			match = (item[key].toUpperCase().indexOf(filter) > -1);
 			if(match) break;
 		}
+		(item['fields'] || []).forEach((field) => {
+			if(field.name.toUpperCase().indexOf(filter) > -1
+			|| (field.type != 'password' && field.value.toUpperCase().indexOf(filter) > -1)) match = true;
+		});
 		// show or hide password
 		if(match) {
 			matches ++;
@@ -520,11 +632,12 @@ function populateUserGroups() {
 	let tblGroups = divUserGroupsContainer.querySelectorAll('.groups')[0];
 	tblGroups.innerHTML = '';
 	for(let groupId in sessionEnvironment['groups']) {
+		if(!sessionEnvironment['groups'][groupId]['members'].includes(sessionEnvironment['userId'])) continue;
 		addUserGroupRow(tblGroups, groupId, function(){
 			showUserGroupManagement(groupId);
 		});
 	}
-	if(!Object.keys(sessionEnvironment['groups']).length) {
+	if(!tblGroups.rows.length) {
 		let tr = document.createElement('TR');
 		tblGroups.appendChild(tr);
 		let td = document.createElement('TD');
@@ -560,7 +673,7 @@ function showUserGroupManagement(id=null) {
 		let userEntries = clone.querySelectorAll('.members tr');
 		for(let i=0; i<userEntries.length; i++) {
 			if(userEntries[i].getAttribute('userid')) {
-				newGroupMemberIds.push(userEntries[i].getAttribute('userid'));
+				newGroupMemberIds.push(parseInt(userEntries[i].getAttribute('userid')));
 			}
 		}
 		// re-encrypt all passwords which are shared with the edited group
@@ -568,7 +681,8 @@ function showUserGroupManagement(id=null) {
 		var encryptedPasswords = {};
 		if(id) {
 			for(let passwordId in sessionVaultContent['passwords']) {
-				if(sessionVaultContent['passwords'][passwordId]['share_groups'].includes(parseInt(id))) {
+				if(sessionVaultContent['passwords'][passwordId]['share_groups'].includes(parseInt(id))
+				&& !(sessionVaultContent['passwords'][passwordId]['permission'] & SHARE_PERMISSION_READ_ONLY)) { // read only passwords cannot be re-encrypted
 					let targetPublicKeys = {};
 					sessionVaultContent['passwords'][passwordId]['share_users'].forEach((userId) => {
 						targetPublicKeys[userId] = sessionEnvironment['users'][userId]['public_key'];
@@ -585,6 +699,10 @@ function showUserGroupManagement(id=null) {
 						'password': sessionVaultContent['passwords'][passwordId].password,
 						'url': sessionVaultContent['passwords'][passwordId].url,
 						'description': sessionVaultContent['passwords'][passwordId].description,
+						'icon': sessionVaultContent['passwords'][passwordId].icon,
+						'fields': sessionVaultContent['passwords'][passwordId].fields,
+						'files': sessionVaultContent['passwords'][passwordId].files,
+						'totp': sessionVaultContent['passwords'][passwordId].totp,
 					};
 					promiseChain.push(
 						encryptData(targetPublicKeys, JSON.stringify(secret), passwordId)
@@ -666,6 +784,77 @@ function showMore() {
 		divMore.classList.toggle('invisible');
 	};
 }
+function showTotp() {
+	let divNotes = divTotpContainer.querySelectorAll('.notes')[0];
+	let txtSecret = divTotpContainer.querySelectorAll('[name=txtSecret]')[0];
+	let txtUri = divTotpContainer.querySelectorAll('[name=txtUri]')[0];
+	let imgQrCode = divTotpContainer.querySelectorAll('[name=imgQrCode]')[0];
+	let txtCode = divTotpContainer.querySelectorAll('[name=txtCode]')[0];
+	let btnEnable = divTotpContainer.querySelectorAll('.btnEnable')[0];
+	let btnDisable = divTotpContainer.querySelectorAll('.btnDisable')[0];
+	let trRecovery = divTotpContainer.querySelectorAll('tr.recovery')[0];
+	let preRecoveryCodes = divTotpContainer.querySelectorAll('[name=preRecoveryCodes]')[0];
+	let setupRows = divTotpContainer.querySelectorAll('tr.setup');
+	let codeRows = divTotpContainer.querySelectorAll('tr.code');
+	// reset state
+	txtCode.value = '';
+	divNotes.classList.remove('invisible');
+	trRecovery.classList.add('invisible');
+	codeRows.forEach((tr) => tr.classList.remove('invisible'));
+	if(sessionEnvironment['totp']) {
+		divNotes.innerText = strings.totp_enabled_notes;
+		setupRows.forEach((tr) => tr.classList.add('invisible'));
+		btnEnable.classList.add('invisible');
+		btnDisable.classList.remove('invisible');
+	} else {
+		divNotes.innerText = strings.totp_setup_notes;
+		setupRows.forEach((tr) => tr.classList.remove('invisible'));
+		btnEnable.classList.remove('invisible');
+		btnDisable.classList.add('invisible');
+		jsonRequest('POST', 'user/totp', {}).then((response) => {
+			txtSecret.value = response.secret;
+			txtUri.value = response.uri;
+			let qr = qrcode(0, 'M');
+			qr.addData(response.uri);
+			qr.make();
+			imgQrCode.src = qr.createDataURL(4);
+		}).catch((error) => {
+			console.warn(error);
+			alert(error);
+		});
+	}
+	// add actions
+	let closeAction = windowCloseAction(divTotpContainer, false);
+	activateWindowMouseDrag(divTotpContainer, divTotpContainer.querySelectorAll('.titlebar')[0], divVaultContainer);
+	btnEnable.onclick = function(){
+		jsonRequest('POST', 'user/totp/enable', {'code':txtCode.value}).then((response) => {
+			sessionEnvironment['totp'] = true;
+			// show the recovery codes once
+			divNotes.classList.add('invisible');
+			setupRows.forEach((tr) => tr.classList.add('invisible'));
+			codeRows.forEach((tr) => tr.classList.add('invisible'));
+			preRecoveryCodes.innerText = response.recovery_codes.join('\n');
+			trRecovery.classList.remove('invisible');
+		}).catch((error) => {
+			console.warn(error);
+			alert(error);
+		});
+	};
+	btnDisable.onclick = function(){
+		jsonRequest('POST', 'user/totp/disable', {'code':txtCode.value}).then((response) => {
+			sessionEnvironment['totp'] = false;
+			closeAction();
+		}).catch((error) => {
+			console.warn(error);
+			alert(error);
+		});
+	};
+	divTotpContainer.querySelectorAll('.btnClose')[0].onclick = closeAction;
+	// show with animation
+	document.body.appendChild(divTotpContainer);
+	windowOpenAnimation(divTotpContainer);
+	txtCode.focus();
+}
 function showImport() {
 	// add actions
 	let closeAction = windowCloseAction(divImportContainer,false);
@@ -678,7 +867,7 @@ function showImport() {
 			.then(() => {
 				divImportContainer.querySelectorAll('.btnImport')[0].classList.remove('loading');
 				divImportContainer.querySelectorAll('.btnImport')[0].disabled = false;
-				populateVaultWindowEntries();
+				loadVault(); // reload to get the complete share and permission info of the imported entries
 				closeAction();
 			})
 			.catch((error) => {
@@ -739,6 +928,7 @@ async function importEntries(rows) {
 				'password': row[3],
 				'url': row[4],
 				'description': row[5],
+				'totp': row[6] || '',
 			};
 			let userId = sessionEnvironment['userId'];
 			let targetPublicKeys = {};
@@ -775,6 +965,8 @@ function showGroupDetails(id=null) {
 	// identify inputs
 	let sltGroup = clone.querySelectorAll('[name=sltGroup]')[0];
 	let txtTitle = clone.querySelectorAll('[name=txtTitle]')[0];
+	let txtIcon = clone.querySelectorAll('[name=txtIcon]')[0];
+	let btnIcon = clone.querySelectorAll('.btnIcon')[0];
 	let sltShareUser = clone.querySelectorAll('[name=sltShareUser]')[0];
 	let sltShareUserGroup = clone.querySelectorAll('[name=sltShareUserGroup]')[0];
 	let chkInheritPermissions = clone.querySelectorAll('[name=chkInheritPermissions]')[0];
@@ -789,6 +981,8 @@ function showGroupDetails(id=null) {
 		sltShareUser.appendChild(option);
 	}
 	for(let userGroupId in sessionEnvironment['groups']) {
+		// only members can add a group share
+		if(!sessionEnvironment['groups'][userGroupId]['members'].includes(sessionEnvironment['userId'])) continue;
 		let option = document.createElement('OPTION');
 		option.value = userGroupId;
 		option.innerText = sessionEnvironment['groups'][userGroupId]['title'];
@@ -803,6 +997,8 @@ function showGroupDetails(id=null) {
 		let group = sessionVaultContent['groups'][id];
 		sltGroup.value = group['group'];
 		txtTitle.value = group['title'];
+		txtIcon.value = group['icon'] || '';
+		btnIcon.querySelectorAll('img')[0].src = getIconUrl(txtIcon.value) || 'img/folder.svg';
 		clone.querySelectorAll('.btnDelete')[0].addEventListener('click', function(e){
 			let subItems = getAllSubentriesOfGroup(id);
 			if(Object.keys(subItems['passwords']).length || Object.keys(subItems['groups']).length) {
@@ -823,10 +1019,10 @@ function showGroupDetails(id=null) {
 			}
 		});
 		group['share_groups'].forEach((shareGroupId) => {
-			addShareGroupRow(tblShares, shareGroupId);
+			addShareGroupRow(tblShares, shareGroupId, group['share_group_permissions'][shareGroupId], group['share_group_expires'][shareGroupId]);
 		});
 		group['share_users'].forEach((shareUserId) => {
-			addShareUserRow(tblShares, shareUserId);
+			addShareUserRow(tblShares, shareUserId, group['share_user_permissions'][shareUserId], group['share_user_expires'][shareUserId]);
 		});
 	}
 	sltGroup.addEventListener('change', function(e) {
@@ -839,22 +1035,26 @@ function showGroupDetails(id=null) {
 		}
 		if(sltGroup.value != '' && sltGroup.value != '-') {
 			// apply permissions from parent folder
-			sessionVaultContent['groups'][sltGroup.value]['share_groups'].forEach((shareGroupId) => {
-				addShareGroupRow(tblShares, shareGroupId);
+			let parentGroup = sessionVaultContent['groups'][sltGroup.value];
+			parentGroup['share_groups'].forEach((shareGroupId) => {
+				addShareGroupRow(tblShares, shareGroupId, parentGroup['share_group_permissions'][shareGroupId], parentGroup['share_group_expires'][shareGroupId]);
 			});
-			sessionVaultContent['groups'][sltGroup.value]['share_users'].forEach((shareUserId) => {
-				addShareUserRow(tblShares, shareUserId);
+			parentGroup['share_users'].forEach((shareUserId) => {
+				addShareUserRow(tblShares, shareUserId, parentGroup['share_user_permissions'][shareUserId], parentGroup['share_user_expires'][shareUserId]);
 			});
 		} else {
 			// add self only
-			addShareUserRow(tblShares, sessionEnvironment['userId']);
+			addShareUserRow(tblShares, sessionEnvironment['userId'], 0);
 		}
 	});
 	clone.querySelectorAll('.btnAddUserShare')[0].addEventListener('click', function(e){
-		addShareUserRow(tblShares, sltShareUser.value);
+		addShareUserRow(tblShares, sltShareUser.value, 0);
 	});
 	clone.querySelectorAll('.btnAddUserGroupShare')[0].addEventListener('click', function(e){
-		addShareGroupRow(tblShares, sltShareUserGroup.value);
+		addShareGroupRow(tblShares, sltShareUserGroup.value, 0);
+	});
+	btnIcon.addEventListener('click', function(e){
+		showIconPicker(txtIcon, btnIcon, 'img/folder.svg', clone);
 	});
 	clone.querySelectorAll('.btnContents')[0].addEventListener('click', function(e){
 		clone.querySelectorAll('.box.contents')[0].classList.remove('invisible');
@@ -868,6 +1068,10 @@ function showGroupDetails(id=null) {
 	clone.querySelectorAll('.btnSave')[0].addEventListener('click', function(e){
 		let shareUsers = [];
 		let shareGroups = [];
+		let shareUserPermissions = {};
+		let shareGroupPermissions = {};
+		let shareUserExpires = {};
+		let shareGroupExpires = {};
 		let targetPublicKeys = {};
 		// add all other users
 		tblShares.querySelectorAll('tr').forEach(function(item){
@@ -876,8 +1080,12 @@ function showGroupDetails(id=null) {
 			if(userId && !shareUsers.includes(userId)) {
 				targetPublicKeys[userId] = sessionEnvironment['users'][userId]['public_key'];
 				shareUsers.push(userId);
+				shareUserPermissions[userId] = parseInt(item.querySelector('select.permission').value);
+				shareUserExpires[userId] = localDateTimeInputToUtc(item.querySelector('input.expires').value);
 			}
 			if(groupId && !shareGroups.includes(groupId)) {
+				shareGroupPermissions[groupId] = parseInt(item.querySelector('select.permission').value);
+				shareGroupExpires[groupId] = localDateTimeInputToUtc(item.querySelector('input.expires').value);
 				sessionEnvironment['groups'][groupId]['members'].forEach((groupUserId) => {
 					targetPublicKeys[groupUserId] = sessionEnvironment['users'][groupUserId]['public_key'];
 				});
@@ -887,6 +1095,8 @@ function showGroupDetails(id=null) {
 		if(!isOwnUserIdIncluded(shareUsers, shareGroups)) {
 			let myUserId = sessionEnvironment['userId'];
 			shareUsers.push(myUserId);
+			shareUserPermissions[myUserId] = 0;
+			shareUserExpires[myUserId] = null;
 			targetPublicKeys[myUserId] = sessionEnvironment['users'][myUserId]['public_key'];
 		}
 		// change permissions and re-encrypt all subitems
@@ -902,6 +1112,10 @@ function showGroupDetails(id=null) {
 					'password': entriesToUpdate.passwords[passwordId].password,
 					'url': entriesToUpdate.passwords[passwordId].url,
 					'description': entriesToUpdate.passwords[passwordId].description,
+					'icon': entriesToUpdate.passwords[passwordId].icon,
+					'fields': entriesToUpdate.passwords[passwordId].fields,
+					'files': entriesToUpdate.passwords[passwordId].files,
+					'totp': entriesToUpdate.passwords[passwordId].totp,
 				};
 				promiseChain.push(
 					encryptData(targetPublicKeys, JSON.stringify(secret), passwordId)
@@ -923,25 +1137,38 @@ function showGroupDetails(id=null) {
 		.then(() => jsonRequest(
 			'POST', (id==null ? 'vault/group' : 'vault/group/'+encodeURIComponent(id)),
 			{
-				'parent_password_group_id': group, 'title': txtTitle.value,
+				'parent_password_group_id': group, 'title': txtTitle.value, 'icon': txtIcon.value,
 				'share_users': shareUsers, 'share_groups': shareGroups,
+				'share_user_permissions': shareUserPermissions, 'share_group_permissions': shareGroupPermissions,
+				'share_user_expires': shareUserExpires, 'share_group_expires': shareGroupExpires,
 				'passwords': encryptedPasswords, 'groups': entriesToUpdate.groups
 			}
 		)).then((response) => {
 			// append to session vault
 			sessionVaultContent['groups'][response.id] = {
-				'group':group, 'title':txtTitle.value,
-				'share_users':shareUsers, 'share_groups':shareGroups
+				'group':group, 'title':txtTitle.value, 'icon':txtIcon.value,
+				'permission': (id ? sessionVaultContent['groups'][id]['permission'] : 0),
+				'share_users':shareUsers, 'share_groups':shareGroups,
+				'share_user_permissions':shareUserPermissions, 'share_group_permissions':shareGroupPermissions,
+				'share_user_expires':shareUserExpires, 'share_group_expires':shareGroupExpires
 			};
 			// update share info of updated entries
 			for(let groupId in entriesToUpdate.groups) {
 				sessionVaultContent['groups'][groupId]['share_users'] = shareUsers;
 				sessionVaultContent['groups'][groupId]['share_groups'] = shareGroups;
+				sessionVaultContent['groups'][groupId]['share_user_permissions'] = shareUserPermissions;
+				sessionVaultContent['groups'][groupId]['share_group_permissions'] = shareGroupPermissions;
+				sessionVaultContent['groups'][groupId]['share_user_expires'] = shareUserExpires;
+				sessionVaultContent['groups'][groupId]['share_group_expires'] = shareGroupExpires;
 			}
 			for(let passwordId in entriesToUpdate.passwords) {
 				sessionVaultContent['passwords'][passwordId]['revision'] += 1;
 				sessionVaultContent['passwords'][passwordId]['share_users'] = shareUsers;
 				sessionVaultContent['passwords'][passwordId]['share_groups'] = shareGroups;
+				sessionVaultContent['passwords'][passwordId]['share_user_permissions'] = shareUserPermissions;
+				sessionVaultContent['passwords'][passwordId]['share_group_permissions'] = shareGroupPermissions;
+				sessionVaultContent['passwords'][passwordId]['share_user_expires'] = shareUserExpires;
+				sessionVaultContent['passwords'][passwordId]['share_group_expires'] = shareGroupExpires;
 			}
 			populateVaultWindowEntries();
 			closeAnimation(e);
@@ -951,6 +1178,12 @@ function showGroupDetails(id=null) {
 			alert(error);
 		});
 	});
+	if(id && (sessionVaultContent['groups'][id]['permission'] & SHARE_PERMISSION_READ_ONLY)) {
+		disableEditing(clone);
+	}
+	if(id && (sessionVaultContent['groups'][id]['permission'] & SHARE_PERMISSION_NO_RESHARE)) {
+		clone.querySelectorAll('.btnShare')[0].classList.add('invisible');
+	}
 	// show with animation
 	document.body.appendChild(clone);
 	windowOpenAnimation(clone);
@@ -963,11 +1196,18 @@ function showPasswordDetails(id=null) {
 	let txtRevision = clone.querySelectorAll('[name=txtRevision]')[0];
 	let sltGroup = clone.querySelectorAll('[name=sltGroup]')[0];
 	let txtTitle = clone.querySelectorAll('[name=txtTitle]')[0];
+	let txtIcon = clone.querySelectorAll('[name=txtIcon]')[0];
+	let btnIcon = clone.querySelectorAll('.btnIcon')[0];
 	let txtUrl = clone.querySelectorAll('[name=txtUrl]')[0];
 	let txtUsername = clone.querySelectorAll('[name=txtUsername]')[0];
 	let txtPassword = clone.querySelectorAll('[name=txtPassword]')[0];
 	let divPasswordStrength = clone.querySelectorAll('.passwordStrength > .bar')[0];
 	let txtDescription = clone.querySelectorAll('[name=txtDescription]')[0];
+	let txtTotpSecret = clone.querySelectorAll('[name=txtTotpSecret]')[0];
+	let txtTotpCode = clone.querySelectorAll('[name=txtTotpCode]')[0];
+	let trAddField = clone.querySelectorAll('.btnAddField')[0].parentNode.parentNode;
+	let tblFiles = clone.querySelectorAll('table.files')[0];
+	let fleUpload = clone.querySelectorAll('[name=fleUpload]')[0];
 	let sltShareUser = clone.querySelectorAll('[name=sltShareUser]')[0];
 	let sltShareUserGroup = clone.querySelectorAll('[name=sltShareUserGroup]')[0];
 	let tblShares = clone.querySelectorAll('.shares')[0];
@@ -981,6 +1221,8 @@ function showPasswordDetails(id=null) {
 		sltShareUser.appendChild(option);
 	}
 	for(let userGroupId in sessionEnvironment['groups']) {
+		// only members can add a group share
+		if(!sessionEnvironment['groups'][userGroupId]['members'].includes(sessionEnvironment['userId'])) continue;
 		let option = document.createElement('OPTION');
 		option.value = userGroupId;
 		option.innerText = sessionEnvironment['groups'][userGroupId]['title'];
@@ -1011,6 +1253,15 @@ function showPasswordDetails(id=null) {
 		updatePasswordStrength();
 		txtUrl.value = password['url'];
 		txtDescription.value = password['description'];
+		txtTotpSecret.value = password['totp'];
+		txtIcon.value = password['icon'] || '';
+		btnIcon.querySelectorAll('img')[0].src = getIconUrl(txtIcon.value) || 'img/key.svg';
+		password['fields'].forEach((field) => {
+			addCustomFieldRow(trAddField, field.name, field.value, field.type);
+		});
+		password['files'].forEach((file) => {
+			addFileRow(tblFiles, id, file);
+		});
 		clone.querySelectorAll('.btnDelete')[0].addEventListener('click', function(e){
 			if(confirm(strings.are_you_sure_delete)) {
 				jsonRequest(
@@ -1026,10 +1277,10 @@ function showPasswordDetails(id=null) {
 			}
 		});
 		password['share_groups'].forEach((shareGroupId) => {
-			addShareGroupRow(tblShares, shareGroupId);
+			addShareGroupRow(tblShares, shareGroupId, password['share_group_permissions'][shareGroupId], password['share_group_expires'][shareGroupId]);
 		});
 		password['share_users'].forEach((shareUserId) => {
-			addShareUserRow(tblShares, shareUserId);
+			addShareUserRow(tblShares, shareUserId, password['share_user_permissions'][shareUserId], password['share_user_expires'][shareUserId]);
 		});
 	}
 	sltGroup.addEventListener('change', function(e) {
@@ -1042,22 +1293,43 @@ function showPasswordDetails(id=null) {
 		}
 		if(sltGroup.value != '' && sltGroup.value != '-') {
 			// apply permissions from parent folder
-			sessionVaultContent['groups'][sltGroup.value]['share_groups'].forEach((shareGroupId) => {
-				addShareGroupRow(tblShares, shareGroupId);
+			let parentGroup = sessionVaultContent['groups'][sltGroup.value];
+			parentGroup['share_groups'].forEach((shareGroupId) => {
+				addShareGroupRow(tblShares, shareGroupId, parentGroup['share_group_permissions'][shareGroupId], parentGroup['share_group_expires'][shareGroupId]);
 			});
-			sessionVaultContent['groups'][sltGroup.value]['share_users'].forEach((shareUserId) => {
-				addShareUserRow(tblShares, shareUserId);
+			parentGroup['share_users'].forEach((shareUserId) => {
+				addShareUserRow(tblShares, shareUserId, parentGroup['share_user_permissions'][shareUserId], parentGroup['share_user_expires'][shareUserId]);
 			});
 		} else {
 			// add self only
-			addShareUserRow(tblShares, sessionEnvironment['userId']);
+			addShareUserRow(tblShares, sessionEnvironment['userId'], 0);
 		}
 	});
 	clone.querySelectorAll('.btnAddUserShare')[0].addEventListener('click', function(e){
-		addShareUserRow(tblShares, sltShareUser.value);
+		addShareUserRow(tblShares, sltShareUser.value, 0);
 	});
 	clone.querySelectorAll('.btnAddUserGroupShare')[0].addEventListener('click', function(e){
-		addShareGroupRow(tblShares, sltShareUserGroup.value);
+		addShareGroupRow(tblShares, sltShareUserGroup.value, 0);
+	});
+	fleUpload.addEventListener('change', function(e){
+		let file = fleUpload.files[0];
+		if(!file) return;
+		fleUpload.value = '';
+		if(id == null) {
+			// files of a new entry are uploaded after the entry was created
+			addFileRow(tblFiles, null, {'name': file.name, 'size': file.size}).pendingFile = file;
+			return;
+		}
+		// encrypt and upload immediately, the file meta data is saved with the entry
+		uploadFile(id, file).then((fileInfo) => {
+			addFileRow(tblFiles, id, fileInfo);
+		}).catch((error) => {
+			console.warn(error);
+			alert(error);
+		});
+	});
+	clone.querySelectorAll('.btnAddField')[0].addEventListener('click', function(e){
+		addCustomFieldRow(trAddField).focus();
 	});
 	clone.querySelectorAll('.btnCopyUsername')[0].addEventListener('click', function(e){
 		copyInputValueToClipboard(txtUsername);
@@ -1065,11 +1337,34 @@ function showPasswordDetails(id=null) {
 	clone.querySelectorAll('.btnCopyPassword')[0].addEventListener('click', function(e){
 		copyInputValueToClipboard(txtPassword);
 	});
+	clone.querySelectorAll('.btnShowHideTotpSecret')[0].addEventListener('click', function(e){
+		togglePasswordInput(txtTotpSecret);
+	});
+	clone.querySelectorAll('.btnCopyTotpCode')[0].addEventListener('click', function(e){
+		copyInputValueToClipboard(txtTotpCode);
+	});
+	let updateTotpCode = function() {
+		if(!clone.isConnected) {
+			clearInterval(totpTimer);
+			return;
+		}
+		clone.querySelectorAll('tr.totpcode')[0].classList.toggle('invisible', !txtTotpSecret.value);
+		if(!txtTotpSecret.value) return;
+		getTotpCode(txtTotpSecret.value).then((code) => {
+			txtTotpCode.value = code;
+		}).catch((error) => {
+			txtTotpCode.value = strings.invalid_code;
+		});
+	};
+	let totpTimer = setInterval(updateTotpCode, 1000);
 	clone.querySelectorAll('.btnGeneratePassword')[0].addEventListener('click', function(e){
 		showPasswordGenerator(txtPassword, clone);
 	});
 	clone.querySelectorAll('.btnShowHidePassword')[0].addEventListener('click', function(e){
 		togglePasswordInput(txtPassword);
+	});
+	btnIcon.addEventListener('click', function(e){
+		showIconPicker(txtIcon, btnIcon, 'img/key.svg', clone);
 	});
 	clone.querySelectorAll('.btnContents')[0].addEventListener('click', function(e){
 		clone.querySelectorAll('.box.contents')[0].classList.remove('invisible');
@@ -1089,11 +1384,26 @@ function showPasswordDetails(id=null) {
 			'password': txtPassword.value,
 			'url': txtUrl.value,
 			'description': txtDescription.value,
+			'icon': txtIcon.value,
+			'fields': [],
+			'totp': txtTotpSecret.value,
 		};
+		clone.querySelectorAll('tr.field').forEach((tr) => {
+			let txtValue = tr.querySelectorAll('.fieldvalue')[0];
+			secret.fields.push({'name': tr.querySelectorAll('.fieldname')[0].value, 'value': txtValue.value, 'type': txtValue.type});
+		});
+		secret.files = [];
+		tblFiles.querySelectorAll('tr').forEach((tr) => {
+			if(!tr.pendingFile) secret.files.push(tr.fileInfo);
+		});
 
 		// collect selected users and groups and compile target keys
 		let shareUsers = [];
 		let shareGroups = [];
+		let shareUserPermissions = {};
+		let shareGroupPermissions = {};
+		let shareUserExpires = {};
+		let shareGroupExpires = {};
 		let targetPublicKeys = {};
 		tblShares.querySelectorAll('tr').forEach(function(item){
 			let userId = item.getAttribute('userid') ? parseInt(item.getAttribute('userid')) : null;
@@ -1101,8 +1411,12 @@ function showPasswordDetails(id=null) {
 			if(userId && !shareUsers.includes(userId)) {
 				targetPublicKeys[userId] = sessionEnvironment['users'][userId]['public_key'];
 				shareUsers.push(userId);
+				shareUserPermissions[userId] = parseInt(item.querySelector('select.permission').value);
+				shareUserExpires[userId] = localDateTimeInputToUtc(item.querySelector('input.expires').value);
 			}
 			if(groupId && !shareGroups.includes(groupId)) {
+				shareGroupPermissions[groupId] = parseInt(item.querySelector('select.permission').value);
+				shareGroupExpires[groupId] = localDateTimeInputToUtc(item.querySelector('input.expires').value);
 				sessionEnvironment['groups'][groupId]['members'].forEach((groupUserId) => {
 					targetPublicKeys[groupUserId] = sessionEnvironment['users'][groupUserId]['public_key'];
 				});
@@ -1112,6 +1426,8 @@ function showPasswordDetails(id=null) {
 		if(!isOwnUserIdIncluded(shareUsers, shareGroups)) {
 			let myUserId = sessionEnvironment['userId'];
 			shareUsers.push(myUserId);
+			shareUserPermissions[myUserId] = 0;
+			shareUserExpires[myUserId] = null;
 			targetPublicKeys[myUserId] = sessionEnvironment['users'][myUserId]['public_key'];
 		}
 
@@ -1126,16 +1442,33 @@ function showPasswordDetails(id=null) {
 				'revision': txtRevision.value,
 				'password_user': result.password_user,
 				'share_users': shareUsers, 'share_groups': shareGroups,
+				'share_user_permissions': shareUserPermissions, 'share_group_permissions': shareGroupPermissions,
+				'share_user_expires': shareUserExpires, 'share_group_expires': shareGroupExpires,
+				'file_ids': secret.files.map((file) => file.id),
 			}
 		))
 		.then((response) => {
+			let pendingRows = [...tblFiles.querySelectorAll('tr')].filter((tr) => tr.pendingFile);
+			if(pendingRows.length) {
+				// upload the files of the new entry and save again with the file info
+				id = response.id;
+				txtRevision.value = response.revision;
+				return Promise.all(pendingRows.map((tr) => uploadFile(id, tr.pendingFile).then((fileInfo) => {
+					tr.fileInfo = fileInfo;
+					delete tr.pendingFile;
+				}))).then(() => clone.querySelectorAll('.btnSave')[0].click());
+			}
 			// append to session vault
 			sessionVaultContent['passwords'][response.id] = {
 				'revision': response.revision,
 				'group': group, 'title': secret.title,
 				'username': secret.username, 'password': secret.password,
 				'url': secret.url, 'description': secret.description,
-				'share_users': shareUsers, 'share_groups': shareGroups
+				'icon': secret.icon, 'fields': secret.fields, 'files': secret.files, 'totp': secret.totp,
+				'permission': (sessionVaultContent['passwords'][id] ? sessionVaultContent['passwords'][id]['permission'] : 0),
+				'share_users': shareUsers, 'share_groups': shareGroups,
+				'share_user_permissions': shareUserPermissions, 'share_group_permissions': shareGroupPermissions,
+				'share_user_expires': shareUserExpires, 'share_group_expires': shareGroupExpires
 			};
 			populateVaultWindowEntries();
 			closeAnimation(e);
@@ -1145,10 +1478,67 @@ function showPasswordDetails(id=null) {
 			alert(error);
 		});
 	});
+	if(id && (sessionVaultContent['passwords'][id]['permission'] & SHARE_PERMISSION_READ_ONLY)) {
+		disableEditing(clone);
+	}
+	if(id && (sessionVaultContent['passwords'][id]['permission'] & SHARE_PERMISSION_NO_RESHARE)) {
+		clone.querySelectorAll('.btnShare')[0].classList.add('invisible');
+	}
 	// show with animation
 	document.body.appendChild(clone);
 	windowOpenAnimation(clone);
+	updateTotpCode();
 	txtTitle.focus();
+}
+function showIconPicker(txtIcon, btnIcon, defaultIcon, divParentWindow) {
+	const clone = divIconPickerTemplateContainer.cloneNode(true);
+	clone.removeAttribute('id');
+	// identify inputs
+	let txtSearch = clone.querySelectorAll('[name=txtSearch]')[0];
+	let fleIcon = clone.querySelectorAll('[name=fleIcon]')[0];
+	let btnIcons = clone.querySelectorAll('.icons button');
+	btnIcons[0].querySelectorAll('img')[0].src = defaultIcon;
+	// add actions
+	activateWindowMouseDrag(clone, clone.querySelectorAll('.titlebar')[0], divParentWindow);
+	let closeAnimation = windowCloseAction(clone);
+	let applyIcon = function(icon) {
+		txtIcon.value = icon;
+		btnIcon.querySelectorAll('img')[0].src = getIconUrl(icon) || defaultIcon;
+		closeAnimation();
+	};
+	btnIcons.forEach((btn) => {
+		btn.addEventListener('click', function(e){
+			applyIcon(btn.value);
+		});
+	});
+	txtSearch.addEventListener('input', function(e){
+		btnIcons.forEach((btn) => {
+			btn.classList.toggle('invisible', !btn.title.toUpperCase().includes(txtSearch.value.toUpperCase()));
+		});
+	});
+	fleIcon.addEventListener('change', function(e){
+		// re-encode the uploaded image as small PNG so that only plain image data is stored
+		let img = new Image();
+		img.onload = function() {
+			let canvas = document.createElement('CANVAS');
+			canvas.width = 48;
+			canvas.height = 48;
+			// keep the aspect ratio, center the image
+			let scale = Math.min(canvas.width / (img.width || canvas.width), canvas.height / (img.height || canvas.height));
+			canvas.getContext('2d').drawImage(img, (canvas.width - img.width*scale) / 2, (canvas.height - img.height*scale) / 2, img.width*scale, img.height*scale);
+			URL.revokeObjectURL(img.src);
+			applyIcon(canvas.toDataURL('image/png'));
+		};
+		img.onerror = function() {
+			alert(strings.invalid_image);
+		};
+		img.src = URL.createObjectURL(fleIcon.files[0]);
+	});
+	clone.querySelectorAll('.btnClose')[0].addEventListener('click', closeAnimation);
+	// show with animation
+	document.body.appendChild(clone);
+	windowOpenAnimation(clone);
+	txtSearch.focus();
 }
 function showPasswordGenerator(input, divParentWindow) {
 	const clone = divPasswordGeneratorTemplateContainer.cloneNode(true);
@@ -1161,6 +1551,8 @@ function showPasswordGenerator(input, divParentWindow) {
 	// set defaults
 	txtCharCount.value = getSetting('generatorCharCount', '13');
 	txtCharset.value = getSetting('generatorCharset', 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789');
+	txtCharset.title = txtCharset.value; // the charset is usually longer than the input field
+	txtCharset.addEventListener('input', function(e){ txtCharset.title = txtCharset.value; });
 	// add actions
 	activateWindowMouseDrag(clone, clone.querySelectorAll('.titlebar')[0], divParentWindow);
 	let closeAnimation = windowCloseAction(clone);
@@ -1244,15 +1636,170 @@ function addUserGroupRow(groupTable, userGroupId, editAction) {
 	tr.appendChild(td2);
 	groupTable.appendChild(tr);
 }
-function addShareUserRow(shareTable, userId) {
+const SHARE_PERMISSION_READ_ONLY = 1;
+const SHARE_PERMISSION_NO_RESHARE = 2;
+const SHARE_PERMISSIONS = {0:'full_access', 2:'no_resharing', 3:'read_only'};
+function createPermissionCell(permission, expires) {
+	let td = document.createElement('TD');
+	let slt = document.createElement('SELECT');
+	slt.classList.add('permission');
+	for(let value in SHARE_PERMISSIONS) {
+		let option = document.createElement('OPTION');
+		option.value = value;
+		option.innerText = strings[SHARE_PERMISSIONS[value]];
+		slt.appendChild(option);
+	}
+	slt.value = permission || 0;
+	td.appendChild(slt);
+	let input = document.createElement('INPUT');
+	input.type = 'datetime-local';
+	input.classList.add('expires');
+	input.title = strings.expires;
+	input.value = utcToLocalDateTimeInput(expires);
+	td.appendChild(input);
+	return td;
+}
+// expiry dates are transferred as UTC 'YYYY-MM-DD HH:MM:SS' and displayed in local time
+function utcToLocalDateTimeInput(utc) {
+	if(!utc) return '';
+	let date = new Date(utc.replace(' ', 'T')+'Z');
+	let pad = (n) => String(n).padStart(2, '0');
+	return date.getFullYear()+'-'+pad(date.getMonth()+1)+'-'+pad(date.getDate())+'T'+pad(date.getHours())+':'+pad(date.getMinutes());
+}
+function localDateTimeInputToUtc(local) {
+	if(!local) return null;
+	return new Date(local).toISOString().slice(0, 19).replace('T', ' ');
+}
+function disableEditing(divWindow) {
+	// read only permission: hide save/delete and make all inputs read only
+	divWindow.querySelectorAll('.btnSave, .btnDelete, .btnAddField').forEach((btn) => btn.remove());
+	divWindow.querySelectorAll('input, textarea').forEach((input) => input.readOnly = true);
+	divWindow.querySelectorAll('input[type=file]').forEach((input) => input.disabled = true);
+	divWindow.querySelectorAll('select, .btnIcon').forEach((select) => select.disabled = true);
+}
+function addFileRow(fileTable, passwordId, fileInfo) {
+	let tr = document.createElement('TR');
+	tr.fileInfo = fileInfo; // {id, name, size, key, iv} - stored inside the encrypted secret
+	let td1 = document.createElement('TD');
+	let a = document.createElement('A');
+	a.href = '#';
+	a.innerText = fileInfo.name+' ('+Math.max(1, Math.round(fileInfo.size/1024))+' KB)';
+	a.addEventListener('click', function(e){
+		e.preventDefault();
+		if(fileInfo.id) downloadFile(passwordId, fileInfo);
+	});
+	td1.appendChild(a);
+	tr.appendChild(td1);
+	let td2 = document.createElement('TD');
+	let btn = document.createElement('BUTTON');
+	btn.title = strings.remove;
+	btn.addEventListener('click', function(e){
+		tr.remove();
+	});
+	let img = document.createElement('IMG');
+	img.src = 'img/minus.svg';
+	btn.appendChild(img);
+	td2.appendChild(btn);
+	tr.appendChild(td2);
+	fileTable.appendChild(tr);
+	return tr;
+}
+function uploadFile(passwordId, file) {
+	// files are encrypted with an individual key, the file info (incl. key) is stored inside the encrypted secret
+	let fileInfo = {'name': file.name, 'size': file.size};
+	return file.arrayBuffer()
+	.then((data) => encryptFile(data))
+	.then((result) => {
+		fileInfo['key'] = result.key;
+		fileInfo['iv'] = result.iv;
+		return jsonRequest('POST', 'vault/password/'+encodeURIComponent(passwordId)+'/file', {'data': arrayBufferToBase64String(result.data)});
+	})
+	.then((response) => {
+		fileInfo['id'] = response.id;
+		return fileInfo;
+	});
+}
+function downloadFile(passwordId, fileInfo) {
+	var xhttp = new XMLHttpRequest();
+	xhttp.responseType = 'arraybuffer';
+	xhttp.onreadystatechange = function() {
+		if(this.readyState != 4) return;
+		if(this.status != 200) {
+			alert('HTTP '+this.status);
+			return;
+		}
+		decryptFile(fileInfo.key, fileInfo.iv, this.response).then((decrypted) => {
+			let a = document.createElement('A');
+			a.href = URL.createObjectURL(new Blob([decrypted]));
+			a.download = fileInfo.name;
+			a.click();
+			URL.revokeObjectURL(a.href);
+		}).catch((error) => {
+			console.warn(error);
+			alert(error);
+		});
+	};
+	xhttp.open('GET', 'vault/password/'+encodeURIComponent(passwordId)+'/file/'+encodeURIComponent(fileInfo.id), true);
+	xhttp.send();
+}
+function addCustomFieldRow(trAddField, name='', value='', type='text') {
+	// custom fields are stored inside the encrypted secret as {name, value, type}
+	let tr = document.createElement('TR');
+	tr.classList.add('field');
+	let th = document.createElement('TH');
+	let txtName = document.createElement('INPUT');
+	txtName.type = 'text';
+	txtName.classList.add('fieldname');
+	txtName.placeholder = strings.field_name;
+	txtName.value = name;
+	th.appendChild(txtName);
+	tr.appendChild(th);
+	let td = document.createElement('TD');
+	let div = document.createElement('DIV');
+	div.classList.add('with2button');
+	let txtValue = document.createElement('INPUT');
+	txtValue.type = (type == 'password') ? 'password' : 'text';
+	txtValue.classList.add('fieldvalue');
+	txtValue.placeholder = strings.value;
+	txtValue.value = value;
+	div.appendChild(txtValue);
+	let btnToggle = document.createElement('BUTTON');
+	btnToggle.title = strings.show_hide_password;
+	btnToggle.addEventListener('click', function(e){
+		togglePasswordInput(txtValue);
+	});
+	let imgToggle = document.createElement('IMG');
+	imgToggle.src = 'img/eye.svg';
+	btnToggle.appendChild(imgToggle);
+	div.appendChild(btnToggle);
+	let btnRemove = document.createElement('BUTTON');
+	btnRemove.title = strings.remove;
+	btnRemove.addEventListener('click', function(e){
+		tr.remove();
+	});
+	let imgRemove = document.createElement('IMG');
+	imgRemove.src = 'img/minus.svg';
+	btnRemove.appendChild(imgRemove);
+	div.appendChild(btnRemove);
+	td.appendChild(div);
+	tr.appendChild(td);
+	trAddField.parentNode.insertBefore(tr, trAddField);
+	return txtName;
+}
+function addShareUserRow(shareTable, userId, permission=null, expires=null) {
 	if(!(userId in sessionEnvironment['users'])) return;
 	let user = sessionEnvironment['users'][userId];
 	let tr = document.createElement('TR');
 	tr.setAttribute('userid', userId);
 	let td1 = document.createElement('TD');
-	td1.setAttribute('colspan', '2');
 	td1.innerText = user['display_name'];
 	tr.appendChild(td1);
+	// permission is null for user group member rows
+	if(permission === null) {
+		td1.setAttribute('colspan', '2');
+	} else {
+		tr.appendChild(createPermissionCell(permission, expires));
+	}
 	let td2 = document.createElement('TD');
 	let btn = document.createElement('BUTTON');
 	btn.title = strings.remove;
@@ -1266,15 +1813,15 @@ function addShareUserRow(shareTable, userId) {
 	tr.appendChild(td2);
 	shareTable.appendChild(tr);
 }
-function addShareGroupRow(shareTable, groupId) {
+function addShareGroupRow(shareTable, groupId, permission=0, expires=null) {
 	if(!(groupId in sessionEnvironment['groups'])) return;
 	let group = sessionEnvironment['groups'][groupId];
 	let tr = document.createElement('TR');
 	tr.setAttribute('groupid', groupId);
 	let td1 = document.createElement('TD');
-	td1.setAttribute('colspan', '2');
 	td1.innerText = group['title'];
 	tr.appendChild(td1);
+	tr.appendChild(createPermissionCell(permission, expires));
 	let td2 = document.createElement('TD');
 	let btn = document.createElement('BUTTON');
 	btn.title = strings.remove;
@@ -1292,6 +1839,12 @@ function addShareGroupRow(shareTable, groupId) {
 function truncate(str, n=null){
 	if(!n) n = getSetting('truncateChars', 60);
 	return (str.length > n) ? str.slice(0, n-1) + '…' : str;
+}
+function setTruncatedText(element, str, prefix='') {
+	let truncated = truncate(str);
+	element.innerText = prefix + truncated;
+	// show the full text as tooltip if it was truncated
+	if(truncated !== str) element.title = str;
 }
 function onlyUnique(value, index, array) {
 	return array.indexOf(value) === index;

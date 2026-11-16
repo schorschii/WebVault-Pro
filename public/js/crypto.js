@@ -75,12 +75,12 @@ function convertPemToBinary(pem) {
 }
 
 function importPublicKey(pemKey, user_id=null) {
-	return new Promise(function(resolve) {
+	return new Promise(function(resolve, reject) {
 		crypto.subtle.importKey(
 			'spki', convertPemToBinary(pemKey), encryptAlgorithm, false, ['encrypt']
 		).then(function(key) {
 			resolve({'key':key, 'user_id':user_id});
-		});
+		}).catch(reject);
 	});
 }
 function importPrivateKey(pemKey, passphrase=null, saltb64=null, ivb64=null, exportable=false) {
@@ -125,12 +125,12 @@ function importPrivateKey(pemKey, passphrase=null, saltb64=null, ivb64=null, exp
 }
 
 function exportPublicKey(keys) {
-	return new Promise(function(resolve) {
+	return new Promise(function(resolve, reject) {
 		crypto.subtle.exportKey(
 			'spki', keys
 		).then(function(spki) {
 			resolve(convertBinaryToPem(spki));
-		});
+		}).catch(reject);
 	});
 }
 function exportPrivateKey(keys, passphrase=null) {
@@ -177,12 +177,12 @@ function exportPrivateKey(keys, passphrase=null) {
 	})
 }
 function exportPemKeys(keys, passphrase=null) {
-	return new Promise(function(resolve) {
+	return new Promise(function(resolve, reject) {
 		exportPublicKey(keys.publicKey).then(function(pubKey) {
 			exportPrivateKey(keys.privateKey, passphrase).then(function(privKey) {
 				resolve({publicKey:pubKey, privateKey:privKey.key, salt:privKey.salt, iv:privKey.iv});
-			});
-		});
+			}).catch(reject);
+		}).catch(reject);
 	});
 }
 
@@ -191,12 +191,12 @@ function getRandomCryptoValues(length) {
 }
 
 function generateKey(alg, scope) {
-	return new Promise(function(resolve) {
+	return new Promise(function(resolve, reject) {
 		crypto.subtle.generateKey(
 			alg, true, scope
 		).then(function (pair) {
 			resolve(pair);
-		});
+		}).catch(reject);
 	});
 }
 
@@ -264,6 +264,75 @@ function _rsaEncrypt(pubKey, data, user_id) {
 	).then((encrypted) => Promise.resolve({
 		'encrypted': encrypted, 'rsa_iv': rsa_iv, 'user_id': user_id
 	}));
+}
+// files are encrypted with an individual AES key which is stored inside the encrypted secret
+function encryptFile(data) {
+	let _aesIv = getRandomCryptoValues(12);
+	let _aesKey = null;
+	let _encrypted = null;
+	return crypto.subtle.generateKey(
+		{ name: 'AES-GCM', length: 256 },
+		true,
+		['encrypt', 'decrypt'],
+	).then((aesKey) => {
+		_aesKey = aesKey;
+		return crypto.subtle.encrypt({ name: 'AES-GCM', iv: _aesIv }, aesKey, data);
+	}).then((encrypted) => {
+		_encrypted = encrypted;
+		return crypto.subtle.exportKey('raw', _aesKey);
+	}).then((exportedAesKey) => Promise.resolve({
+		'data': _encrypted,
+		'key': arrayBufferToBase64String(exportedAesKey),
+		'iv': arrayBufferToBase64String(_aesIv),
+	}));
+}
+function decryptFile(keyB64, ivB64, data) {
+	return crypto.subtle.importKey(
+		'raw', base64StringToArrayBuffer(keyB64), 'AES-GCM', false, ['decrypt']
+	).then((aesKey) => crypto.subtle.decrypt(
+		{ name: 'AES-GCM', iv: base64StringToArrayBuffer(ivB64) },
+		aesKey,
+		data
+	));
+}
+// time-based one-time password (RFC 6238) from an otpauth:// URI or a plain base32 secret
+function getTotpCode(totp) {
+	let secret = totp;
+	let digits = 6;
+	let period = 30;
+	let algorithm = 'SHA-1';
+	if(totp.startsWith('otpauth://')) {
+		let params = new URL(totp).searchParams;
+		secret = params.get('secret') || '';
+		digits = parseInt(params.get('digits') || 6);
+		period = parseInt(params.get('period') || 30);
+		algorithm = (params.get('algorithm') || 'SHA1').toUpperCase().replace('SHA', 'SHA-');
+	}
+	let counter = new ArrayBuffer(8);
+	new DataView(counter).setBigUint64(0, BigInt(Math.floor(Date.now() / 1000 / period)));
+	return crypto.subtle.importKey(
+		'raw', base32StringToArrayBuffer(secret), { name: 'HMAC', hash: algorithm }, false, ['sign']
+	).then((key) => crypto.subtle.sign('HMAC', key, counter)
+	).then((signature) => {
+		let hash = new Uint8Array(signature);
+		let offset = hash[hash.length - 1] & 0x0f;
+		let code = ((hash[offset] & 0x7f) << 24) | (hash[offset+1] << 16) | (hash[offset+2] << 8) | hash[offset+3];
+		return String(code % Math.pow(10, digits)).padStart(digits, '0');
+	});
+}
+function base32StringToArrayBuffer(b32str) {
+	let alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+	let bits = '';
+	for(let char of b32str.toUpperCase().replace(/[\s=]/g, '')) {
+		let index = alphabet.indexOf(char);
+		if(index < 0) throw new Error('Invalid base32 string');
+		bits += index.toString(2).padStart(5, '0');
+	}
+	let bytes = new Uint8Array(Math.floor(bits.length / 8));
+	for(let i = 0; i < bytes.length; i++) {
+		bytes[i] = parseInt(bits.substr(i * 8, 8), 2);
+	}
+	return bytes.buffer;
 }
 function decryptData(rsaPrivKey, encryptedAesKey, aesIv, rsa_iv, data) {
 	return crypto.subtle.decrypt(

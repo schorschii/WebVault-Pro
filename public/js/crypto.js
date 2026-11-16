@@ -265,6 +265,36 @@ function _rsaEncrypt(pubKey, data, user_id) {
 		'encrypted': encrypted, 'rsa_iv': rsa_iv, 'user_id': user_id
 	}));
 }
+// files are encrypted with an individual AES key which is stored inside the encrypted secret
+function encryptFile(data) {
+	let _aesIv = getRandomCryptoValues(12);
+	let _aesKey = null;
+	let _encrypted = null;
+	return crypto.subtle.generateKey(
+		{ name: 'AES-GCM', length: 256 },
+		true,
+		['encrypt', 'decrypt'],
+	).then((aesKey) => {
+		_aesKey = aesKey;
+		return crypto.subtle.encrypt({ name: 'AES-GCM', iv: _aesIv }, aesKey, data);
+	}).then((encrypted) => {
+		_encrypted = encrypted;
+		return crypto.subtle.exportKey('raw', _aesKey);
+	}).then((exportedAesKey) => Promise.resolve({
+		'data': _encrypted,
+		'key': arrayBufferToBase64String(exportedAesKey),
+		'iv': arrayBufferToBase64String(_aesIv),
+	}));
+}
+function decryptFile(keyB64, ivB64, data) {
+	return crypto.subtle.importKey(
+		'raw', base64StringToArrayBuffer(keyB64), 'AES-GCM', false, ['decrypt']
+	).then((aesKey) => crypto.subtle.decrypt(
+		{ name: 'AES-GCM', iv: base64StringToArrayBuffer(ivB64) },
+		aesKey,
+		data
+	));
+}
 function decryptData(rsaPrivKey, encryptedAesKey, aesIv, rsa_iv, data) {
 	return crypto.subtle.decrypt(
 		{ name: 'RSA-OAEP', iv: base64StringToArrayBuffer(rsa_iv) },

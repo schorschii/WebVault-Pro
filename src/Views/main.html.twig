@@ -90,6 +90,17 @@
 					</select>
 				</td>
 			</tr>
+			<tr>
+				<th>{{ "icon"|trans }}</th>
+				<td>
+					<select name="sltIcon">
+						<option value="">{{ "default"|trans }}</option>
+						{% for icon in icons %}
+						<option value="{{ icon }}">{{ icon|replace({'_': ' '}) }}</option>
+						{% endfor %}
+					</select>
+				</td>
+			</tr>
 		</table>
 	</div>
 	<div class="share box invisible">
@@ -156,6 +167,17 @@
 				</td>
 			</tr>
 			<tr>
+				<th>{{ "icon"|trans }}</th>
+				<td>
+					<select name="sltIcon">
+						<option value="">{{ "default"|trans }}</option>
+						{% for icon in icons %}
+						<option value="{{ icon }}">{{ icon|replace({'_': ' '}) }}</option>
+						{% endfor %}
+					</select>
+				</td>
+			</tr>
+			<tr>
 				<th>{{ "username"|trans }}</th>
 				<td>
 					<div class="with1button">
@@ -186,6 +208,19 @@
 				<th>{{ "description"|trans }}</th>
 				<td>
 					<textarea name="txtDescription"></textarea>
+				</td>
+			</tr>
+			<tr>
+				<th></th>
+				<td>
+					<button class="btnAddField"><img class="inline" src="img/add.svg">&nbsp;{{ "add_field"|trans }}</button>
+				</td>
+			</tr>
+			<tr class="files">
+				<th>{{ "files"|trans }}</th>
+				<td>
+					<table class="inputtable actionbtn files"></table>
+					<input type="file" name="fleUpload">
 				</td>
 			</tr>
 		</table>

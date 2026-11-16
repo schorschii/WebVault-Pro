@@ -434,8 +434,15 @@ function setSetting(name, value) {
 
 function generateRandomPassword(length=13, charset='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789') {
 	let generated = '';
-	for(var i = 0, n = charset.length; i < length; ++i) {
-		generated += charset.charAt(Math.floor(Math.random() * n));
+	let n = charset.length;
+	if(!n) return generated;
+	let random = new Uint32Array(1);
+	while(generated.length < length) {
+		crypto.getRandomValues(random);
+		// rejection sampling to avoid modulo bias
+		if(random[0] < 0x100000000 - (0x100000000 % n)) {
+			generated += charset.charAt(random[0] % n);
+		}
 	}
 	return generated;
 }
@@ -520,11 +527,12 @@ function populateUserGroups() {
 	let tblGroups = divUserGroupsContainer.querySelectorAll('.groups')[0];
 	tblGroups.innerHTML = '';
 	for(let groupId in sessionEnvironment['groups']) {
+		if(!sessionEnvironment['groups'][groupId]['members'].includes(sessionEnvironment['userId'])) continue;
 		addUserGroupRow(tblGroups, groupId, function(){
 			showUserGroupManagement(groupId);
 		});
 	}
-	if(!Object.keys(sessionEnvironment['groups']).length) {
+	if(!tblGroups.rows.length) {
 		let tr = document.createElement('TR');
 		tblGroups.appendChild(tr);
 		let td = document.createElement('TD');
@@ -560,7 +568,7 @@ function showUserGroupManagement(id=null) {
 		let userEntries = clone.querySelectorAll('.members tr');
 		for(let i=0; i<userEntries.length; i++) {
 			if(userEntries[i].getAttribute('userid')) {
-				newGroupMemberIds.push(userEntries[i].getAttribute('userid'));
+				newGroupMemberIds.push(parseInt(userEntries[i].getAttribute('userid')));
 			}
 		}
 		// re-encrypt all passwords which are shared with the edited group
@@ -789,6 +797,8 @@ function showGroupDetails(id=null) {
 		sltShareUser.appendChild(option);
 	}
 	for(let userGroupId in sessionEnvironment['groups']) {
+		// only members can add a group share
+		if(!sessionEnvironment['groups'][userGroupId]['members'].includes(sessionEnvironment['userId'])) continue;
 		let option = document.createElement('OPTION');
 		option.value = userGroupId;
 		option.innerText = sessionEnvironment['groups'][userGroupId]['title'];
@@ -981,6 +991,8 @@ function showPasswordDetails(id=null) {
 		sltShareUser.appendChild(option);
 	}
 	for(let userGroupId in sessionEnvironment['groups']) {
+		// only members can add a group share
+		if(!sessionEnvironment['groups'][userGroupId]['members'].includes(sessionEnvironment['userId'])) continue;
 		let option = document.createElement('OPTION');
 		option.value = userGroupId;
 		option.innerText = sessionEnvironment['groups'][userGroupId]['title'];

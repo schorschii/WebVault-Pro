@@ -168,13 +168,11 @@ class DatabaseController {
 		return $this->stmt->execute([':id' => $id]);
 	}
 
-	public function selectAllUserGroupForShare($user_id) {
+	public function selectAllUserGroup() {
 		$this->stmt = $this->dbh->prepare(
-			'SELECT ug.id, ug.title FROM user_group ug
-			WHERE ug.id IN (SELECT ugm.user_group_id FROM user_group_member ugm WHERE ugm.user_id = :user_id)
-			ORDER BY ug.title'
+			'SELECT id, title FROM user_group ORDER BY title'
 		);
-		$this->stmt->execute([':user_id' => $user_id]);
+		$this->stmt->execute();
 		return $this->stmt->fetchAll(PDO::FETCH_CLASS);
 	}
 	public function selectAllUserIdByUserGroup($user_group_id) {

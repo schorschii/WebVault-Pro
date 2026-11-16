@@ -19,8 +19,16 @@ $app->post('/user/login', WebVault\Controllers\UserController::class.':login')
 	->setName('user-login');
 $app->get('/user/session', WebVault\Controllers\UserController::class.':session')
 	->setName('user-session');
+$app->post('/user/login/totp', WebVault\Controllers\UserController::class.':loginTotp')
+	->setName('user-login-totp');
 $app->post('/user/logout', WebVault\Controllers\UserController::class.':logout')
 	->setName('user-logout');
+$app->post('/user/totp', WebVault\Controllers\UserController::class.':totpSetup')
+	->setName('user-totp-setup');
+$app->post('/user/totp/enable', WebVault\Controllers\UserController::class.':totpEnable')
+	->setName('user-totp-enable');
+$app->post('/user/totp/disable', WebVault\Controllers\UserController::class.':totpDisable')
+	->setName('user-totp-disable');
 $app->post('/user/keys', WebVault\Controllers\UserController::class.':setUserKeys')
 	->setName('user-keys');
 $app->post('/user/group', WebVault\Controllers\UserController::class.':createGroup')
@@ -39,6 +47,10 @@ $app->post('/vault/password/{id}', WebVault\Controllers\VaultController::class.'
 	->setName('vault-password-edit');
 $app->delete('/vault/password/{id}', WebVault\Controllers\VaultController::class.':removePassword')
 	->setName('vault-password-delete');
+$app->post('/vault/password/{id}/file', WebVault\Controllers\VaultController::class.':uploadFile')
+	->setName('vault-password-file-upload');
+$app->get('/vault/password/{id}/file/{fid}', WebVault\Controllers\VaultController::class.':downloadFile')
+	->setName('vault-password-file-download');
 
 $app->post('/vault/group', WebVault\Controllers\VaultController::class.':createGroup')
 	->setName('vault-group-new');
